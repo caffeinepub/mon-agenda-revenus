@@ -1,0 +1,105 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-08T08:21:17.993Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 5,
+    "implemented": 4,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "Create backend support for a persistent Client database owned per authenticated user, with client records containing the same client-related fields used in the appointment form: client name, client reference, phone number, address, service, and notes.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add backend support to store and retrieve one photo per client record. The photo must be constrained to a 35mm x 45mm portrait aspect ratio (35:45) at upload time on the frontend, and stored per client.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/imageCrop.ts",
+          "frontend/src/components/ClientPhotoField.tsx",
+          "frontend/src/pages/ClientDatabasePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/imageCrop.ts",
+          "frontend/src/components/ClientPhotoField.tsx",
+          "frontend/src/pages/ClientDatabasePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Implement a new frontend page named “Client Database” (English UI label) that shows (1) a full client form for creating/editing a client and (2) below it, a table listing all clients where rows are clients and columns include all client fields plus a “Paid this year” column.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ClientDatabasePage.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/components/Header.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ClientDatabasePage.tsx",
+          "frontend/src/App.tsx",
+          "frontend/src/components/Header.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Compute and display “Paid this year” per client for the current calendar year using the same source concept as Dashboard > “Listing Mensuel” > “Revenus (Faits et Payés)”: the value must be derived from appointment and monthly listing data for the current year and aggregated per client reference.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/ClientDatabasePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/ClientDatabasePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Update the appointment creation/edit dialog so that the “Client Name” field can select an existing client from the Client Database, and the selection is linked to “Client Reference” to avoid ambiguity when multiple clients share the same name.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/AppointmentDialog.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/AppointmentDialog.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/AppointmentDialog.tsx",
+    "frontend/src/components/ClientPhotoField.tsx",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/ClientDatabasePage.tsx",
+    "frontend/src/utils/imageCrop.ts",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

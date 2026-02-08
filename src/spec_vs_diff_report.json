@@ -1,0 +1,84 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-08T08:21:17.990Z",
+  "summary": "Diff adds a client-record type and storage scaffolding in the Motoko actor (plus migration), a new Client Database frontend page with photo upload/cropping utilities, client CRUD React Query hooks, and a client-picking combobox in the appointment dialog. However, the diff evidence is incomplete/truncated for several key acceptance criteria: explicit backend CRUD/photo APIs, the “Paid this year” calculation/column, and the required English UI label for the page.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Backend provides CRUD methods to create/update/delete/list the caller’s clients and treats client reference as unique identifier within caller’s data.",
+      "reason": "The diff shows the ClientRecord type and new clientRecordMap state, but the actual public CRUD methods and enforcement of unique reference-per-owner are not visible in the provided backend/main.mo snippet (truncated). Frontend hooks call such methods, but the backend implementation is not evidenced in the diff excerpt.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Backend provides methods to set/replace a client photo and fetch a client photo by client reference for the caller; saved photo persists and is displayed when reopening the client record.",
+      "reason": "Frontend implements cropping to 35:45 and stores photo bytes via add/update, but the diff does not show backend methods to fetch/set photo specifically by client reference (only a ClientRecord has an optional photo field). Also, persistence/display on reopen is not fully evidenced due to truncation of the ClientDatabasePage.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/components/ClientPhotoField.tsx",
+        "frontend/src/utils/imageCrop.ts",
+        "frontend/src/pages/ClientDatabasePage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Add a navigable frontend page named “Client Database” (English UI label) containing a full client form (Name, Client Reference, Phone Number, Address, Service, Notes, Photo) and a table listing all clients with a “Paid this year” column; selecting a row loads that client into the form.",
+      "reason": "Route and page component are added, but the navigation label shown is “Base Client” (French) rather than the required English UI label “Client Database”. Also, due to truncation, the table columns and the “Paid this year” column and row-selection-to-edit behavior are not fully verifiable from the diff excerpt.",
+      "evidence": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/Header.tsx",
+        "frontend/src/pages/ClientDatabasePage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Compute and display “Paid this year” per client for the current calendar year using the same underlying logic as Dashboard > Listing Mensuel > “Revenus (Faits et Payés)”, aggregated per client reference.",
+      "reason": "The ClientDatabasePage imports appointments and client records, but the diff excerpt does not show any implemented aggregation for “Paid this year”, nor any reuse of the monthly listing/dashboard revenue logic. No clear linkage to the monthly listing computations is evidenced.",
+      "evidence": [
+        "frontend/src/pages/ClientDatabasePage.tsx",
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Compta Mois hour/separator alignment CSS changes",
+      "reason": "Explicitly listed as a non-goal, but the diff summary indicates new Compta Mois-specific CSS classes for alignment were added.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "New/expanded appointment edit/delete menu dialogs (edit single vs all future; delete single vs all future)",
+      "reason": "Not requested by the BuildRequest (scope is client database + client selection in appointment dialog). The diff summary lists new dialog components and behavior.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Broader changes to appointment list behavior (e.g., unified modifier/supprimer button, unpaidCount prop changes)",
+      "reason": "Not requested by the BuildRequest; appears to be additional refactoring/feature work unrelated to client database requirements.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "confidence": 0.62,
+  "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AppointmentDialog.tsx",
+    "frontend/src/components/ClientPhotoField.tsx",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/ClientDatabasePage.tsx",
+    "frontend/src/utils/imageCrop.ts",
+    "project_state.json"
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Build an appointment-booking app enhanced with a \"Base Client\" (client database) page to manage client records (including photos), allow selecting existing clients when creating appointments, and report each client’s payments for the current year based on dashboard revenue data.",
+  "architectural_notes": [
+    "Client photo requirement: store/display a photo per client with target dimensions 35mm (W) x 45mm (H).",
+    "Client annual payment column should be derived from Dashboard > Listing Mensuel > \"Revenus (Faits et Payés)\" for the current year."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-add-backend-support-to-store-and-retrieve-one-photo-per-client-record-the-photo-must-be-constrained-to-a-35mm-x-45mm-portrait-aspect-ratio-35-45-at-upload-time-on-the-frontend-and-stored-per-client",
+      "title": "Add backend support to store and retrieve one photo per client record. The photo must be constrained to a 35mm x 45mm portrait aspect ratio (35:45) at upload time on the frontend, and stored per client.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-new-frontend-page-named-client-database-english-ui-label-that-shows-1-a-full-client-form-for-creating-editing-a-client-and-2-below-it-a-table-listing-all-clients-where-rows-are-clients-and-columns-include-all-client-fields-plus-a-paid-this-year-column",
+      "title": "Implement a new frontend page named “Client Database” (English UI label) that shows (1) a full client form for creating/editing a client and (2) below it, a table listing all clients where rows are clients and columns include all client fields plus a “Paid this year” column.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-compute-and-display-paid-this-year-per-client-for-the-current-calendar-year-using-the-same-source-concept-as-dashboard-listing-mensuel-revenus-faits-et-pay-s-the-value-must-be-derived-from-appointment-and-monthly-listing-data-for-the-current-year-and-aggregated-per-client-reference",
+      "title": "Compute and display “Paid this year” per client for the current calendar year using the same source concept as Dashboard > “Listing Mensuel” > “Revenus (Faits et Payés)”: the value must be derived from appointment and monthly listing data for the current year and aggregated per client reference.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-appointment-creation-edit-dialog-so-that-the-client-name-field-can-select-an-existing-client-from-the-client-database-and-the-selection-is-linked-to-client-reference-to-avoid-ambiguity-when-multiple-clients-share-the-same-name",
+      "title": "Update the appointment creation/edit dialog so that the “Client Name” field can select an existing client from the Client Database, and the selection is linked to “Client Reference” to avoid ambiguity when multiple clients share the same name.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Link client identification so searches use \"Référence Client\" to avoid confusion when multiple clients share the same name",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Create a new \"Base Client\" page: same fields as appointment form, include client photo (35mm x 45mm), allow selecting an existing client in appointment \"Nom\" field, and show a table listing clients with all fields plus current-year amount paid pulled from Dashboard > Listing Mensuel > \"Revenus (Faits et Payés)\"",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Create backend support for a persistent Client database owned per authenticated user, with client records containing the same client-related fields used in the appointment form: client name, client reference, phone number, address, service, and notes.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Add Client Database page with client photos and year-to-date paid amount, and allow selecting clients in new appointments",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

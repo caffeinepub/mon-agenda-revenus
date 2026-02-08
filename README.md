@@ -1,2 +1,3 @@
-# mon-agenda-revenus
-Exported from Caffeine project: Restore Compta Mois page design in v107 to match v106 (without touching Base Client or appointment form)
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`
