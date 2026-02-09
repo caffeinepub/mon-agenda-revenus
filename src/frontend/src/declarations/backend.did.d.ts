@@ -21,6 +21,10 @@ export interface ClientRecord {
   'photo' : [] | [Uint8Array],
   'phoneNumber' : string,
 }
+export interface ClientReference {
+  'owner' : Principal,
+  'referenceClient' : string,
+}
 export interface DashboardStats {
   'revenusPercus' : bigint,
   'totalRecu2026' : bigint,
@@ -95,6 +99,34 @@ export interface RendezVous {
   'heureDebut' : string,
   'numeroTelephone' : string,
 }
+export interface RendezVousCreateArgs {
+  'montantDu' : bigint,
+  'service' : string,
+  'dateHeure' : Time,
+  'heureFin' : string,
+  'nomClient' : string,
+  'repetition' : TypeRepetition,
+  'notes' : string,
+  'adresse' : string,
+  'clientRef' : ClientReference,
+  'heureDebut' : string,
+  'numeroTelephone' : string,
+}
+export interface RendezVousUpdateArgs {
+  'id' : bigint,
+  'montantDu' : bigint,
+  'service' : string,
+  'dateHeure' : Time,
+  'heureFin' : string,
+  'nomClient' : string,
+  'repetition' : TypeRepetition,
+  'notes' : string,
+  'adresse' : string,
+  'clientRef' : ClientReference,
+  'heureDebut' : string,
+  'numeroTelephone' : string,
+  'demandeEdition' : DemandeEdition,
+}
 export interface StatistiquesFinancieres {
   'totalDuesIndividuelles' : bigint,
   'totalFaitEtPaye' : bigint,
@@ -131,22 +163,7 @@ export interface _SERVICE {
     [string, string, string, string, string, string, [] | [Uint8Array]],
     bigint
   >,
-  'ajouterRendezVous' : ActorMethod<
-    [
-      Time,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      bigint,
-      TypeRepetition,
-    ],
-    bigint
-  >,
+  'ajouterRendezVous' : ActorMethod<[RendezVousCreateArgs], bigint>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'calculatePaidThisYear' : ActorMethod<[string], bigint>,
   'deleteClientRecord' : ActorMethod<[bigint], undefined>,
@@ -160,24 +177,7 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'handleMontantPayeUpdateWithCredits' : ActorMethod<[bigint, bigint], bigint>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'modifierRendezVous' : ActorMethod<
-    [
-      bigint,
-      Time,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      bigint,
-      TypeRepetition,
-      DemandeEdition,
-    ],
-    undefined
-  >,
+  'modifierRendezVous' : ActorMethod<[RendezVousUpdateArgs], undefined>,
   'obtenirCreditClient' : ActorMethod<[string], bigint>,
   'obtenirListingMensuel' : ActorMethod<
     [bigint, bigint],

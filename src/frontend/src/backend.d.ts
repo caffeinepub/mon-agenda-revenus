@@ -7,10 +7,29 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface RendezVousUpdateArgs {
+    id: bigint;
+    montantDu: bigint;
+    service: string;
+    dateHeure: Time;
+    heureFin: string;
+    nomClient: string;
+    repetition: TypeRepetition;
+    notes: string;
+    adresse: string;
+    clientRef: ClientReference;
+    heureDebut: string;
+    numeroTelephone: string;
+    demandeEdition: DemandeEdition;
+}
 export interface RapportPDFRequest {
     rapportType: RapportType;
     period: bigint;
     year: bigint;
+}
+export interface ClientReference {
+    owner: Principal;
+    referenceClient: string;
 }
 export type Time = bigint;
 export interface ClientRecord {
@@ -37,15 +56,6 @@ export type TypeRepetition = {
     __kind__: "mensuelle";
     mensuelle: null;
 };
-export interface DashboardStats {
-    revenusPercus: bigint;
-    totalRecu2026: bigint;
-    revenuMoyen2026: bigint;
-    revenusPercusMois: bigint;
-    totalDue: bigint;
-    totalRevenusMensuels2026: Array<bigint>;
-    totalReelRecu: bigint;
-}
 export interface JoursSemaine {
     mardi: boolean;
     samedi: boolean;
@@ -54,6 +64,15 @@ export interface JoursSemaine {
     lundi: boolean;
     vendredi: boolean;
     mercredi: boolean;
+}
+export interface DashboardStats {
+    revenusPercus: bigint;
+    totalRecu2026: bigint;
+    revenuMoyen2026: bigint;
+    revenusPercusMois: bigint;
+    totalDue: bigint;
+    totalRevenusMensuels2026: Array<bigint>;
+    totalReelRecu: bigint;
 }
 export interface TotauxListingMensuel {
     totalTotalReelRecu: bigint;
@@ -125,6 +144,19 @@ export interface DomaineListingMensuel {
 export interface UserProfile {
     name: string;
 }
+export interface RendezVousCreateArgs {
+    montantDu: bigint;
+    service: string;
+    dateHeure: Time;
+    heureFin: string;
+    nomClient: string;
+    repetition: TypeRepetition;
+    notes: string;
+    adresse: string;
+    clientRef: ClientReference;
+    heureDebut: string;
+    numeroTelephone: string;
+}
 export enum DemandeEdition {
     unique = "unique",
     futursDuClient = "futursDuClient"
@@ -141,7 +173,7 @@ export enum UserRole {
 }
 export interface backendInterface {
     addClientRecord(clientName: string, referenceClient: string, phoneNumber: string, address: string, service: string, notes: string, photo: Uint8Array | null): Promise<bigint>;
-    ajouterRendezVous(dateHeure: Time, heureDebut: string, heureFin: string, nomClient: string, referenceClient: string, numeroTelephone: string, adresse: string, service: string, notes: string, montantDu: bigint, repetition: TypeRepetition): Promise<bigint>;
+    ajouterRendezVous(args: RendezVousCreateArgs): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     calculatePaidThisYear(referenceClient: string): Promise<bigint>;
     deleteClientRecord(id: bigint): Promise<void>;
@@ -155,7 +187,7 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     handleMontantPayeUpdateWithCredits(id: bigint, montantPaye: bigint): Promise<bigint>;
     isCallerAdmin(): Promise<boolean>;
-    modifierRendezVous(id: bigint, dateHeure: Time, heureDebut: string, heureFin: string, nomClient: string, referenceClient: string, numeroTelephone: string, adresse: string, service: string, notes: string, montantDu: bigint, repetition: TypeRepetition, demandeEdition: DemandeEdition): Promise<void>;
+    modifierRendezVous(args: RendezVousUpdateArgs): Promise<void>;
     obtenirCreditClient(referenceClient: string): Promise<bigint>;
     obtenirListingMensuel(year: bigint, month: bigint): Promise<[Array<DomaineListingMensuel>, TotauxListingMensuel]>;
     obtenirRapportPDF(request: RapportPDFRequest): Promise<Array<RapportPDFData>>;

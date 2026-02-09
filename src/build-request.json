@@ -1,113 +1,67 @@
 {
   "kind": "build_request",
-  "title": "Add Client Database page with client photos and year-to-date paid amount, and allow selecting clients in new appointments",
+  "title": "Fix Dashboard 'Due (Completed appointments; current month)' to match Monthly Listing negative credit total",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Create backend support for a persistent Client database owned per authenticated user, with client records containing the same client-related fields used in the appointment form: client name, client reference, phone number, address, service, and notes.",
-      "target": "backend",
+      "text": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4",
+          "msg-6"
         ],
         "quotes": [
-          "Create a new page “Base Client” with the same fields as for appointments…"
+          "Page « Tableau de bord », Cadre « Dus (RDV Faits ; Mois Courant) » le calcul de la somme due du mois courant au mois de février  n’est pas correct.",
+          "Dans le tableau «  Listing Mensuel » du mois de février, il y à zéro en crédit négatif, c’est correct mais pas dans le Cadre « Dus (RDV Faits ; Mois Courant) » il y a 4400 et cela n’est pas correct."
         ]
       },
       "acceptanceCriteria": [
-        "Backend exposes a Client type and stores client records per caller (owner-scoped).",
-        "Backend provides CRUD methods to create/update/delete/list the caller’s clients.",
-        "Client reference is treated as the unique identifier for a client within a caller’s data (two clients may share the same name without collision)."
+        "On the Dashboard, the displayed value for \"Dus (RDV Faits ; Mois Courant)\" equals abs(totalCreditNegatif) computed using the same functions as MonthlyListingTable for the current month.",
+        "For February in the same dataset where the February Monthly Listing total row shows 0 for \"Crédit Négatif\", the Dashboard \"Dus (RDV Faits ; Mois Courant)\" card displays 0 (not 4400)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add backend support to store and retrieve one photo per client record. The photo must be constrained to a 35mm x 45mm portrait aspect ratio (35:45) at upload time on the frontend, and stored per client.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "…I want to be able to insert a photo (width 35mm and height 45mm) in each client record."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Frontend provides a photo uploader in the client form and enforces/crops to a 35:45 aspect ratio before saving.",
-        "Backend provides methods to set/replace a client photo and fetch a client photo by client reference for the caller.",
-        "A saved photo persists and is displayed when reopening the client record."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Implement a new frontend page named “Client Database” (English UI label) that shows (1) a full client form for creating/editing a client and (2) below it, a table listing all clients where rows are clients and columns include all client fields plus a “Paid this year” column.",
+      "text": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4",
+          "msg-6"
         ],
         "quotes": [
-          "Create a new page “Base Client”…",
-          "…below the full visible form, I want a table… rows will be client names, columns will repeat the client fields… and a column how much the client paid in the current year…"
+          "Dans le tableau «  Listing Mensuel » du mois de février, il y à zéro en crédit négatif, c’est correct mais pas dans le Cadre « Dus (RDV Faits ; Mois Courant) » il y a 4400 et cela n’est pas correct.",
+          "Tu veux que je corrige maintenant ? / Oui"
         ]
       },
       "acceptanceCriteria": [
-        "The app has a navigable “Client Database” page reachable from the main navigation.",
-        "The page contains a client form for add/edit with fields: Name, Client Reference, Phone Number, Address, Service, Notes, and Photo.",
-        "The page displays a table under the form that lists all saved clients for the signed-in user, with one column per client field plus “Paid this year”.",
-        "Selecting a row loads that client into the form for editing."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Compute and display “Paid this year” per client for the current calendar year using the same source concept as Dashboard > “Listing Mensuel” > “Revenus (Faits et Payés)”: the value must be derived from appointment and monthly listing data for the current year and aggregated per client reference.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "…a column how much the client paid in the current year take the information from the “Dashboard” page table “Listing Mensuel” column “Revenus (Faits et Payés)”."
-        ]
-      },
-      "acceptanceCriteria": [
-        "For each client in Client Database, “Paid this year” is shown for the current year (based on the user’s local current year).",
-        "The aggregation is per client reference (not only per client name).",
-        "The total used matches the same underlying logic used by the app for “Revenus (Faits et Payés)” in the monthly listing (i.e., consistent with Dashboard calculations)."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Update the appointment creation/edit dialog so that the “Client Name” field can select an existing client from the Client Database, and the selection is linked to “Client Reference” to avoid ambiguity when multiple clients share the same name.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "…for new appointments we can select in the field “Name” a client from the client database."
-        ]
-      },
-      "acceptanceCriteria": [
-        "In the appointment dialog, the user can pick an existing client (displayed as Name + Client Reference) for the client name input.",
-        "When a client is selected, the appointment’s Client Reference is set to that client’s reference (and remains linked for searches/uniqueness).",
-        "It remains possible to type a new client manually if no client is selected (unless a valid client selection is required by existing validation)."
+        "The \"Dus\" card computation uses previous-month listing data in the same way the Monthly Listing table does (so months that depend on prior credit do not diverge between the card and the table).",
+        "No other Dashboard cards regress (\"RDV faits...\" still matches the Monthly Listing totalDuMois for the current month, and \"Revenus du Mois en Cours (Faits et Payés)\" remains unchanged)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit any files under frontend/src/components/ui or any paths listed in frontend.immutablePaths in SYSTEM_CONTEXT.",
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "All client data must be owner-scoped and only accessible to the authenticated caller."
+    "Do not edit files under frontend/src/components/ui (compose existing UI components only).",
+    "Do not modify immutable frontend hook files listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
   ],
   "nonGoals": [
-    "Fixing the Compta Mois hour/separator alignment issue (tracked as a known issue but not requested here).",
-    "Adding third-party authentication providers (only Internet Identity is supported).",
-    "Adding external databases or off-chain storage for client photos."
+    "Do not change the UI labels, language, or formatting unless required to fix the calculation mismatch.",
+    "Do not change backend financial schemas or how TotauxListingMensuel.totalSoldeRestantNegatif is computed (this fix is to make the Dashboard card consistent with the Monthly Listing table)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

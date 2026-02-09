@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useGetAllClientRecords,
   useAddClientRecord,
@@ -6,6 +6,7 @@ import {
   useDeleteClientRecord,
   useGetAllAppointments,
 } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,9 +21,10 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Plus, Save, X } from 'lucide-react';
+import { Trash2, Save, X, Download, ArrowUpDown } from 'lucide-react';
 import ClientPhotoField from '../components/ClientPhotoField';
 import { photoToUrl } from '../utils/imageCrop';
+import { arrayToCsv, downloadCsv } from '../utils/csvExport';
 import type { ClientRecord } from '../backend';
 import {
   AlertDialog,
@@ -36,6 +38,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function ClientDatabasePage() {
+  const { identity } = useInternetIdentity();
   const { data: clients = [], isLoading: clientsLoading } = useGetAllClientRecords();
   const { data: appointments = [] } = useGetAllAppointments();
   const addClient = useAddClientRecord();
@@ -55,6 +58,7 @@ export default function ClientDatabasePage() {
   const [editingClientId, setEditingClientId] = useState<bigint | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<bigint | null>(null);
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
   const resetForm = () => {
     setFormData({
@@ -90,6 +94,12 @@ export default function ClientDatabasePage() {
       return;
     }
 
+    // Check if actor is ready
+    if (!identity) {
+      toast.error('Veuillez vous connecter pour enregistrer un client');
+      return;
+    }
+
     try {
       if (editingClientId) {
         await updateClient.mutateAsync({
@@ -118,7 +128,14 @@ export default function ClientDatabasePage() {
       resetForm();
     } catch (error: any) {
       console.error('Error saving client:', error);
-      toast.error(error.message || 'Erreur lors de l\'enregistrement');
+      
+      // Parse authorization errors
+      const errorMessage = error.message || String(error);
+      if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized') || errorMessage.includes('not authorized')) {
+        toast.error('Non autorisé : Veuillez vous reconnecter et réessayer');
+      } else {
+        toast.error(errorMessage || 'Erreur lors de l\'enregistrement');
+      }
     }
   };
 
@@ -138,7 +155,12 @@ export default function ClientDatabasePage() {
       }
     } catch (error: any) {
       console.error('Error deleting client:', error);
-      toast.error(error.message || 'Erreur lors de la suppression');
+      const errorMessage = error.message || String(error);
+      if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized') || errorMessage.includes('not authorized')) {
+        toast.error('Non autorisé : Vous ne pouvez supprimer que vos propres clients');
+      } else {
+        toast.error(errorMessage || 'Erreur lors de la suppression');
+      }
     } finally {
       setDeleteDialogOpen(false);
       setClientToDelete(null);
@@ -163,6 +185,54 @@ export default function ClientDatabasePage() {
     });
 
     return total;
+  };
+
+  // Sort clients alphabetically by name if enabled
+  const sortedClients = useMemo(() => {
+    if (!sortAlphabetically) {
+      return clients;
+    }
+    return [...clients].sort((a, b) => 
+      a.clientName.localeCompare(b.clientName, 'fr', { sensitivity: 'base' })
+    );
+  }, [clients, sortAlphabetically]);
+
+  // Export clients to CSV
+  const handleExportCsv = () => {
+    if (sortedClients.length === 0) {
+      toast.error('Aucun client à exporter');
+      return;
+    }
+
+    try {
+      const exportData = sortedClients.map(client => ({
+        referenceClient: client.referenceClient,
+        clientName: client.clientName,
+        phoneNumber: client.phoneNumber || '',
+        address: client.address || '',
+        service: client.service || '',
+        notes: client.notes || '',
+        paidThisYear: calculatePaidThisYear(client.referenceClient),
+      }));
+
+      const csvContent = arrayToCsv(exportData, [
+        { key: 'referenceClient', label: 'Référence Client' },
+        { key: 'clientName', label: 'Nom' },
+        { key: 'phoneNumber', label: 'Téléphone' },
+        { key: 'address', label: 'Adresse' },
+        { key: 'service', label: 'Service' },
+        { key: 'notes', label: 'Notes' },
+        { key: 'paidThisYear', label: 'Payé cette année' },
+      ]);
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      downloadCsv(csvContent, `base-client-${timestamp}.csv`);
+      
+      toast.success('Export CSV réussi');
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Erreur lors de l\'export CSV');
+    }
   };
 
   const isLoading = addClient.isPending || updateClient.isPending || deleteClient.isPending;
@@ -201,7 +271,7 @@ export default function ClientDatabasePage() {
                     setFormData({ ...formData, referenceClient: e.target.value })
                   }
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || !!editingClientId}
                 />
               </div>
 
@@ -311,17 +381,41 @@ export default function ClientDatabasePage() {
       {/* Clients Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Liste des clients</CardTitle>
-          <CardDescription>
-            Cliquez sur une ligne pour modifier un client
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Liste des clients</CardTitle>
+              <CardDescription>
+                Cliquez sur une ligne pour modifier un client
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setSortAlphabetically(!sortAlphabetically)}
+                className="gap-2"
+                disabled={clientsLoading || clients.length === 0}
+              >
+                <ArrowUpDown className="h-4 w-4" />
+                {sortAlphabetically ? 'Ordre original' : 'Trier A-Z'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExportCsv}
+                className="gap-2"
+                disabled={clientsLoading || clients.length === 0}
+              >
+                <Download className="h-4 w-4" />
+                Exporter
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {clientsLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : clients.length === 0 ? (
+          ) : sortedClients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Aucun client enregistré
             </div>
@@ -342,7 +436,7 @@ export default function ClientDatabasePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clients.map((client) => {
+                  {sortedClients.map((client) => {
                     const paidThisYear = calculatePaidThisYear(client.referenceClient);
                     return (
                       <TableRow

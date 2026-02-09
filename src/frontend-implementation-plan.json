@@ -1,110 +1,35 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Client Database page with photos, YTD paid totals, and appointment client selection",
+  "title": "Align Dashboard “Dus (RDV Faits ; Mois Courant)” with Monthly Listing Excel-formula Crédit Négatif total",
   "requirements": [
     {
+      "id": "REQ-1",
+      "summary": "Replace Dashboard “Dus (RDV Faits ; Mois Courant)” calculation to use the same monthlyListing.ts Excel-formula total for “Crédit Négatif” (absolute value) instead of totals.totalSoldeRestantNegatif.",
+      "acceptanceCriteria": [
+        "On the Dashboard, the displayed value for \"Dus (RDV Faits ; Mois Courant)\" equals abs(totalCreditNegatif) computed using the same functions as MonthlyListingTable for the current month.",
+        "For February in the same dataset where the February Monthly Listing total row shows 0 for \"Crédit Négatif\", the Dashboard \"Dus (RDV Faits ; Mois Courant)\" card displays 0 (not 4400)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Update the “Dus (RDV Faits ; Mois Courant)” computation to: (1) compute totalCreditNegatif for the current month using the shared monthlyListing.ts Excel-formula helpers (same as MonthlyListingTable’s totalCreditNegatif), including prior-month carry-over, and (2) display bigintAbs(totalCreditNegatif) as the card value instead of using TotauxListingMensuel.totalSoldeRestantNegatif."
+        }
+      ]
+    },
+    {
       "id": "REQ-2",
-      "summary": "Add client photo upload in Client Database form with enforced 35:45 aspect ratio cropping before saving.",
+      "summary": "Ensure Dashboard consistently fetches and uses the same inputs as Monthly Listing for negative-credit computation (current month listings, previous month listings for carry-over, and all appointments), without changing other Dashboard card behavior.",
       "acceptanceCriteria": [
-        "Frontend provides a photo uploader in the client form and enforces/crops to a 35:45 aspect ratio before saving.",
-        "Backend provides methods to set/replace a client photo and fetch a client photo by client reference for the caller.",
-        "A saved photo persists and is displayed when reopening the client record."
+        "The \"Dus\" card computation uses previous-month listing data in the same way the Monthly Listing table does (so months that depend on prior credit do not diverge between the card and the table).",
+        "No other Dashboard cards regress (\"RDV faits...\" still matches the Monthly Listing totalDuMois for the current month, and \"Revenus du Mois en Cours (Faits et Payés)\" remains unchanged)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/imageCrop.ts",
-          "operation": "create",
-          "description": "Implement a canvas-based image processing helper to center-crop (and optionally downscale) an uploaded image to a strict 35:45 aspect ratio and return an encoded byte array suitable for backend storage."
-        },
-        {
-          "path": "frontend/src/components/ClientPhotoField.tsx",
-          "operation": "create",
-          "description": "Create a reusable client photo field for the client form: file picker, preview, and client-side crop enforcement to 35:45 using the helper in frontend/src/utils/imageCrop.ts. Use shadcn-ui inputs/buttons/dialog primitives already present in the project to keep UI consistent. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/ClientDatabasePage.tsx",
-          "operation": "create",
-          "description": "Add the Photo field to the client create/edit form using the ClientPhotoField component; ensure saved photos are shown when loading an existing client into the form and that replacing a photo updates the preview. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/pages/Dashboard.tsx",
           "operation": "modify",
-          "description": "Add React Query hooks for client CRUD that support passing photo bytes (Uint8Array|null) when creating/updating clients, and ensure the client list query returns records including any stored photo bytes so the form can rehydrate the preview."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Implement a navigable “Client Database” page with a full client form (including photo) and a table listing all clients; selecting a row loads the client into the form.",
-      "acceptanceCriteria": [
-        "The app has a navigable “Client Database” page reachable from the main navigation.",
-        "The page contains a client form for add/edit with fields: Name, Client Reference, Phone Number, Address, Service, Notes, and Photo.",
-        "The page displays a table under the form that lists all saved clients for the signed-in user, with one column per client field plus “Paid this year”.",
-        "Selecting a row loads that client into the form for editing."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/ClientDatabasePage.tsx",
-          "operation": "create",
-          "description": "Create the Client Database page: top section is the add/edit form (Name, Client Reference, Phone Number, Address, Service, Notes, Photo), below is a table listing all clients. Include row click handling to load the selected client into the form for editing, and include create/update/delete actions consistent with backend capabilities."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register a new route for the Client Database page (e.g., /client-database) in the TanStack Router route tree so the page is navigable after login."
-        },
-        {
-          "path": "frontend/src/components/Header.tsx",
-          "operation": "modify",
-          "description": "Add a “Client Database” navigation item to the main navigation (desktop buttons + mobile dropdown), wiring it to the new route. Keep existing authenticated-only navigation behavior."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add/extend client data hooks (list/get/create/update/delete) used by ClientDatabasePage, with query keys suitable for invalidation after mutations."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Compute and display “Paid this year” per client for the current calendar year, consistent with Dashboard monthly listing “Revenus (Faits et Payés)” logic and aggregated by client reference.",
-      "acceptanceCriteria": [
-        "For each client in Client Database, “Paid this year” is shown for the current year (based on the user’s local current year).",
-        "The aggregation is per client reference (not only per client name).",
-        "The total used matches the same underlying logic used by the app for “Revenus (Faits et Payés)” in the monthly listing (i.e., consistent with Dashboard calculations)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add a React Query hook to fetch the year-to-date paid value per client reference for the current local calendar year using the backend capability intended to match Dashboard “Revenus (Faits et Payés)”. Ensure relevant appointment-related mutations invalidate/refetch these paid-this-year queries."
-        },
-        {
-          "path": "frontend/src/pages/ClientDatabasePage.tsx",
-          "operation": "modify",
-          "description": "In the clients table, add a “Paid this year” column that resolves the current local year and displays the YTD paid total per row, aggregated by client reference (not name). Show a sensible loading/empty state per row while values are being fetched."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Update the appointment create/edit dialog to allow selecting an existing client (Name + Client Reference) and link the selection to the appointment’s Client Reference while still allowing manual entry.",
-      "acceptanceCriteria": [
-        "In the appointment dialog, the user can pick an existing client (displayed as Name + Client Reference) for the client name input.",
-        "When a client is selected, the appointment’s Client Reference is set to that client’s reference (and remains linked for searches/uniqueness).",
-        "It remains possible to type a new client manually if no client is selected (unless a valid client selection is required by existing validation)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Expose a client list hook usable by AppointmentDialog to populate selectable client options (Name + Client Reference)."
-        },
-        {
-          "path": "frontend/src/components/AppointmentDialog.tsx",
-          "operation": "modify",
-          "description": "Augment the “Nom du client” section to support selecting an existing client (display label: Name + Client Reference). When selected, populate both nomClient and referenceClient fields. Preserve the ability to manually type nomClient/referenceClient when no selection is made, and ensure existing submit validation continues to work."
+          "description": "Add/adjust Dashboard data dependencies so the “Dus” calculation has: (a) current-month listing rows, (b) previous-month listing rows for the current month (including January→December prior year handling), and (c) all appointments; then compute the “Dus” card from these inputs using the same monthlyListing.ts functions used by MonthlyListingTable, while keeping existing logic for the other cards unchanged."
         }
       ]
     }

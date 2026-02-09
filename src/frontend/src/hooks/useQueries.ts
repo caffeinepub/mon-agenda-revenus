@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { RendezVous, UserProfile, TypeRepetition, DomaineListingMensuel, TotauxListingMensuel, StatistiquesFinancieres, RapportPDFRequest, RapportPDFData, ClientRecord } from '../backend';
+import { useInternetIdentity } from './useInternetIdentity';
+import type { RendezVous, UserProfile, TypeRepetition, DomaineListingMensuel, TotauxListingMensuel, StatistiquesFinancieres, RapportPDFRequest, RapportPDFData, ClientRecord, ClientReference } from '../backend';
 import { DemandeEdition } from '../backend';
 
 // User Profile Queries
@@ -83,15 +84,24 @@ export function useAddClientRecord() {
       photo: Uint8Array | null;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addClientRecord(
-        data.clientName,
-        data.referenceClient,
-        data.phoneNumber,
-        data.address,
-        data.service,
-        data.notes,
-        data.photo
-      );
+      try {
+        return await actor.addClientRecord(
+          data.clientName,
+          data.referenceClient,
+          data.phoneNumber,
+          data.address,
+          data.service,
+          data.notes,
+          data.photo
+        );
+      } catch (error: any) {
+        // Parse and re-throw with clearer message
+        const errorMessage = error.message || String(error);
+        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
+          throw new Error('Non autorisé : Veuillez vous reconnecter et réessayer');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientRecords'] });
@@ -115,16 +125,24 @@ export function useUpdateClientRecord() {
       photo: Uint8Array | null;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateClientRecord(
-        data.id,
-        data.clientName,
-        data.referenceClient,
-        data.phoneNumber,
-        data.address,
-        data.service,
-        data.notes,
-        data.photo
-      );
+      try {
+        return await actor.updateClientRecord(
+          data.id,
+          data.clientName,
+          data.referenceClient,
+          data.phoneNumber,
+          data.address,
+          data.service,
+          data.notes,
+          data.photo
+        );
+      } catch (error: any) {
+        const errorMessage = error.message || String(error);
+        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
+          throw new Error('Non autorisé : Vous ne pouvez modifier que vos propres clients');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientRecords'] });
@@ -139,7 +157,15 @@ export function useDeleteClientRecord() {
   return useMutation({
     mutationFn: async (id: bigint) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteClientRecord(id);
+      try {
+        return await actor.deleteClientRecord(id);
+      } catch (error: any) {
+        const errorMessage = error.message || String(error);
+        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
+          throw new Error('Non autorisé : Vous ne pouvez supprimer que vos propres clients');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientRecords'] });
@@ -307,6 +333,7 @@ export function useGetRapportPDF(request: RapportPDFRequest) {
 // Appointment Mutations
 export function useAddAppointment() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -322,21 +349,35 @@ export function useAddAppointment() {
       notes: string;
       montantDu: bigint;
       repetition: TypeRepetition;
+      clientRef: ClientReference;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.ajouterRendezVous(
-        data.dateHeure,
-        data.heureDebut,
-        data.heureFin,
-        data.nomClient,
-        data.referenceClient,
-        data.numeroTelephone,
-        data.adresse,
-        data.service,
-        data.notes,
-        data.montantDu,
-        data.repetition
-      );
+      if (!identity) throw new Error('Identity not available');
+      
+      try {
+        return await actor.ajouterRendezVous({
+          dateHeure: data.dateHeure,
+          heureDebut: data.heureDebut,
+          heureFin: data.heureFin,
+          nomClient: data.nomClient,
+          clientRef: data.clientRef,
+          numeroTelephone: data.numeroTelephone,
+          adresse: data.adresse,
+          service: data.service,
+          notes: data.notes,
+          montantDu: data.montantDu,
+          repetition: data.repetition,
+        });
+      } catch (error: any) {
+        const errorMessage = error.message || String(error);
+        if (errorMessage.includes('référence client') || errorMessage.includes('obligatoire')) {
+          throw new Error('La référence client est obligatoire et doit correspondre à un client existant');
+        }
+        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
+          throw new Error('Non autorisé : Veuillez vous reconnecter et réessayer');
+        }
+        throw error;
+      }
     },
     onSuccess: async () => {
       await Promise.all([
@@ -354,6 +395,7 @@ export function useAddAppointment() {
 
 export function useUpdateAppointment() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -371,23 +413,37 @@ export function useUpdateAppointment() {
       montantDu: bigint;
       repetition: TypeRepetition;
       demandeEdition: DemandeEdition;
+      clientRef: ClientReference;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.modifierRendezVous(
-        data.id,
-        data.dateHeure,
-        data.heureDebut,
-        data.heureFin,
-        data.nomClient,
-        data.referenceClient,
-        data.numeroTelephone,
-        data.adresse,
-        data.service,
-        data.notes,
-        data.montantDu,
-        data.repetition,
-        data.demandeEdition
-      );
+      if (!identity) throw new Error('Identity not available');
+      
+      try {
+        return await actor.modifierRendezVous({
+          id: data.id,
+          dateHeure: data.dateHeure,
+          heureDebut: data.heureDebut,
+          heureFin: data.heureFin,
+          nomClient: data.nomClient,
+          clientRef: data.clientRef,
+          numeroTelephone: data.numeroTelephone,
+          adresse: data.adresse,
+          service: data.service,
+          notes: data.notes,
+          montantDu: data.montantDu,
+          repetition: data.repetition,
+          demandeEdition: data.demandeEdition,
+        });
+      } catch (error: any) {
+        const errorMessage = error.message || String(error);
+        if (errorMessage.includes('référence client') || errorMessage.includes('obligatoire')) {
+          throw new Error('La référence client est obligatoire et doit correspondre à un client existant');
+        }
+        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
+          throw new Error('Non autorisé : Vous ne pouvez modifier que vos propres rendez-vous');
+        }
+        throw error;
+      }
     },
     onSuccess: async () => {
       await Promise.all([

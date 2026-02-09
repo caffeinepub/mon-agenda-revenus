@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Calendar, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import MonthlyListingTable from '../components/MonthlyListingTable';
-import { calculateTotalRevenusFaitsEtPayes } from '../utils/monthlyListing';
+import { calculateTotalRevenusFaitsEtPayes, calculateTotalCreditNegatif } from '../utils/monthlyListing';
 import { bigintAbs } from '../utils/bigintMath';
 
 const MONTHS_SHORT = [
@@ -37,6 +37,11 @@ export default function Dashboard() {
   const previousYear = listingMonth === 1 ? listingYear - 1 : listingYear;
   const { data: previousMonthListingData } = useGetMonthlyListing(previousYear, previousMonth);
 
+  // Fetch previous month for current month (for Dashboard cards)
+  const currentPreviousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const currentPreviousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  const { data: currentPreviousMonthListingData } = useGetMonthlyListing(currentPreviousYear, currentPreviousMonth);
+
   // Fetch monthly listings for all months of the current year
   const monthlyListingQueries = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
@@ -62,12 +67,26 @@ export default function Dashboard() {
   }, [currentMonthListingData]);
 
   // "Dus (RDV Faits ; Mois Courant)"
-  // Source : totalSoldeRestantNegatif du mois courant (valeur absolue)
+  // Source : Calculé depuis le tableau intégré en utilisant la formule Excel pour "Crédit Négatif"
+  // Utilise la même fonction que MonthlyListingTable pour garantir la cohérence
   const montantsDus = useMemo(() => {
-    if (!currentMonthListingData || !currentMonthListingData[1]) return BigInt(0);
-    const negativeBalance = currentMonthListingData[1].totalSoldeRestantNegatif;
-    return bigintAbs(negativeBalance);
-  }, [currentMonthListingData]);
+    if (!currentMonthListingData || !currentMonthListingData[0] || !allAppointments) return BigInt(0);
+    
+    const listings = currentMonthListingData[0];
+    const previousMonthListings = currentPreviousMonthListingData ? currentPreviousMonthListingData[0] : undefined;
+    
+    // Calculate total "Crédit Négatif" using the same Excel formula as Monthly Listing table
+    const totalCreditNegatif = calculateTotalCreditNegatif(
+      listings,
+      allAppointments,
+      currentYear,
+      currentMonth,
+      previousMonthListings
+    );
+    
+    // Return absolute value (negative credit is displayed as positive amount due)
+    return bigintAbs(totalCreditNegatif);
+  }, [currentMonthListingData, allAppointments, currentYear, currentMonth, currentPreviousMonthListingData]);
 
   // "Revenus du Mois en Cours (Faits et Payés)"
   // Source : Calculé depuis le tableau intégré en utilisant la formule Excel
@@ -75,17 +94,10 @@ export default function Dashboard() {
     if (!currentMonthListingData || !currentMonthListingData[0] || !allAppointments) return BigInt(0);
     
     const listings = currentMonthListingData[0];
-    
-    // For January, fetch December of the previous year
-    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-    const previousMonthData = currentMonth === 1 
-      ? previousMonthQueries[0]?.data  // December of previous year
-      : monthlyListingQueries[currentMonth - 2]?.data;
-    const previousMonthListings = previousMonthData ? previousMonthData[0] : undefined;
+    const previousMonthListings = currentPreviousMonthListingData ? currentPreviousMonthListingData[0] : undefined;
     
     return calculateTotalRevenusFaitsEtPayes(listings, allAppointments, currentYear, currentMonth, previousMonthListings);
-  }, [currentMonthListingData, allAppointments, currentYear, currentMonth, monthlyListingQueries, previousMonthQueries]);
+  }, [currentMonthListingData, allAppointments, currentYear, currentMonth, currentPreviousMonthListingData]);
 
   // "Revenus Mensuels 2026 (RDV Faits et payés)" et "Statistiques annuelles 2026"
   // Source : Somme des 12 valeurs mensuelles de la colonne "Revenus (Faits et Payés)" du tableau intégré

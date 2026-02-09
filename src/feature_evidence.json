@@ -2,13 +2,29 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-backend-support-to-store-and-retrieve-one-photo-per-client-record-the-photo-must-be-constrained-to-a-35mm-x-45mm-portrait-aspect-ratio-35-45-at-upload-time-on-the-frontend-and-stored-per-client",
-      "featureTitle": "Add backend support to store and retrieve one photo per client record. The photo must be constrained to a 35mm x 45mm portrait aspect ratio (35:45) at upload time on the frontend, and stored per client.",
+      "featureId": "feature-update-the-dashboard-calculation-for-the-card-dus-rdv-faits-mois-courant-so-it-uses-the-exact-same-logic-as-the-listing-mensuel-table-total-for-cr-dit-n-gatif-i-e-the-monthlylisting-ts-excel-formula-calculation-instead-of-reading-backend-field-totalsolderestantnegatif",
+      "featureTitle": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
       "files": [
-        "frontend/src/components/ClientPhotoField.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/ClientDatabasePage.tsx",
-        "frontend/src/utils/imageCrop.ts"
+        "frontend/src/pages/Dashboard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-dashboard-has-access-to-the-required-inputs-for-the-shared-negative-credit-calculation-current-month-listings-previous-month-listings-for-credit-carry-over-and-all-appointments-and-use-them-consistently-for-the-dus-card-computation",
+      "featureTitle": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+      "files": [
+        "frontend/src/pages/Dashboard.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -20,68 +36,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-a-new-frontend-page-named-client-database-english-ui-label-that-shows-1-a-full-client-form-for-creating-editing-a-client-and-2-below-it-a-table-listing-all-clients-where-rows-are-clients-and-columns-include-all-client-fields-plus-a-paid-this-year-column",
-      "featureTitle": "Implement a new frontend page named “Client Database” (English UI label) that shows (1) a full client form for creating/editing a client and (2) below it, a table listing all clients where rows are clients and columns include all client fields plus a “Paid this year” column.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/Header.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/ClientDatabasePage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-compute-and-display-paid-this-year-per-client-for-the-current-calendar-year-using-the-same-source-concept-as-dashboard-listing-mensuel-revenus-faits-et-pay-s-the-value-must-be-derived-from-appointment-and-monthly-listing-data-for-the-current-year-and-aggregated-per-client-reference",
-      "featureTitle": "Compute and display “Paid this year” per client for the current calendar year using the same source concept as Dashboard > “Listing Mensuel” > “Revenus (Faits et Payés)”: the value must be derived from appointment and monthly listing data for the current year and aggregated per client reference.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/ClientDatabasePage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-appointment-creation-edit-dialog-so-that-the-client-name-field-can-select-an-existing-client-from-the-client-database-and-the-selection-is-linked-to-client-reference-to-avoid-ambiguity-when-multiple-clients-share-the-same-name",
-      "featureTitle": "Update the appointment creation/edit dialog so that the “Client Name” field can select an existing client from the Client Database, and the selection is linked to “Client Reference” to avoid ambiguity when multiple clients share the same name.",
-      "files": [
-        "frontend/src/components/AppointmentDialog.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
       ],
       "confidence": "high"
     }

@@ -10,9 +10,7 @@ import Array "mo:core/Array";
 import Int "mo:core/Int";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   public type JoursSemaine = {
     lundi : Bool;
@@ -155,14 +153,49 @@ actor {
     photo : ?[Nat8];
   };
 
+  public type ClientReference = {
+    owner : Principal;
+    referenceClient : Text;
+  };
+
+  public type RendezVousCreateArgs = {
+    dateHeure : Time.Time;
+    heureDebut : Text;
+    heureFin : Text;
+    nomClient : Text;
+    clientRef : ClientReference;
+    numeroTelephone : Text;
+    adresse : Text;
+    service : Text;
+    notes : Text;
+    montantDu : Nat;
+    repetition : TypeRepetition;
+  };
+
+  public type RendezVousUpdateArgs = {
+    id : Nat;
+    dateHeure : Time.Time;
+    heureDebut : Text;
+    heureFin : Text;
+    nomClient : Text;
+    clientRef : ClientReference;
+    numeroTelephone : Text;
+    adresse : Text;
+    service : Text;
+    notes : Text;
+    montantDu : Nat;
+    repetition : TypeRepetition;
+    demandeEdition : DemandeEdition;
+  };
+
   var rendezVousMap = Map.empty<Nat, RendezVous>();
   var clientRecordMap = Map.empty<Nat, ClientRecord>();
-  var dernierClientRecordId : Nat = 0;
-  var dernierId : Nat = 0;
+  var dernierClientRecordId = 0;
+  var dernierId = 0;
   var userProfiles = Map.empty<Principal, UserProfile>();
   var creditsClients = Map.empty<Text, Nat>();
   var accessControlState = AccessControl.initState();
-  var systemInitialized : Bool = false;
+  var systemInitialized = false;
 
   include MixinAuthorization(accessControlState);
 
@@ -225,6 +258,11 @@ actor {
   };
 
   func callerOwnsReferenceClient(caller : Principal, referenceClient : Text) : Bool {
+    for ((_, cr) in clientRecordMap.entries()) {
+      if (cr.owner == caller and cr.referenceClient == referenceClient) {
+        return true;
+      };
+    };
     for ((_, rv) in rendezVousMap.entries()) {
       if (rv.owner == caller and rv.referenceClient == referenceClient) {
         return true;
@@ -236,6 +274,15 @@ actor {
   func verifyClientOwnership(caller : Principal, referenceClient : Text) {
     if (not callerOwnsReferenceClient(caller, referenceClient)) {
       Runtime.trap("Non autorisé : vous ne pouvez accéder qu'aux données de vos propres clients");
+    };
+  };
+
+  func verifyClientReferenceOwnership(caller : Principal, clientRef : ClientReference) {
+    if (clientRef.owner != caller) {
+      Runtime.trap("Non autorisé : la référence client doit appartenir à l'utilisateur actuel");
+    };
+    if (clientRef.referenceClient == "") {
+      Runtime.trap("La référence client est obligatoire");
     };
   };
 
@@ -268,7 +315,9 @@ actor {
   ) : async Nat {
     requireUserPermission(caller);
 
-    verifyClientOwnership(caller, referenceClient);
+    if (referenceClient == "") {
+      Runtime.trap("La référence client est obligatoire");
+    };
 
     let id = dernierClientRecordId + 1;
     let newClientRecord : ClientRecord = {
@@ -326,7 +375,9 @@ actor {
           Runtime.trap("Non autorisé : vous ne pouvez mettre à jour que vos propres clients");
         };
 
-        verifyClientOwnership(caller, referenceClient);
+        if (referenceClient != clientRecord.referenceClient) {
+          Runtime.trap("La référence client ne peut pas être modifiée une fois créée");
+        };
 
         let updatedClientRecord : ClientRecord = {
           owner = caller;
@@ -383,6 +434,10 @@ actor {
 
   func getClientKey(owner : Principal, referenceClient : Text) : Text {
     owner.toText() # ":" # referenceClient;
+  };
+
+  func convertirClientReferenceToString(clientRef : ClientReference) : Text {
+    clientRef.owner.toText() # ":" # clientRef.referenceClient;
   };
 
   func calculerDettesClient(owner : Principal, referenceClient : Text) : Nat {
@@ -548,52 +603,41 @@ actor {
     };
   };
 
-  public shared ({ caller }) func ajouterRendezVous(
-    dateHeure : Time.Time,
-    heureDebut : Text,
-    heureFin : Text,
-    nomClient : Text,
-    referenceClient : Text,
-    numeroTelephone : Text,
-    adresse : Text,
-    service : Text,
-    notes : Text,
-    montantDu : Nat,
-    repetition : TypeRepetition,
-  ) : async Nat {
+  public shared ({ caller }) func ajouterRendezVous(args : RendezVousCreateArgs) : async Nat {
     requireUserPermission(caller);
+    verifyClientReferenceOwnership(caller, args.clientRef);
 
     let id = dernierId + 1;
     let nouveauRV : RendezVous = {
       id;
       owner = caller;
-      dateHeure;
-      heureDebut;
-      heureFin;
-      nomClient;
-      referenceClient;
-      numeroTelephone;
-      adresse;
-      service;
-      notes;
-      montantDu;
+      dateHeure = args.dateHeure;
+      heureDebut = args.heureDebut;
+      heureFin = args.heureFin;
+      nomClient = args.nomClient;
+      referenceClient = args.clientRef.referenceClient;
+      numeroTelephone = args.numeroTelephone;
+      adresse = args.adresse;
+      service = args.service;
+      notes = args.notes;
+      montantDu = args.montantDu;
       montantPaye = 0;
       paiementAnticipe = false;
       fait = false;
       annule = false;
-      repetition;
+      repetition = args.repetition;
       commentaireManuel = "";
     };
 
     rendezVousMap.add(id, nouveauRV);
     dernierId += 1;
 
-    switch (repetition) {
+    switch (args.repetition) {
       case (#hebdomadaire joursSemaine) {
         genererRendezVousHebdomadairesMultiJours(nouveauRV, joursSemaine);
       };
       case (_) {
-        genererRendezVousRecurents(nouveauRV, repetition);
+        genererRendezVousRecurents(nouveauRV, args.repetition);
       };
     };
 
@@ -601,54 +645,41 @@ actor {
   };
 
   public shared ({ caller }) func modifierRendezVous(
-    id : Nat,
-    dateHeure : Time.Time,
-    heureDebut : Text,
-    heureFin : Text,
-    nomClient : Text,
-    referenceClient : Text,
-    numeroTelephone : Text,
-    adresse : Text,
-    service : Text,
-    notes : Text,
-    montantDu : Nat,
-    repetition : TypeRepetition,
-    demandeEdition : DemandeEdition,
+    args : RendezVousUpdateArgs,
   ) : async () {
     requireUserPermission(caller);
+    verifyClientReferenceOwnership(caller, args.clientRef);
 
-    switch (rendezVousMap.get(id)) {
+    switch (rendezVousMap.get(args.id)) {
       case (null) { Runtime.trap("Rendez-vous non trouvé") };
       case (?rvExistant) {
         if (rvExistant.owner != caller) {
           Runtime.trap("Non autorisé : vous ne pouvez modifier que vos propres rendez-vous");
         };
 
-        verifyClientOwnership(caller, rvExistant.referenceClient);
-
-        switch (demandeEdition) {
+        switch (args.demandeEdition) {
           case (#unique) {
             let rvModifie : RendezVous = {
-              id;
+              id = args.id;
               owner = caller;
-              dateHeure;
-              heureDebut;
-              heureFin;
-              nomClient;
-              referenceClient;
-              numeroTelephone;
-              adresse;
-              service;
-              notes;
-              montantDu;
+              dateHeure = args.dateHeure;
+              heureDebut = args.heureDebut;
+              heureFin = args.heureFin;
+              nomClient = args.nomClient;
+              referenceClient = args.clientRef.referenceClient;
+              numeroTelephone = args.numeroTelephone;
+              adresse = args.adresse;
+              service = args.service;
+              notes = args.notes;
+              montantDu = args.montantDu;
               montantPaye = rvExistant.montantPaye;
               paiementAnticipe = rvExistant.paiementAnticipe;
               fait = rvExistant.fait;
               annule = rvExistant.annule;
-              repetition;
+              repetition = args.repetition;
               commentaireManuel = rvExistant.commentaireManuel;
             };
-            rendezVousMap.add(id, rvModifie);
+            rendezVousMap.add(args.id, rvModifie);
           };
           case (#futursDuClient) {
             let now = Time.now();
@@ -665,20 +696,20 @@ actor {
                     id = rvCourant.id;
                     owner = caller;
                     dateHeure = rvCourant.dateHeure;
-                    heureDebut;
-                    heureFin;
-                    nomClient;
-                    referenceClient;
-                    numeroTelephone;
-                    adresse;
-                    service;
-                    notes;
-                    montantDu;
+                    heureDebut = args.heureDebut;
+                    heureFin = args.heureFin;
+                    nomClient = args.nomClient;
+                    referenceClient = args.clientRef.referenceClient;
+                    numeroTelephone = args.numeroTelephone;
+                    adresse = args.adresse;
+                    service = args.service;
+                    notes = args.notes;
+                    montantDu = args.montantDu;
                     montantPaye = rvCourant.montantPaye;
                     paiementAnticipe = rvCourant.paiementAnticipe;
                     fait = rvCourant.fait;
                     annule = rvCourant.annule;
-                    repetition;
+                    repetition = args.repetition;
                     commentaireManuel = rvCourant.commentaireManuel;
                   };
                   rendezVousMap.add(rvCourant.id, rvModifie);
