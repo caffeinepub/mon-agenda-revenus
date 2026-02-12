@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-dashboard-calculation-for-the-card-dus-rdv-faits-mois-courant-so-it-uses-the-exact-same-logic-as-the-listing-mensuel-table-total-for-cr-dit-n-gatif-i-e-the-monthlylisting-ts-excel-formula-calculation-instead-of-reading-backend-field-totalsolderestantnegatif",
-      "featureTitle": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+      "featureId": "feature-restore-an-existing-client-selection-field-in-the-new-appointment-flow-so-users-can-pick-an-already-created-client-record-when-creating-a-new-appointment",
+      "featureTitle": "Restore an \"existing client\" selection field in the \"New appointment\" flow so users can pick an already-created client record when creating a new appointment.",
       "files": [
-        "frontend/src/pages/Dashboard.tsx"
+        "frontend/src/components/AppointmentDialog.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,10 +21,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-dashboard-has-access-to-the-required-inputs-for-the-shared-negative-credit-calculation-current-month-listings-previous-month-listings-for-credit-carry-over-and-all-appointments-and-use-them-consistently-for-the-dus-card-computation",
-      "featureTitle": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+      "featureId": "feature-when-an-existing-client-is-selected-during-appointment-creation-automatically-populate-appointment-form-fields-from-that-client-record-and-keep-the-appointment-tied-to-that-client-s-reference",
+      "featureTitle": "When an existing client is selected during appointment creation, automatically populate appointment form fields from that client record and keep the appointment tied to that client's reference.",
       "files": [
-        "frontend/src/pages/Dashboard.tsx"
+        "frontend/src/components/AppointmentDialog.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -36,6 +36,25 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-the-create-appointment-validation-so-selecting-an-existing-client-does-not-trigger-the-duplicate-reference-error-while-still-preventing-accidental-creation-with-a-new-reference-that-already-exists",
+      "featureTitle": "Fix the create-appointment validation so selecting an existing client does not trigger the \"duplicate reference\" error, while still preventing accidental creation with a new reference that already exists.",
+      "files": [
+        "frontend/src/components/AppointmentDialog.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

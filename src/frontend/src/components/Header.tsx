@@ -139,7 +139,7 @@ export default function Header({ userName }: HeaderProps) {
 
       <AppointmentDialog
         open={isNewAppointmentOpen}
-        onClose={() => setIsNewAppointmentOpen(false)}
+        onOpenChange={setIsNewAppointmentOpen}
       />
     </>
   );

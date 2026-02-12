@@ -1,64 +1,42 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAddAppointment, useUpdateAppointment, useGetAllClientRecords } from '../hooks/useQueries';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { DemandeEdition, type RendezVous, type TypeRepetition, type JoursSemaine } from '../backend';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { X } from 'lucide-react';
+import type { RendezVous, TypeRepetition, ClientReference, ClientRecord } from '../backend';
+import { DemandeEdition } from '../backend';
 
 interface AppointmentDialogProps {
   open: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   appointment?: RendezVous | null;
-  editMode?: DemandeEdition;
+  initialDate?: Date;
+  demandeEdition?: DemandeEdition;
 }
-
-type RepetitionType = 'aucune' | 'hebdomadaire' | 'mensuelle' | 'annuelle';
 
 export default function AppointmentDialog({
   open,
-  onClose,
+  onOpenChange,
   appointment,
-  editMode,
+  initialDate,
+  demandeEdition = DemandeEdition.unique,
 }: AppointmentDialogProps) {
   const { identity } = useInternetIdentity();
+  const { data: clientRecords = [] } = useGetAllClientRecords();
+  const addAppointment = useAddAppointment();
+  const updateAppointment = useUpdateAppointment();
+
+  const [selectedExistingClient, setSelectedExistingClient] = useState<ClientRecord | null>(null);
   const [formData, setFormData] = useState({
-    date: '',
-    heureDebut: '',
-    heureFin: '',
+    dateHeure: initialDate || new Date(),
+    heureDebut: '09:00',
+    heureFin: '10:00',
     nomClient: '',
     referenceClient: '',
     numeroTelephone: '',
@@ -66,53 +44,14 @@ export default function AppointmentDialog({
     service: '',
     notes: '',
     montantDu: '',
-    repetitionType: 'aucune' as RepetitionType,
+    repetition: { __kind__: 'aucune' as const, aucune: null } as TypeRepetition,
   });
-
-  const [joursSemaine, setJoursSemaine] = useState<JoursSemaine>({
-    lundi: false,
-    mardi: false,
-    mercredi: false,
-    jeudi: false,
-    vendredi: false,
-    samedi: false,
-    dimanche: false,
-  });
-
-  const [clientSelectOpen, setClientSelectOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-
-  const { data: clientRecords = [] } = useGetAllClientRecords();
-  const addAppointment = useAddAppointment();
-  const updateAppointment = useUpdateAppointment();
 
   useEffect(() => {
     if (appointment) {
-      const date = new Date(Number(appointment.dateHeure) / 1000000);
-      const dateStr = date.toISOString().split('T')[0];
-
-      let repetitionType: RepetitionType = 'aucune';
-      let jours: JoursSemaine = {
-        lundi: false,
-        mardi: false,
-        mercredi: false,
-        jeudi: false,
-        vendredi: false,
-        samedi: false,
-        dimanche: false,
-      };
-
-      if (appointment.repetition.__kind__ === 'hebdomadaire') {
-        repetitionType = 'hebdomadaire';
-        jours = appointment.repetition.hebdomadaire;
-      } else if (appointment.repetition.__kind__ === 'mensuelle') {
-        repetitionType = 'mensuelle';
-      } else if (appointment.repetition.__kind__ === 'annuelle') {
-        repetitionType = 'annuelle';
-      }
-
+      const date = new Date(Number(appointment.dateHeure) / 1_000_000);
       setFormData({
-        date: dateStr,
+        dateHeure: date,
         heureDebut: appointment.heureDebut,
         heureFin: appointment.heureFin,
         nomClient: appointment.nomClient,
@@ -122,83 +61,48 @@ export default function AppointmentDialog({
         service: appointment.service,
         notes: appointment.notes,
         montantDu: appointment.montantDu.toString(),
-        repetitionType,
+        repetition: appointment.repetition,
       });
-      setJoursSemaine(jours);
-
-      // Find matching client
-      const matchingClient = clientRecords.find(
-        (c) => c.referenceClient === appointment.referenceClient
-      );
-      if (matchingClient) {
-        setSelectedClientId(matchingClient.id.toString());
-      }
-    } else {
-      setFormData({
-        date: '',
-        heureDebut: '',
-        heureFin: '',
-        nomClient: '',
-        referenceClient: '',
-        numeroTelephone: '',
-        adresse: '',
-        service: '',
-        notes: '',
-        montantDu: '',
-        repetitionType: 'aucune',
-      });
-      setJoursSemaine({
-        lundi: false,
-        mardi: false,
-        mercredi: false,
-        jeudi: false,
-        vendredi: false,
-        samedi: false,
-        dimanche: false,
-      });
-      setSelectedClientId(null);
+      setSelectedExistingClient(null);
+    } else if (initialDate) {
+      setFormData(prev => ({ ...prev, dateHeure: initialDate }));
     }
-  }, [appointment, clientRecords]);
+  }, [appointment, initialDate]);
 
-  const handleClientSelect = (clientId: string) => {
-    const client = clientRecords.find((c) => c.id.toString() === clientId);
+  const handleExistingClientSelect = (clientId: string) => {
+    const client = clientRecords.find(c => c.id.toString() === clientId);
     if (client) {
-      setSelectedClientId(clientId);
-      setFormData({
-        ...formData,
+      setSelectedExistingClient(client);
+      setFormData(prev => ({
+        ...prev,
         nomClient: client.clientName,
         referenceClient: client.referenceClient,
         numeroTelephone: client.phoneNumber,
         adresse: client.address,
         service: client.service,
-      });
+        notes: client.notes,
+      }));
     }
-    setClientSelectOpen(false);
+  };
+
+  const handleClearExistingClient = () => {
+    setSelectedExistingClient(null);
+    setFormData(prev => ({
+      ...prev,
+      nomClient: '',
+      referenceClient: '',
+      numeroTelephone: '',
+      adresse: '',
+      service: '',
+      notes: '',
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
-    if (!formData.referenceClient) {
-      toast.error('La référence client est obligatoire');
-      return;
-    }
-
-    if (!formData.nomClient) {
-      toast.error('Le nom du client est obligatoire');
-      return;
-    }
-
-    // Verify that the reference client exists in the client database
-    const clientExists = clientRecords.some(
-      (c) => c.referenceClient === formData.referenceClient
-    );
-
-    if (!clientExists) {
-      toast.error(
-        'La référence client doit correspondre à un client existant dans la Base Client. Veuillez sélectionner un client ou créer un nouveau client dans la Base Client.'
-      );
+    if (!formData.nomClient || !formData.referenceClient) {
+      toast.error('Veuillez remplir le nom et la référence client');
       return;
     }
 
@@ -207,30 +111,31 @@ export default function AppointmentDialog({
       return;
     }
 
-    try {
-      const dateTime = new Date(formData.date + 'T' + formData.heureDebut);
-      const dateHeure = BigInt(dateTime.getTime() * 1000000);
-
-      let repetition: TypeRepetition;
-      if (formData.repetitionType === 'hebdomadaire') {
-        repetition = { __kind__: 'hebdomadaire', hebdomadaire: joursSemaine };
-      } else if (formData.repetitionType === 'mensuelle') {
-        repetition = { __kind__: 'mensuelle', mensuelle: null };
-      } else if (formData.repetitionType === 'annuelle') {
-        repetition = { __kind__: 'annuelle', annuelle: null };
-      } else {
-        repetition = { __kind__: 'aucune', aucune: null };
+    // Check for duplicate reference when creating a new appointment (only if not using existing client)
+    if (!appointment && !selectedExistingClient) {
+      const isDuplicate = clientRecords.some(
+        client => client.referenceClient.toLowerCase() === formData.referenceClient.toLowerCase()
+      );
+      
+      if (isDuplicate) {
+        toast.error('Cette référence client est déjà utilisée. Veuillez choisir une référence unique ou sélectionner le client existant.');
+        return;
       }
+    }
 
-      const clientRef = {
-        owner: identity.getPrincipal(),
-        referenceClient: formData.referenceClient,
-      };
+    const dateTimeNanos = BigInt(formData.dateHeure.getTime()) * BigInt(1_000_000);
+    const montantDu = BigInt(formData.montantDu || '0');
 
-      if (appointment && editMode) {
+    const clientRef: ClientReference = {
+      owner: identity.getPrincipal(),
+      referenceClient: formData.referenceClient,
+    };
+
+    try {
+      if (appointment) {
         await updateAppointment.mutateAsync({
           id: appointment.id,
-          dateHeure,
+          dateHeure: dateTimeNanos,
           heureDebut: formData.heureDebut,
           heureFin: formData.heureFin,
           nomClient: formData.nomClient,
@@ -239,15 +144,15 @@ export default function AppointmentDialog({
           adresse: formData.adresse,
           service: formData.service,
           notes: formData.notes,
-          montantDu: BigInt(formData.montantDu || 0),
-          repetition,
-          demandeEdition: editMode,
+          montantDu,
+          repetition: formData.repetition,
+          demandeEdition,
           clientRef,
         });
         toast.success('Rendez-vous modifié avec succès');
       } else {
         await addAppointment.mutateAsync({
-          dateHeure,
+          dateHeure: dateTimeNanos,
           heureDebut: formData.heureDebut,
           heureFin: formData.heureFin,
           nomClient: formData.nomClient,
@@ -256,19 +161,23 @@ export default function AppointmentDialog({
           adresse: formData.adresse,
           service: formData.service,
           notes: formData.notes,
-          montantDu: BigInt(formData.montantDu || 0),
-          repetition,
+          montantDu,
+          repetition: formData.repetition,
           clientRef,
         });
-        toast.success('Rendez-vous ajouté avec succès');
+        toast.success('Rendez-vous créé avec succès');
       }
-      onClose();
+      onOpenChange(false);
+      // Reset selection on successful creation
+      setSelectedExistingClient(null);
     } catch (error: any) {
       console.error('Error saving appointment:', error);
       const errorMessage = error.message || String(error);
       
-      if (errorMessage.includes('référence client') || errorMessage.includes('client reference')) {
-        toast.error('La référence client doit correspondre à un client existant dans la Base Client');
+      if (errorMessage.includes('déjà utilisée') || errorMessage.includes('already used')) {
+        toast.error('Cette référence client est déjà utilisée. Veuillez choisir une référence unique.');
+      } else if (errorMessage.includes('référence client') || errorMessage.includes('obligatoire')) {
+        toast.error('La référence client est obligatoire et doit être unique');
       } else if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
         toast.error('Non autorisé : Veuillez vous reconnecter et réessayer');
       } else {
@@ -280,7 +189,7 @@ export default function AppointmentDialog({
   const isLoading = addAppointment.isPending || updateAppointment.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -289,85 +198,70 @@ export default function AppointmentDialog({
           <DialogDescription>
             {appointment
               ? 'Modifiez les informations du rendez-vous'
-              : 'Créez un nouveau rendez-vous'}
+              : 'Créez un nouveau rendez-vous pour un client'}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Client Selection */}
-          <div className="space-y-2">
-            <Label>Client *</Label>
-            <Popover open={clientSelectOpen} onOpenChange={setClientSelectOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={clientSelectOpen}
-                  className="w-full justify-between"
-                  type="button"
-                  disabled={isLoading}
-                >
-                  {selectedClientId
-                    ? (() => {
-                        const client = clientRecords.find(
-                          (c) => c.id.toString() === selectedClientId
-                        );
-                        return client
-                          ? `${client.clientName} (${client.referenceClient})`
-                          : 'Sélectionner un client...';
-                      })()
-                    : 'Sélectionner un client...'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0">
-                <Command>
-                  <CommandInput placeholder="Rechercher un client..." />
-                  <CommandEmpty>Aucun client trouvé.</CommandEmpty>
-                  <CommandList>
-                    <CommandGroup>
-                      {clientRecords.map((client) => (
-                        <CommandItem
-                          key={client.id.toString()}
-                          value={`${client.clientName} ${client.referenceClient}`}
-                          onSelect={() => handleClientSelect(client.id.toString())}
-                        >
-                          <Check
-                            className={cn(
-                              'mr-2 h-4 w-4',
-                              selectedClientId === client.id.toString()
-                                ? 'opacity-100'
-                                : 'opacity-0'
-                            )}
-                          />
-                          {client.clientName} ({client.referenceClient})
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            <p className="text-xs text-muted-foreground">
-              Sélectionnez un client existant. La référence client est obligatoire.
-            </p>
-          </div>
+          {/* Existing Client Selector - Only shown in create mode */}
+          {!appointment && clientRecords.length > 0 && (
+            <div className="space-y-2 p-4 bg-muted/50 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="existingClient" className="text-base font-semibold">
+                  Client existant
+                </Label>
+                {selectedExistingClient && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearExistingClient}
+                    disabled={isLoading}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Effacer
+                  </Button>
+                )}
+              </div>
+              <Select
+                value={selectedExistingClient?.id.toString() || ''}
+                onValueChange={handleExistingClientSelect}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="existingClient">
+                  <SelectValue placeholder="Sélectionner un client existant..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientRecords.map((client) => (
+                    <SelectItem key={client.id.toString()} value={client.id.toString()}>
+                      {client.clientName} ({client.referenceClient})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Sélectionnez un client existant pour pré-remplir les informations
+              </p>
+            </div>
+          )}
 
-          {/* Date and Time */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="dateHeure">Date</Label>
               <Input
-                id="date"
+                id="dateHeure"
                 type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                value={formData.dateHeure.toISOString().split('T')[0]}
+                onChange={(e) =>
+                  setFormData({ ...formData, dateHeure: new Date(e.target.value) })
+                }
                 required
                 disabled={isLoading}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="heureDebut">Heure début *</Label>
+              <Label htmlFor="heureDebut">Heure de début</Label>
               <Input
                 id="heureDebut"
                 type="time"
@@ -379,82 +273,116 @@ export default function AppointmentDialog({
                 disabled={isLoading}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="heureFin">Heure fin *</Label>
+              <Label htmlFor="heureFin">Heure de fin</Label>
               <Input
                 id="heureFin"
                 type="time"
                 value={formData.heureFin}
-                onChange={(e) => setFormData({ ...formData, heureFin: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, heureFin: e.target.value })
+                }
                 required
                 disabled={isLoading}
               />
             </div>
-          </div>
 
-          {/* Client Details (read-only when client selected) */}
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nomClient">Nom du client *</Label>
+              <Label htmlFor="montantDu">Montant dû</Label>
               <Input
-                id="nomClient"
-                value={formData.nomClient}
-                onChange={(e) => setFormData({ ...formData, nomClient: e.target.value })}
+                id="montantDu"
+                type="number"
+                min="0"
+                value={formData.montantDu}
+                onChange={(e) =>
+                  setFormData({ ...formData, montantDu: e.target.value })
+                }
                 required
-                disabled={isLoading || !!selectedClientId}
+                disabled={isLoading}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="referenceClient">Référence client *</Label>
+              <Label htmlFor="referenceClient">Référence Client *</Label>
               <Input
                 id="referenceClient"
+                placeholder="REF-2026-001"
                 value={formData.referenceClient}
                 onChange={(e) =>
                   setFormData({ ...formData, referenceClient: e.target.value })
                 }
                 required
-                disabled={isLoading || !!selectedClientId}
+                disabled={isLoading || !!appointment || !!selectedExistingClient}
+              />
+              {!appointment && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedExistingClient
+                    ? 'Référence du client sélectionné'
+                    : 'Doit être unique. La référence ne peut pas être modifiée après création.'}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nomClient">Nom du client *</Label>
+              <Input
+                id="nomClient"
+                placeholder="Jean Dupont"
+                value={formData.nomClient}
+                onChange={(e) =>
+                  setFormData({ ...formData, nomClient: e.target.value })
+                }
+                required
+                disabled={isLoading}
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="numeroTelephone">Téléphone</Label>
+              <Label htmlFor="numeroTelephone">Numéro de téléphone</Label>
               <Input
                 id="numeroTelephone"
+                placeholder="+33 6 12 34 56 78"
                 value={formData.numeroTelephone}
                 onChange={(e) =>
                   setFormData({ ...formData, numeroTelephone: e.target.value })
                 }
-                disabled={isLoading || !!selectedClientId}
+                disabled={isLoading}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="adresse">Adresse</Label>
               <Input
                 id="adresse"
+                placeholder="123 Rue de la Paix, Paris"
                 value={formData.adresse}
-                onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-                disabled={isLoading || !!selectedClientId}
+                onChange={(e) =>
+                  setFormData({ ...formData, adresse: e.target.value })
+                }
+                disabled={isLoading}
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="service">Service</Label>
-            <Input
-              id="service"
-              value={formData.service}
-              onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-              disabled={isLoading || !!selectedClientId}
-            />
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="service">Service</Label>
+              <Input
+                id="service"
+                placeholder="Consultation"
+                value={formData.service}
+                onChange={(e) =>
+                  setFormData({ ...formData, service: e.target.value })
+                }
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
+              placeholder="Notes supplémentaires..."
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               disabled={isLoading}
@@ -462,71 +390,19 @@ export default function AppointmentDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="montantDu">Montant dû</Label>
-            <Input
-              id="montantDu"
-              type="number"
-              min="0"
-              value={formData.montantDu}
-              onChange={(e) => setFormData({ ...formData, montantDu: e.target.value })}
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Repetition */}
-          <div className="space-y-2">
-            <Label htmlFor="repetition">Répétition</Label>
-            <Select
-              value={formData.repetitionType}
-              onValueChange={(value: RepetitionType) =>
-                setFormData({ ...formData, repetitionType: value })
-              }
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="aucune">Aucune</SelectItem>
-                <SelectItem value="hebdomadaire">Hebdomadaire</SelectItem>
-                <SelectItem value="mensuelle">Mensuelle</SelectItem>
-                <SelectItem value="annuelle">Annuelle</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {formData.repetitionType === 'hebdomadaire' && (
-            <div className="space-y-2">
-              <Label>Jours de la semaine</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {Object.entries(joursSemaine).map(([jour, checked]) => (
-                  <div key={jour} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={jour}
-                      checked={checked}
-                      onCheckedChange={(checked) =>
-                        setJoursSemaine({ ...joursSemaine, [jour]: !!checked })
-                      }
-                      disabled={isLoading}
-                    />
-                    <Label htmlFor={jour} className="capitalize cursor-pointer">
-                      {jour}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Annuler
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent mr-2" />
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                   Enregistrement...
                 </>
               ) : appointment ? (
@@ -535,7 +411,7 @@ export default function AppointmentDialog({
                 'Créer'
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -11,6 +11,8 @@ import Int "mo:core/Int";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
+
+
 actor {
   public type JoursSemaine = {
     lundi : Bool;
@@ -286,6 +288,20 @@ actor {
     };
   };
 
+  func isReferenceClientUsedByOwner(owner : Principal, referenceClient : Text) : Bool {
+    for ((_, cr) in clientRecordMap.entries()) {
+      if (cr.owner == owner and cr.referenceClient == referenceClient) {
+        return true;
+      };
+    };
+    for ((_, rv) in rendezVousMap.entries()) {
+      if (rv.owner == owner and rv.referenceClient == referenceClient) {
+        return true;
+      };
+    };
+    false;
+  };
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     requireUserPermission(caller);
     userProfiles.get(caller);
@@ -314,9 +330,12 @@ actor {
     photo : ?[Nat8],
   ) : async Nat {
     requireUserPermission(caller);
-
     if (referenceClient == "") {
       Runtime.trap("La référence client est obligatoire");
+    };
+
+    if (isReferenceClientUsedByOwner(caller, referenceClient)) {
+      Runtime.trap("Référence du client déjà utilisée. Veuillez choisir une référence unique.");
     };
 
     let id = dernierClientRecordId + 1;
@@ -606,6 +625,10 @@ actor {
   public shared ({ caller }) func ajouterRendezVous(args : RendezVousCreateArgs) : async Nat {
     requireUserPermission(caller);
     verifyClientReferenceOwnership(caller, args.clientRef);
+
+    if (isReferenceClientUsedByOwner(caller, args.clientRef.referenceClient)) {
+      Runtime.trap("Référence du client déjà utilisée. Veuillez choisir une référence unique.");
+    };
 
     let id = dernierId + 1;
     let nouveauRV : RendezVous = {
@@ -1418,4 +1441,3 @@ actor {
     clientMap.values().toArray();
   };
 };
-

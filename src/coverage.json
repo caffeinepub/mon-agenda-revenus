@@ -1,46 +1,56 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T18:16:57.907Z",
+  "generatedAt": "2026-02-11T14:28:28.597Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+        "summary": "Restore an \"existing client\" selection field in the \"New appointment\" flow so users can pick an already-created client record when creating a new appointment.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/components/AppointmentDialog.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/components/AppointmentDialog.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+        "summary": "When an existing client is selected during appointment creation, automatically populate appointment form fields from that client record and keep the appointment tied to that client's reference.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/components/AppointmentDialog.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/components/AppointmentDialog.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Fix the create-appointment validation so selecting an existing client does not trigger the \"duplicate reference\" error, while still preventing accidental creation with a new reference that already exists.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/AppointmentDialog.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/AppointmentDialog.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/Dashboard.tsx",
+    "frontend/src/components/AppointmentDialog.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

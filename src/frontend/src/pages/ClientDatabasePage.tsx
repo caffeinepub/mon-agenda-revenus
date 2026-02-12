@@ -100,6 +100,18 @@ export default function ClientDatabasePage() {
       return;
     }
 
+    // Check for duplicate reference when creating a new client
+    if (!editingClientId) {
+      const isDuplicate = clients.some(
+        client => client.referenceClient.toLowerCase() === formData.referenceClient.toLowerCase()
+      );
+      
+      if (isDuplicate) {
+        toast.error('Cette référence client est déjà utilisée. Veuillez choisir une référence unique.');
+        return;
+      }
+    }
+
     try {
       if (editingClientId) {
         await updateClient.mutateAsync({
@@ -129,9 +141,11 @@ export default function ClientDatabasePage() {
     } catch (error: any) {
       console.error('Error saving client:', error);
       
-      // Parse authorization errors
+      // Parse authorization and validation errors
       const errorMessage = error.message || String(error);
-      if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized') || errorMessage.includes('not authorized')) {
+      if (errorMessage.includes('déjà utilisée') || errorMessage.includes('already used')) {
+        toast.error('Cette référence client est déjà utilisée. Veuillez choisir une référence unique.');
+      } else if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized') || errorMessage.includes('not authorized')) {
         toast.error('Non autorisé : Veuillez vous reconnecter et réessayer');
       } else {
         toast.error(errorMessage || 'Erreur lors de l\'enregistrement');
@@ -196,6 +210,13 @@ export default function ClientDatabasePage() {
       a.clientName.localeCompare(b.clientName, 'fr', { sensitivity: 'base' })
     );
   }, [clients, sortAlphabetically]);
+
+  // Calculate total paid this year for all clients
+  const totalPaidThisYear = useMemo(() => {
+    return sortedClients.reduce((sum, client) => {
+      return sum + calculatePaidThisYear(client.referenceClient);
+    }, 0);
+  }, [sortedClients, appointments]);
 
   // Export clients to CSV
   const handleExportCsv = () => {
@@ -273,6 +294,11 @@ export default function ClientDatabasePage() {
                   required
                   disabled={isLoading || !!editingClientId}
                 />
+                {!editingClientId && (
+                  <p className="text-xs text-muted-foreground">
+                    La référence ne peut pas être modifiée après création
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -436,6 +462,18 @@ export default function ClientDatabasePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {/* Totals Row */}
+                  <TableRow className="bg-muted/50 font-bold hover:bg-muted/50">
+                    <TableCell colSpan={7} className="font-bold">
+                      TOTAL
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
+                      {totalPaidThisYear.toFixed(0)}
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                  
+                  {/* Client Rows */}
                   {sortedClients.map((client) => {
                     const paidThisYear = calculatePaidThisYear(client.referenceClient);
                     return (

@@ -2,33 +2,39 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [
-    "Dashboard widget “Dus (RDV Faits ; Mois Courant)” appears to recalculate dues independently instead of reading the same monthly totals as “Listing Mensuel”, leading to inconsistent results."
-  ],
+  "architectural_notes": [],
   "known_issues": [
-    "Bug: On “Tableau de bord”, the frame “Dus (RDV Faits ; Mois Courant)” shows an incorrect due sum for February (shows 4400) while February “Listing Mensuel” correctly shows 0 negative credit."
+    "In the 'create new appointment' flow, the field to select an existing client has disappeared (regression) and needs to be restored."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-dashboard-calculation-for-the-card-dus-rdv-faits-mois-courant-so-it-uses-the-exact-same-logic-as-the-listing-mensuel-table-total-for-cr-dit-n-gatif-i-e-the-monthlylisting-ts-excel-formula-calculation-instead-of-reading-backend-field-totalsolderestantnegatif",
-      "title": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+      "id": "feature-restore-an-existing-client-selection-field-in-the-new-appointment-flow-so-users-can-pick-an-already-created-client-record-when-creating-a-new-appointment",
+      "title": "Restore an \"existing client\" selection field in the \"New appointment\" flow so users can pick an already-created client record when creating a new appointment.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-dashboard-has-access-to-the-required-inputs-for-the-shared-negative-credit-calculation-current-month-listings-previous-month-listings-for-credit-carry-over-and-all-appointments-and-use-them-consistently-for-the-dus-card-computation",
-      "title": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+      "id": "feature-when-an-existing-client-is-selected-during-appointment-creation-automatically-populate-appointment-form-fields-from-that-client-record-and-keep-the-appointment-tied-to-that-client-s-reference",
+      "title": "When an existing client is selected during appointment creation, automatically populate appointment form fields from that client record and keep the appointment tied to that client's reference.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-create-appointment-validation-so-selecting-an-existing-client-does-not-trigger-the-duplicate-reference-error-while-still-preventing-accidental-creation-with-a-new-reference-that-already-exists",
+      "title": "Fix the create-appointment validation so selecting an existing client does not trigger the \"duplicate reference\" error, while still preventing accidental creation with a new reference that already exists.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Fix Dashboard 'Due (Completed appointments; current month)' to match Monthly Listing negative credit total",
+  "projectName": "Restore existing client selection in New Appointment dialog",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

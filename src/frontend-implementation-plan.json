@@ -1,35 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Align Dashboard “Dus (RDV Faits ; Mois Courant)” with Monthly Listing Excel-formula Crédit Négatif total",
+  "title": "Restore existing client selection + autofill in New Appointment dialog",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace Dashboard “Dus (RDV Faits ; Mois Courant)” calculation to use the same monthlyListing.ts Excel-formula total for “Crédit Négatif” (absolute value) instead of totals.totalSoldeRestantNegatif.",
+      "summary": "Reintroduce an existing-client selector in the New Appointment dialog (create mode only) to pick from the current user's client records.",
       "acceptanceCriteria": [
-        "On the Dashboard, the displayed value for \"Dus (RDV Faits ; Mois Courant)\" equals abs(totalCreditNegatif) computed using the same functions as MonthlyListingTable for the current month.",
-        "For February in the same dataset where the February Monthly Listing total row shows 0 for \"Crédit Négatif\", the Dashboard \"Dus (RDV Faits ; Mois Courant)\" card displays 0 (not 4400)."
+        "When opening the AppointmentDialog in create mode (no existing appointment), a visible control exists to select an existing client from the current user's client records.",
+        "The client selection control is not shown (or is disabled) when editing an existing appointment, unless it previously existed in edit mode."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/components/AppointmentDialog.tsx",
           "operation": "modify",
-          "description": "Update the “Dus (RDV Faits ; Mois Courant)” computation to: (1) compute totalCreditNegatif for the current month using the shared monthlyListing.ts Excel-formula helpers (same as MonthlyListingTable’s totalCreditNegatif), including prior-month carry-over, and (2) display bigintAbs(totalCreditNegatif) as the card value instead of using TotauxListingMensuel.totalSoldeRestantNegatif."
+          "description": "Add a create-mode-only 'Client existant' selection control backed by the already-loaded clientRecords from useGetAllClientRecords; hide/disable this control when appointment is provided (edit mode) to match prior behavior."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Ensure Dashboard consistently fetches and uses the same inputs as Monthly Listing for negative-credit computation (current month listings, previous month listings for carry-over, and all appointments), without changing other Dashboard card behavior.",
+      "summary": "Autofill appointment fields from the selected existing client and keep the appointment tied to that client reference, while allowing clearing back to manual entry.",
       "acceptanceCriteria": [
-        "The \"Dus\" card computation uses previous-month listing data in the same way the Monthly Listing table does (so months that depend on prior credit do not diverge between the card and the table).",
-        "No other Dashboard cards regress (\"RDV faits...\" still matches the Monthly Listing totalDuMois for the current month, and \"Revenus du Mois en Cours (Faits et Payés)\" remains unchanged)."
+        "Selecting an existing client sets at minimum: referenceClient and nomClient in the form.",
+        "Selecting an existing client also populates other matching fields when available (e.g., phone number, address, service, notes) without preventing the user from editing appointment-specific fields.",
+        "The user can clear the selection to return to manual entry for a new/unlisted client."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/components/AppointmentDialog.tsx",
           "operation": "modify",
-          "description": "Add/adjust Dashboard data dependencies so the “Dus” calculation has: (a) current-month listing rows, (b) previous-month listing rows for the current month (including January→December prior year handling), and (c) all appointments; then compute the “Dus” card from these inputs using the same monthlyListing.ts functions used by MonthlyListingTable, while keeping existing logic for the other cards unchanged."
+          "description": "Track selected existing client in component state; on selection, populate formData.referenceClient + formData.nomClient and additional matching fields (phone/address/service/notes) from the chosen ClientRecord, and build clientRef from the selected record's owner+reference. Add a clear action that resets the selection and returns the form to manual entry (re-enabling reference editing as needed)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Adjust create-mode duplicate-reference validation to allow selecting an existing client without triggering duplicate errors, while still blocking manual duplicates.",
+      "acceptanceCriteria": [
+        "If the user selected an existing client from the restored selector, the form can be submitted even though referenceClient matches an existing client record.",
+        "If the user did not select an existing client and manually enters a referenceClient that matches an existing client record (case-insensitive), the form submission is blocked with the existing duplicate-reference error behavior.",
+        "No backend changes are required to support this behavior (client records are loaded via the existing useGetAllClientRecords hook)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppointmentDialog.tsx",
+          "operation": "modify",
+          "description": "Update create-mode validation to conditionally bypass the duplicate-reference check when an existing client is selected; keep the current case-insensitive duplicate check when no existing client is selected (manual entry). Ensure submission uses the selected clientRef when present."
         }
       ]
     }

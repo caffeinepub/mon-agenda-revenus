@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Download, FileText } from 'lucide-react';
 import { RapportType } from '../backend';
 import MonthlyListingTable from '../components/MonthlyListingTable';
-import { generateMonthlyListingHTML, calculateClientRevenusFaitsEtPayes, calculateTotalRevenusFaitsEtPayes } from '../utils/monthlyListing';
+import { calculateRevenusFaitsEtPayesFromListing, calculateTotalRevenusFaitsEtPayes } from '../utils/monthlyListing';
 
 export default function RapportPDFPage() {
   const [rapportType, setRapportType] = useState<'hebdomadaire' | 'mensuel' | 'annuel'>('mensuel');
@@ -46,7 +46,7 @@ export default function RapportPDFPage() {
     rapportData.forEach(item => {
       const client = monthlyListings.find(c => c.referenceClient === item.referenceClient);
       if (client) {
-        const revenus = calculateClientRevenusFaitsEtPayes(
+        const revenus = calculateRevenusFaitsEtPayesFromListing(
           client,
           allAppointments,
           year,
@@ -218,107 +218,87 @@ export default function RapportPDFPage() {
             </tr>
           </thead>
           <tbody>
-            <tr class="total-row">
-              <td colspan="2">Total</td>
-              <td class="number">${totals.totalNbRDV.toString()}</td>
-              <td class="number">${totals.totalRevenus.toString()}</td>
-              <td class="number red-text">${totals.totalSommesDues.toString()}</td>
-              <td class="number">${totals.totalCredits.toString()}</td>
-            </tr>
-            ${rapportData.map(item => {
-              // Use Monthly Listing calculation for mensuel reports
-              const revenus = rapportType === 'mensuel' && revenusData.has(item.referenceClient)
-                ? revenusData.get(item.referenceClient)!
-                : item.totalSommesRecues;
-              
-              const sommesDues = item.totalSommesDues > revenus 
-                ? Number(item.totalSommesDues - revenus) 
-                : 0;
-              return `
-              <tr>
-                <td>${item.referenceClient}</td>
-                <td>${item.nomClient}</td>
-                <td class="number">${item.nbRendezVousFaits.toString()}</td>
-                <td class="number">${revenus.toString()}</td>
-                <td class="number red-text">${sommesDues}</td>
-                <td class="number">${item.totalCredits.toString()}</td>
-              </tr>
-            `}).join('')}
-          </tbody>
-        </table>
     `;
 
-    // Add Monthly Listing table for mensuel rapport type
-    if (rapportType === 'mensuel' && monthlyListings.length > 0 && allAppointments) {
-      const monthlyListingHTML = generateMonthlyListingHTML(
-        monthlyListings,
-        allAppointments,
-        year,
-        period,
-        previousMonthListings
-      );
-      htmlContent += `
-        <h2>Listing Mensuel</h2>
-        ${monthlyListingHTML}
-      `;
-    }
+    // Add data rows
+    rapportData.forEach(item => {
+      // For mensuel reports, use calculated "Revenus (Faits et Payés)"
+      const revenus = rapportType === 'mensuel' 
+        ? (revenusData.get(item.referenceClient) || BigInt(0))
+        : item.totalSommesRecues;
+      
+      const sommesDues = item.totalSommesDues > revenus 
+        ? item.totalSommesDues - revenus 
+        : BigInt(0);
 
+      htmlContent += `
+            <tr>
+              <td>${item.referenceClient}</td>
+              <td>${item.nomClient}</td>
+              <td class="number">${Number(item.nbRendezVousFaits)}</td>
+              <td class="number">${Number(revenus).toLocaleString('fr-FR')}</td>
+              <td class="number ${sommesDues > 0 ? 'red-text' : ''}">${Number(sommesDues).toLocaleString('fr-FR')}</td>
+              <td class="number ${item.totalCredits > 0 ? 'positive' : ''}">${Number(item.totalCredits).toLocaleString('fr-FR')}</td>
+            </tr>
+      `;
+    });
+
+    // Add total row
     htmlContent += `
+            <tr class="total-row">
+              <td colspan="2">TOTAL</td>
+              <td class="number">${Number(totals.totalNbRDV)}</td>
+              <td class="number">${Number(totals.totalRevenus).toLocaleString('fr-FR')}</td>
+              <td class="number ${totals.totalSommesDues > 0 ? 'red-text' : ''}">${Number(totals.totalSommesDues).toLocaleString('fr-FR')}</td>
+              <td class="number ${totals.totalCredits > 0 ? 'positive' : ''}">${Number(totals.totalCredits).toLocaleString('fr-FR')}</td>
+            </tr>
+          </tbody>
+        </table>
       </body>
       </html>
     `;
 
-    // Create a blob and download
+    // Create a Blob and download
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `rapport_${rapportType}_${year}_${period}.html`;
+    a.download = `rapport-${rapportType}-${year}-${period}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const years = [2024, 2025, 2026, 2027, 2028];
-  const months = [
-    { value: 1, label: 'Janvier' },
-    { value: 2, label: 'Février' },
-    { value: 3, label: 'Mars' },
-    { value: 4, label: 'Avril' },
-    { value: 5, label: 'Mai' },
-    { value: 6, label: 'Juin' },
-    { value: 7, label: 'Juillet' },
-    { value: 8, label: 'Août' },
-    { value: 9, label: 'Septembre' },
-    { value: 10, label: 'Octobre' },
-    { value: 11, label: 'Novembre' },
-    { value: 12, label: 'Décembre' },
-  ];
+  const formatNumber = (amount: bigint | number) => {
+    return Number(amount).toLocaleString('fr-FR');
+  };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Cambria, serif' }}>Rapport PDF</h1>
-        <p className="text-muted-foreground" style={{ fontFamily: 'Cambria, serif' }}>
-          Générez et téléchargez des rapports de synthèse
+    <div className="container mx-auto py-8 space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Rapport PDF</h1>
+        <p className="text-muted-foreground">
+          Générez et exportez des rapports détaillés
         </p>
       </div>
 
-      <Card className="mb-6">
+      {/* Configuration Card */}
+      <Card>
         <CardHeader>
-          <CardTitle style={{ fontFamily: 'Cambria, serif' }}>Configuration du rapport</CardTitle>
-          <CardDescription style={{ fontFamily: 'Cambria, serif' }}>
-            Sélectionnez le type de rapport, l'année et la période
+          <CardTitle>Configuration du rapport</CardTitle>
+          <CardDescription>
+            Sélectionnez le type de rapport et la période
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block" style={{ fontFamily: 'Cambria, serif' }}>
-                Type de rapport
-              </label>
-              <Select value={rapportType} onValueChange={(value: 'hebdomadaire' | 'mensuel' | 'annuel') => setRapportType(value)}>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Type de rapport</label>
+              <Select
+                value={rapportType}
+                onValueChange={(value) => setRapportType(value as 'hebdomadaire' | 'mensuel' | 'annuel')}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -330,16 +310,17 @@ export default function RapportPDFPage() {
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block" style={{ fontFamily: 'Cambria, serif' }}>
-                Année
-              </label>
-              <Select value={year.toString()} onValueChange={(value) => setYear(parseInt(value))}>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Année</label>
+              <Select
+                value={year.toString()}
+                onValueChange={(value) => setYear(parseInt(value))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {years.map((y) => (
+                  {[2024, 2025, 2026, 2027, 2028].map((y) => (
                     <SelectItem key={y} value={y.toString()}>
                       {y}
                     </SelectItem>
@@ -348,127 +329,175 @@ export default function RapportPDFPage() {
               </Select>
             </div>
 
-            {rapportType !== 'annuel' && (
-              <div>
-                <label className="text-sm font-medium mb-2 block" style={{ fontFamily: 'Cambria, serif' }}>
-                  {rapportType === 'hebdomadaire' ? 'Semaine' : 'Mois'}
-                </label>
-                <Select value={period.toString()} onValueChange={(value) => setPeriod(parseInt(value))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rapportType === 'mensuel' ? (
-                      months.map((m) => (
-                        <SelectItem key={m.value} value={m.value.toString()}>
-                          {m.label}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      Array.from({ length: 52 }, (_, i) => i + 1).map((week) => (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {rapportType === 'hebdomadaire' ? 'Semaine' : rapportType === 'mensuel' ? 'Mois' : 'Période'}
+              </label>
+              <Select
+                value={period.toString()}
+                onValueChange={(value) => setPeriod(parseInt(value))}
+                disabled={rapportType === 'annuel'}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {rapportType === 'hebdomadaire'
+                    ? Array.from({ length: 52 }, (_, i) => i + 1).map((week) => (
                         <SelectItem key={week} value={week.toString()}>
                           Semaine {week}
                         </SelectItem>
                       ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6">
-            <Button onClick={handleDownloadPDF} disabled={isLoading || !rapportData || rapportData.length === 0} className="gap-2">
-              <Download className="h-4 w-4" />
-              Télécharger le rapport
-            </Button>
+                    : Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                        <SelectItem key={month} value={month.toString()}>
+                          {
+                            [
+                              'Janvier',
+                              'Février',
+                              'Mars',
+                              'Avril',
+                              'Mai',
+                              'Juin',
+                              'Juillet',
+                              'Août',
+                              'Septembre',
+                              'Octobre',
+                              'Novembre',
+                              'Décembre',
+                            ][month - 1]
+                          }
+                        </SelectItem>
+                      ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Report Data Card */}
       <Card>
         <CardHeader>
-          <CardTitle style={{ fontFamily: 'Cambria, serif' }}>Aperçu du rapport</CardTitle>
-          <CardDescription style={{ fontFamily: 'Cambria, serif' }}>
-            Prévisualisation des données avant téléchargement
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Données du rapport</CardTitle>
+              <CardDescription>{getPeriodLabel()}</CardDescription>
+            </div>
+            <Button
+              onClick={handleDownloadPDF}
+              disabled={isLoading || !rapportData || rapportData.length === 0}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exporter HTML
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : rapportData && rapportData.length > 0 ? (
-            <>
-              <div className="overflow-x-auto">
-                <Table style={{ fontFamily: 'Cambria, serif', fontSize: '10pt' }}>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Réf</TableHead>
-                      <TableHead>Nom</TableHead>
-                      <TableHead className="text-right">Nbr RDV</TableHead>
-                      <TableHead className="text-right">Revenus (Faits et Payés)</TableHead>
-                      <TableHead className="text-right">Sommes Dues</TableHead>
-                      <TableHead className="text-right">Crédits</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow className="font-bold bg-muted/50">
-                      <TableCell colSpan={2}>Total</TableCell>
-                      <TableCell className="text-right">{totals.totalNbRDV.toString()}</TableCell>
-                      <TableCell className="text-right">{totals.totalRevenus.toString()}</TableCell>
-                      <TableCell className="text-right text-red-600">{totals.totalSommesDues.toString()}</TableCell>
-                      <TableCell className="text-right">{totals.totalCredits.toString()}</TableCell>
-                    </TableRow>
-                    {rapportData.map((item, index) => {
-                      // Use Monthly Listing calculation for mensuel reports
-                      const revenus = rapportType === 'mensuel' && revenusData.has(item.referenceClient)
-                        ? revenusData.get(item.referenceClient)!
-                        : item.totalSommesRecues;
-                      
-                      const sommesDues = item.totalSommesDues > revenus 
-                        ? Number(item.totalSommesDues - revenus) 
-                        : 0;
-                      return (
-                        <TableRow key={index}>
-                          <TableCell>{item.referenceClient}</TableCell>
-                          <TableCell>{item.nomClient}</TableCell>
-                          <TableCell className="text-right">{item.nbRendezVousFaits.toString()}</TableCell>
-                          <TableCell className="text-right">{revenus.toString()}</TableCell>
-                          <TableCell className="text-right text-red-600">{sommesDues}</TableCell>
-                          <TableCell className="text-right">{item.totalCredits.toString()}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Add Monthly Listing table for mensuel rapport type */}
-              {rapportType === 'mensuel' && monthlyListings.length > 0 && allAppointments && (
-                <div className="mt-8">
-                  <h3 className="text-xl font-semibold mb-4" style={{ fontFamily: 'Cambria, serif' }}>
-                    Listing Mensuel
-                  </h3>
-                  <MonthlyListingTable
-                    listings={monthlyListings}
-                    totals={monthlyTotals}
-                    allAppointments={allAppointments}
-                    year={year}
-                    month={period}
-                    previousMonthListings={previousMonthListings}
-                  />
-                </div>
-              )}
-            </>
+          ) : !rapportData || rapportData.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Aucune donnée disponible pour cette période
+            </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Aucune donnée disponible pour cette période</p>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Réf</TableHead>
+                    <TableHead>Nom</TableHead>
+                    <TableHead className="text-right">Nbr RDV</TableHead>
+                    <TableHead className="text-right">Revenus (Faits et Payés)</TableHead>
+                    <TableHead className="text-right">Sommes Dues</TableHead>
+                    <TableHead className="text-right">Crédits</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {/* Total Row */}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={2}>TOTAL</TableCell>
+                    <TableCell className="text-right">{Number(totals.totalNbRDV)}</TableCell>
+                    <TableCell className="text-right">{formatNumber(totals.totalRevenus)}</TableCell>
+                    <TableCell className="text-right">
+                      <span className={totals.totalSommesDues > 0 ? 'text-red-600' : ''}>
+                        {formatNumber(totals.totalSommesDues)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={totals.totalCredits > 0 ? 'text-green-600 font-semibold' : ''}>
+                        {formatNumber(totals.totalCredits)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Data Rows */}
+                  {rapportData.map((item) => {
+                    // For mensuel reports, use calculated "Revenus (Faits et Payés)"
+                    const revenus = rapportType === 'mensuel' 
+                      ? (revenusData.get(item.referenceClient) || BigInt(0))
+                      : item.totalSommesRecues;
+                    
+                    const sommesDues = item.totalSommesDues > revenus 
+                      ? item.totalSommesDues - revenus 
+                      : BigInt(0);
+
+                    return (
+                      <TableRow key={item.referenceClient}>
+                        <TableCell className="font-medium">{item.referenceClient}</TableCell>
+                        <TableCell>{item.nomClient}</TableCell>
+                        <TableCell className="text-right">{Number(item.nbRendezVousFaits)}</TableCell>
+                        <TableCell className="text-right">{formatNumber(revenus)}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={sommesDues > 0 ? 'text-red-600' : ''}>
+                            {formatNumber(sommesDues)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={item.totalCredits > 0 ? 'text-green-600 font-semibold' : ''}>
+                            {formatNumber(item.totalCredits)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Monthly Listing Table - Only show for mensuel reports */}
+      {rapportType === 'mensuel' && monthlyListings.length > 0 && allAppointments && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Listing Mensuel Intégré</CardTitle>
+                <CardDescription>
+                  Tableau détaillé avec calculs Excel pour {getPeriodLabel()}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <MonthlyListingTable
+              listings={monthlyListings}
+              totals={monthlyTotals}
+              allAppointments={allAppointments}
+              year={year}
+              month={period}
+              previousMonthListings={previousMonthListings}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
