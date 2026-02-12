@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-restore-an-existing-client-selection-field-in-the-new-appointment-flow-so-users-can-pick-an-already-created-client-record-when-creating-a-new-appointment",
-      "featureTitle": "Restore an \"existing client\" selection field in the \"New appointment\" flow so users can pick an already-created client record when creating a new appointment.",
+      "featureId": "feature-fix-the-dashboard-card-due-completed-appointments-current-month-so-that-its-computed-amount-exactly-matches-the-monthly-listing-table-s-total-negative-credit-for-the-same-month-e-g-february-must-show-0-when-february-s-monthly-listing-negative-credit-total-is-0",
+      "featureTitle": "Fix the Dashboard card \"Due (completed appointments; current month)\" so that its computed amount exactly matches the Monthly Listing table’s total \"Negative Credit\" for the same month (e.g., February must show 0 when February’s Monthly Listing \"Negative Credit\" total is 0).",
       "files": [
-        "frontend/src/components/AppointmentDialog.tsx"
+        "frontend/src/utils/monthlyListing.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,10 +21,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-when-an-existing-client-is-selected-during-appointment-creation-automatically-populate-appointment-form-fields-from-that-client-record-and-keep-the-appointment-tied-to-that-client-s-reference",
-      "featureTitle": "When an existing client is selected during appointment creation, automatically populate appointment form fields from that client record and keep the appointment tied to that client's reference.",
+      "featureId": "feature-fix-the-monthly-listing-previous-month-credit-carryover-so-that-for-every-month-of-the-year-including-from-march-onward-the-previous-month-credit-column-equals-the-ending-credit-balance-from-the-immediately-preceding-month-matching-the-preceding-month-s-displayed-credit-amounts",
+      "featureTitle": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year (including from March onward), the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month, matching the preceding month’s displayed credit amounts.",
       "files": [
-        "frontend/src/components/AppointmentDialog.tsx"
+        "frontend/src/utils/monthlyListing.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -40,10 +40,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-the-create-appointment-validation-so-selecting-an-existing-client-does-not-trigger-the-duplicate-reference-error-while-still-preventing-accidental-creation-with-a-new-reference-that-already-exists",
-      "featureTitle": "Fix the create-appointment validation so selecting an existing client does not trigger the \"duplicate reference\" error, while still preventing accidental creation with a new reference that already exists.",
+      "featureId": "feature-enforce-uniqueness-of-the-client-reference-field-during-both-client-creation-client-database-and-appointment-creation-if-a-reference-is-already-in-use-prevent-saving-and-show-a-clear-validation-error-indicating-the-reference-is-already-used",
+      "featureTitle": "Enforce uniqueness of the client reference field during both client creation (Client Database) and appointment creation. If a reference is already in use, prevent saving and show a clear validation error indicating the reference is already used.",
       "files": [
-        "frontend/src/components/AppointmentDialog.tsx"
+        "frontend/src/components/AppointmentDialog.tsx",
+        "frontend/src/pages/ClientDatabasePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -55,6 +56,25 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-client-database-page-add-a-totals-row-directly-under-the-table-headers-that-shows-the-grand-total-sum-of-the-paid-this-year-column-across-all-displayed-clients",
+      "featureTitle": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients.",
+      "files": [
+        "frontend/src/pages/ClientDatabasePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

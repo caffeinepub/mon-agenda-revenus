@@ -6,10 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { X } from 'lucide-react';
-import type { RendezVous, TypeRepetition, ClientReference, ClientRecord } from '../backend';
+import type { RendezVous, TypeRepetition, ClientReference } from '../backend';
 import { DemandeEdition } from '../backend';
 
 interface AppointmentDialogProps {
@@ -32,7 +30,6 @@ export default function AppointmentDialog({
   const addAppointment = useAddAppointment();
   const updateAppointment = useUpdateAppointment();
 
-  const [selectedExistingClient, setSelectedExistingClient] = useState<ClientRecord | null>(null);
   const [formData, setFormData] = useState({
     dateHeure: initialDate || new Date(),
     heureDebut: '09:00',
@@ -63,40 +60,10 @@ export default function AppointmentDialog({
         montantDu: appointment.montantDu.toString(),
         repetition: appointment.repetition,
       });
-      setSelectedExistingClient(null);
     } else if (initialDate) {
       setFormData(prev => ({ ...prev, dateHeure: initialDate }));
     }
   }, [appointment, initialDate]);
-
-  const handleExistingClientSelect = (clientId: string) => {
-    const client = clientRecords.find(c => c.id.toString() === clientId);
-    if (client) {
-      setSelectedExistingClient(client);
-      setFormData(prev => ({
-        ...prev,
-        nomClient: client.clientName,
-        referenceClient: client.referenceClient,
-        numeroTelephone: client.phoneNumber,
-        adresse: client.address,
-        service: client.service,
-        notes: client.notes,
-      }));
-    }
-  };
-
-  const handleClearExistingClient = () => {
-    setSelectedExistingClient(null);
-    setFormData(prev => ({
-      ...prev,
-      nomClient: '',
-      referenceClient: '',
-      numeroTelephone: '',
-      adresse: '',
-      service: '',
-      notes: '',
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,14 +78,14 @@ export default function AppointmentDialog({
       return;
     }
 
-    // Check for duplicate reference when creating a new appointment (only if not using existing client)
-    if (!appointment && !selectedExistingClient) {
+    // Check for duplicate reference when creating a new appointment
+    if (!appointment) {
       const isDuplicate = clientRecords.some(
         client => client.referenceClient.toLowerCase() === formData.referenceClient.toLowerCase()
       );
       
       if (isDuplicate) {
-        toast.error('Cette référence client est déjà utilisée. Veuillez choisir une référence unique ou sélectionner le client existant.');
+        toast.error('Cette référence client est déjà utilisée. Veuillez choisir une référence unique ou utiliser la référence existante.');
         return;
       }
     }
@@ -168,8 +135,6 @@ export default function AppointmentDialog({
         toast.success('Rendez-vous créé avec succès');
       }
       onOpenChange(false);
-      // Reset selection on successful creation
-      setSelectedExistingClient(null);
     } catch (error: any) {
       console.error('Error saving appointment:', error);
       const errorMessage = error.message || String(error);
@@ -203,48 +168,6 @@ export default function AppointmentDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Existing Client Selector - Only shown in create mode */}
-          {!appointment && clientRecords.length > 0 && (
-            <div className="space-y-2 p-4 bg-muted/50 rounded-lg border">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="existingClient" className="text-base font-semibold">
-                  Client existant
-                </Label>
-                {selectedExistingClient && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClearExistingClient}
-                    disabled={isLoading}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Effacer
-                  </Button>
-                )}
-              </div>
-              <Select
-                value={selectedExistingClient?.id.toString() || ''}
-                onValueChange={handleExistingClientSelect}
-                disabled={isLoading}
-              >
-                <SelectTrigger id="existingClient">
-                  <SelectValue placeholder="Sélectionner un client existant..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientRecords.map((client) => (
-                    <SelectItem key={client.id.toString()} value={client.id.toString()}>
-                      {client.clientName} ({client.referenceClient})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Sélectionnez un client existant pour pré-remplir les informations
-              </p>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dateHeure">Date</Label>
@@ -313,13 +236,11 @@ export default function AppointmentDialog({
                   setFormData({ ...formData, referenceClient: e.target.value })
                 }
                 required
-                disabled={isLoading || !!appointment || !!selectedExistingClient}
+                disabled={isLoading || !!appointment}
               />
               {!appointment && (
                 <p className="text-xs text-muted-foreground">
-                  {selectedExistingClient
-                    ? 'Référence du client sélectionné'
-                    : 'Doit être unique. La référence ne peut pas être modifiée après création.'}
+                  Doit être unique. La référence ne peut pas être modifiée après création.
                 </p>
               )}
             </div>

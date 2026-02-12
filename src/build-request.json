@@ -1,83 +1,93 @@
 {
   "kind": "build_request",
-  "title": "Restore existing client selection in New Appointment dialog",
-  "priority": "high",
+  "title": "Fix Dashboard due/credit calculations, enforce unique client reference, and add totals row in Client Database",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Restore an \"existing client\" selection field in the \"New appointment\" flow so users can pick an already-created client record when creating a new appointment.",
-      "target": "frontend",
+      "text": "Fix the Dashboard card \"Due (completed appointments; current month)\" so that its computed amount exactly matches the Monthly Listing table’s total \"Negative Credit\" for the same month (e.g., February must show 0 when February’s Monthly Listing \"Negative Credit\" total is 0).",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-7"
         ],
         "quotes": [
-          "Maintenant dans la création de nouveau rendez-vous, le champ pour sélectionner un client existant à disparu, alors qu'il existait avant, il faut le remettre"
+          "Page « Tableau de bord », Cadre « Dus (RDV Faits ; Mois Courant) » le calcul ... au mois de février n’est pas correct ... dans ... « Listing Mensuel » du mois de février ... zéro ... mais ... « Dus ... » il y a 4400"
         ]
       },
       "acceptanceCriteria": [
-        "When opening the AppointmentDialog in create mode (no existing appointment), a visible control exists to select an existing client from the current user's client records.",
-        "The client selection control is not shown (or is disabled) when editing an existing appointment, unless it previously existed in edit mode."
+        "When the Monthly Listing for February displays a total Negative Credit of 0, the Dashboard \"Due (completed appointments; current month)\" card displays 0 for February as well.",
+        "Dashboard due computation uses the same month selection and the same underlying credit logic as the Monthly Listing totals (no divergence between components).",
+        "No regressions: the Dashboard due card remains consistent with the Monthly Listing totals for all other months when navigating/refreshing."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "When an existing client is selected during appointment creation, automatically populate appointment form fields from that client record and keep the appointment tied to that client's reference.",
-      "target": "frontend",
+      "text": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year (including from March onward), the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month, matching the preceding month’s displayed credit amounts.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-7"
         ],
         "quotes": [
-          "le champ pour sélectionner un client existant... il faut le remettre"
+          "Page « Tableau de bord », cadre « Listing Mensuel » ... jusqu’au mois de février ... reprend ... du mois précédent ... Mais à partir du mois de mars il ne reporte pas les mêmes montants. Il faut corriger ..."
         ]
       },
       "acceptanceCriteria": [
-        "Selecting an existing client sets at minimum: referenceClient and nomClient in the form.",
-        "Selecting an existing client also populates other matching fields when available (e.g., phone number, address, service, notes) without preventing the user from editing appointment-specific fields.",
-        "The user can clear the selection to return to manual entry for a new/unlisted client."
+        "For any displayed month M, each client row’s \"Previous month credit\" equals the same client’s ending credit/balance from month M-1.",
+        "March’s \"Previous month credit\" values match February’s ending credit/balance values for the same clients.",
+        "This carryover remains correct for all months (April uses March, etc.), including January using December of the previous year when available."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Fix the create-appointment validation so selecting an existing client does not trigger the \"duplicate reference\" error, while still preventing accidental creation with a new reference that already exists.",
-      "target": "frontend",
+      "text": "Enforce uniqueness of the client reference field during both client creation (Client Database) and appointment creation. If a reference is already in use, prevent saving and show a clear validation error indicating the reference is already used.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-7"
         ],
         "quotes": [
-          "le champ pour sélectionner un client existant..."
+          "Le champ référence, dans la création de nouveau rendez-vous et création base client, ne doit pas avoir 2 fois la même référence sinon, il faut indiquer lors de la création que cette référence est déjà utilisé."
         ]
       },
       "acceptanceCriteria": [
-        "If the user selected an existing client from the restored selector, the form can be submitted even though referenceClient matches an existing client record.",
-        "If the user did not select an existing client and manually enters a referenceClient that matches an existing client record (case-insensitive), the form submission is blocked with the existing duplicate-reference error behavior.",
-        "No backend changes are required to support this behavior (client records are loaded via the existing useGetAllClientRecords hook)."
+        "Attempting to create a client with a referenceClient that already exists for the same signed-in user is rejected (backend validation) and the UI shows an error.",
+        "Attempting to create an appointment using a client reference that conflicts with an existing client reference rule is rejected according to the same uniqueness policy (backend validation) and the UI shows an error.",
+        "Uniqueness is enforced server-side (cannot be bypassed via direct calls).",
+        "The existing behavior that prevents changing a client reference after creation remains unchanged."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-7"
+        ],
+        "quotes": [
+          "Page « Base Client » Tableau « Liste des clients » il faut, en haut du tableau sous les noms des colonnes, ajouter une ligne totale qui indique la somme total de la colonne « Payé cette année »"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A totals row is visible immediately under the column headers in the client list table.",
+        "The totals row displays the correct sum of \"Paid this year\" across all clients currently shown in the table (respecting any active sorting/filtering that affects which rows are displayed).",
+        "The total updates correctly when clients/appointments data changes (e.g., after adding/editing appointments or clients)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or anything in frontend/src/components/ui (compose existing components instead).",
-    "Maintain the single-actor backend architecture; do not introduce additional backend services/canisters.",
-    "Do not introduce external databases or third-party auth providers."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not modify files listed as immutable in SYSTEM_CONTEXT (compose UI using existing components instead)."
   ],
   "nonGoals": [
-    "Redesigning the overall appointment creation UX beyond restoring the missing existing-client selector and its necessary validation/autofill logic.",
-    "Changing backend data models or performing state migrations."
+    "Adding new authentication methods (Internet Identity remains the only auth).",
+    "Adding external databases or third-party services.",
+    "Redesigning unrelated UI pages or changing existing accounting formulas beyond what is needed to restore consistency and correct carryover."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

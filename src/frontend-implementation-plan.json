@@ -1,52 +1,95 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Restore existing client selection + autofill in New Appointment dialog",
+  "title": "Fix monthly due/credit consistency, client reference uniqueness UX, and client table totals row",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Reintroduce an existing-client selector in the New Appointment dialog (create mode only) to pick from the current user's client records.",
+      "summary": "Make Dashboard \"Due (completed appointments; current month)\" always match the Monthly Listing total \"Negative Credit\" for the same month by sharing identical month selection inputs and credit logic.",
       "acceptanceCriteria": [
-        "When opening the AppointmentDialog in create mode (no existing appointment), a visible control exists to select an existing client from the current user's client records.",
-        "The client selection control is not shown (or is disabled) when editing an existing appointment, unless it previously existed in edit mode."
+        "When the Monthly Listing for February displays a total Negative Credit of 0, the Dashboard \"Due (completed appointments; current month)\" card displays 0 for February as well.",
+        "Dashboard due computation uses the same month selection and the same underlying credit logic as the Monthly Listing totals (no divergence between components).",
+        "No regressions: the Dashboard due card remains consistent with the Monthly Listing totals for all other months when navigating/refreshing."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AppointmentDialog.tsx",
+          "path": "frontend/src/utils/monthlyListing.ts",
           "operation": "modify",
-          "description": "Add a create-mode-only 'Client existant' selection control backed by the already-loaded clientRecords from useGetAllClientRecords; hide/disable this control when appointment is provided (edit mode) to match prior behavior."
+          "description": "Refactor/shared-helper the \"total negative credit\" aggregation used by both Dashboard and MonthlyListingTable so the Dashboard due amount can be derived from the same underlying calculation path (including prior-month carryover dependency)."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Update the Dashboard \"Dus\" card computation to consume the same shared Monthly Listing negative-credit calculation helper and ensure it is driven by the same year/month inputs as the listing data used for that month (no parallel/duplicate logic)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Autofill appointment fields from the selected existing client and keep the appointment tied to that client reference, while allowing clearing back to manual entry.",
+      "summary": "Correct Monthly Listing \"Previous month credit\" carryover so each month’s carryover equals the immediately preceding month’s ending credit/balance, consistently for all months (including March onward and January→December rollover when available).",
       "acceptanceCriteria": [
-        "Selecting an existing client sets at minimum: referenceClient and nomClient in the form.",
-        "Selecting an existing client also populates other matching fields when available (e.g., phone number, address, service, notes) without preventing the user from editing appointment-specific fields.",
-        "The user can clear the selection to return to manual entry for a new/unlisted client."
+        "For any displayed month M, each client row’s \"Previous month credit\" equals the same client’s ending credit/balance from month M-1.",
+        "March’s \"Previous month credit\" values match February’s ending credit/balance values for the same clients.",
+        "This carryover remains correct for all months (April uses March, etc.), including January using December of the previous year when available."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AppointmentDialog.tsx",
+          "path": "frontend/src/utils/monthlyListing.ts",
           "operation": "modify",
-          "description": "Track selected existing client in component state; on selection, populate formData.referenceClient + formData.nomClient and additional matching fields (phone/address/service/notes) from the chosen ClientRecord, and build clientRef from the selected record's owner+reference. Add a clear action that resets the selection and returns the form to manual entry (re-enabling reference editing as needed)."
+          "description": "Fix getPreviousMonthCredit to use the correct prior-month ending credit/balance field from the prior month listing data (aligning with what the UI displays as the prior month’s ending credit), with safe fallback behavior when prior-month data is missing."
+        },
+        {
+          "path": "frontend/src/components/MonthlyListingTable.tsx",
+          "operation": "modify",
+          "description": "Ensure the table’s \"Crédit du mois précédent\" column and any dependent credit totals (positive/negative) use the corrected carryover logic from monthlyListing utilities, keeping displayed values consistent month-to-month. Use the shadcn-ui Table components already in use; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Align the data wiring for previous-month listing inputs passed into the MonthlyListingTable and used in Dashboard-level monthly computations so carryover remains correct when navigating months and when computing the current-month cards."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Adjust create-mode duplicate-reference validation to allow selecting an existing client without triggering duplicate errors, while still blocking manual duplicates.",
+      "summary": "Prevent saving when a client reference is already used (client creation and appointment creation flows) and show a clear validation error in the UI.",
       "acceptanceCriteria": [
-        "If the user selected an existing client from the restored selector, the form can be submitted even though referenceClient matches an existing client record.",
-        "If the user did not select an existing client and manually enters a referenceClient that matches an existing client record (case-insensitive), the form submission is blocked with the existing duplicate-reference error behavior.",
-        "No backend changes are required to support this behavior (client records are loaded via the existing useGetAllClientRecords hook)."
+        "Attempting to create a client with a referenceClient that already exists for the same signed-in user is rejected (backend validation) and the UI shows an error.",
+        "Attempting to create an appointment using a client reference that conflicts with an existing client reference rule is rejected according to the same uniqueness policy (backend validation) and the UI shows an error.",
+        "Uniqueness is enforced server-side (cannot be bypassed via direct calls).",
+        "The existing behavior that prevents changing a client reference after creation remains unchanged."
       ],
       "file_operations": [
         {
+          "path": "frontend/src/pages/ClientDatabasePage.tsx",
+          "operation": "modify",
+          "description": "Add a client-side uniqueness pre-check during new client creation (not edit) against the currently loaded client list; block submit and display a clear toast validation error when the reference is already in use. Keep existing behavior that disables reference editing once a client exists."
+        },
+        {
           "path": "frontend/src/components/AppointmentDialog.tsx",
           "operation": "modify",
-          "description": "Update create-mode validation to conditionally bypass the duplicate-reference check when an existing client is selected; keep the current case-insensitive duplicate check when no existing client is selected (manual entry). Ensure submission uses the selected clientRef when present."
+          "description": "Add validation to detect ambiguous/duplicated client references in the loaded client list and prevent appointment creation/edit submission when the selected/typed reference is not uniquely resolvable; display a clear toast error indicating the reference is already used/duplicated. Use existing shadcn-ui form controls and dialog components already present; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Harden error handling for client and appointment create mutations by mapping backend uniqueness validation failures to a stable, user-friendly error message that the UI can present (without changing authentication behavior)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add a totals row under the Client Database table headers showing the grand total of \"Paid this year\" for all currently displayed clients.",
+      "acceptanceCriteria": [
+        "A totals row is visible immediately under the column headers in the client list table.",
+        "The totals row displays the correct sum of \"Paid this year\" across all clients currently shown in the table (respecting any active sorting/filtering that affects which rows are displayed).",
+        "The total updates correctly when clients/appointments data changes (e.g., after adding/editing appointments or clients)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ClientDatabasePage.tsx",
+          "operation": "modify",
+          "description": "Compute a memoized grand total of the \"Payé cette année\" values for the currently displayed client rows (sortedClients) and render a totals row directly beneath the column headers using the existing shadcn-ui Table components. Verify the component's usage instructions before implementing."
         }
       ]
     }

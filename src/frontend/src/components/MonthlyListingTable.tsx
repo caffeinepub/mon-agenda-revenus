@@ -130,7 +130,7 @@ export default function MonthlyListingTable({
           
           {/* Client Rows */}
           {listings.map((client) => {
-            const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings, allAppointments);
+            const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings);
             const revenusPlusAvances = calculateToutesSommesRecues(client.referenceClient, allAppointments, year, month);
             const rdvFaits = client.totalDuMois;
             

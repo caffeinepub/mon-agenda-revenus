@@ -1,40 +1,77 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
+  "summary": "App de gestion (Tableau de bord, Listing Mensuel, Base Client) avec calculs de crédits/dus et gestion de rendez-vous/clients.",
+  "architectural_notes": [
+    "Les montants affichés sur le Tableau de bord doivent être cohérents avec le tableau « Listing Mensuel » (mêmes règles de calcul/report).",
+    "La référence utilisée lors de la création RDV/client doit être unique et validée à la saisie."
+  ],
   "known_issues": [
-    "In the 'create new appointment' flow, the field to select an existing client has disappeared (regression) and needs to be restored."
+    "Erreur de calcul sur « Dus (RDV Faits ; Mois Courant) » en février (affiche 4400 au lieu de 0).",
+    "Report incorrect de « Crédit du mois précédent » à partir de mars dans le Listing Mensuel."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-restore-an-existing-client-selection-field-in-the-new-appointment-flow-so-users-can-pick-an-already-created-client-record-when-creating-a-new-appointment",
-      "title": "Restore an \"existing client\" selection field in the \"New appointment\" flow so users can pick an already-created client record when creating a new appointment.",
+      "id": "feature-fix-the-dashboard-card-due-completed-appointments-current-month-so-that-its-computed-amount-exactly-matches-the-monthly-listing-table-s-total-negative-credit-for-the-same-month-e-g-february-must-show-0-when-february-s-monthly-listing-negative-credit-total-is-0",
+      "title": "Fix the Dashboard card \"Due (completed appointments; current month)\" so that its computed amount exactly matches the Monthly Listing table’s total \"Negative Credit\" for the same month (e.g., February must show 0 when February’s Monthly Listing \"Negative Credit\" total is 0).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-when-an-existing-client-is-selected-during-appointment-creation-automatically-populate-appointment-form-fields-from-that-client-record-and-keep-the-appointment-tied-to-that-client-s-reference",
-      "title": "When an existing client is selected during appointment creation, automatically populate appointment form fields from that client record and keep the appointment tied to that client's reference.",
+      "id": "feature-fix-the-monthly-listing-previous-month-credit-carryover-so-that-for-every-month-of-the-year-including-from-march-onward-the-previous-month-credit-column-equals-the-ending-credit-balance-from-the-immediately-preceding-month-matching-the-preceding-month-s-displayed-credit-amounts",
+      "title": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year (including from March onward), the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month, matching the preceding month’s displayed credit amounts.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-fix-the-create-appointment-validation-so-selecting-an-existing-client-does-not-trigger-the-duplicate-reference-error-while-still-preventing-accidental-creation-with-a-new-reference-that-already-exists",
-      "title": "Fix the create-appointment validation so selecting an existing client does not trigger the \"duplicate reference\" error, while still preventing accidental creation with a new reference that already exists.",
+      "id": "feature-enforce-uniqueness-of-the-client-reference-field-during-both-client-creation-client-database-and-appointment-creation-if-a-reference-is-already-in-use-prevent-saving-and-show-a-clear-validation-error-indicating-the-reference-is-already-used",
+      "title": "Enforce uniqueness of the client reference field during both client creation (Client Database) and appointment creation. If a reference is already in use, prevent saving and show a clear validation error indicating the reference is already used.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-on-the-client-database-page-add-a-totals-row-directly-under-the-table-headers-that-shows-the-grand-total-sum-of-the-paid-this-year-column-across-all-displayed-clients",
+      "title": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Restore existing client selection in New Appointment dialog",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Corriger le calcul du cadre « Dus (RDV Faits ; Mois Courant) » sur le Tableau de bord (erreur en février : 4400 au lieu de 0 en crédit négatif).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Empêcher les références dupliquées lors de la création d’un nouveau rendez-vous et d’un client (validation d’unicité + message si déjà utilisée).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Corriger le report « Crédit du mois précédent » dans le Listing Mensuel à partir de mars (doit reprendre exactement les crédits du mois précédent toute l’année).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Ajouter une ligne de total en haut du tableau « Liste des clients » (Base Client) pour la somme de la colonne « Payé cette année ».",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Fix Dashboard due/credit calculations, enforce unique client reference, and add totals row in Client Database",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

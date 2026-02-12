@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Restore the ability to select an existing client when creating a new appointment, including correct autofill behavior and validation.
+**Goal:** Fix inconsistencies in monthly due/credit calculations, enforce unique client references, and add a “Paid this year” totals row in the Client Database.
 
 **Planned changes:**
-- Add back an "existing client" selector in the New Appointment dialog when creating a new appointment (create mode), sourcing options from the current user’s client records.
-- When an existing client is selected, auto-populate appointment fields (at minimum `referenceClient` and `nomClient`, plus other matching fields when available) while still allowing users to edit appointment-specific details.
-- Allow clearing the selected existing client to return to manual entry for a new/unlisted client.
-- Update create-appointment validation so selecting an existing client does not trigger the duplicate-reference error, while manual entry of an already-existing reference still triggers the existing duplicate check.
+- Align the Dashboard card “Due (completed appointments; current month)” calculation to exactly match the Monthly Listing total “Negative Credit” for the same selected month.
+- Correct the Monthly Listing “Previous month credit” carryover so each month’s value equals the immediately preceding month’s ending credit/balance (including March onward, and January using prior December when available).
+- Enforce server-side uniqueness of the client reference during both client creation and appointment creation; block saves and show a clear “reference already used” validation error when duplicated (while keeping the existing rule that client references can’t be changed after creation).
+- Add a totals row under the Client Database table headers that sums “Paid this year” across all currently displayed clients, updating as displayed rows/data changes.
 
-**User-visible outcome:** When creating a new appointment, users can select an already-created client, have the form pre-filled accordingly, and submit successfully without false duplicate-reference errors.
+**User-visible outcome:** Dashboard due amounts match Monthly Listing negative credit totals for the same month, monthly credit carryovers remain correct across the year, duplicate client references are prevented with clear errors, and the Client Database shows an up-to-date “Paid this year” grand total row.

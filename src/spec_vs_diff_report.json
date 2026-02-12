@@ -1,23 +1,65 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T14:28:28.594Z",
-  "summary": "Diff adds state and handlers in AppointmentDialog to support selecting/clearing an existing client and to bypass duplicate-reference validation when an existing client is selected. However, the provided diff snippet is truncated before the JSX/render portion, so it does not conclusively show the presence/visibility rules of the selector control in create vs edit mode.",
+  "generatedAt": "2026-02-10T14:32:13.864Z",
+  "summary": "REQ-1 appears implemented on the frontend by unifying the Dashboard “Due” computation with the Monthly Listing “Negative Credit” logic via shared utilities. REQ-2 is not convincingly implemented: the new shared carryover helper returns `soldeRestant`, which does not clearly equal the prior month’s ending credit/balance, so the “Previous month credit” carryover requirement is likely still unmet. REQ-3 is only enforced client-side in the UI; server-side uniqueness enforcement is not evidenced in the backend diff. REQ-4 (totals row in Client Database) is not evidenced in the shown ClientDatabasePage changes.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "The client selection control is not shown (or is disabled) when editing an existing appointment, unless it previously existed in edit mode.",
-      "reason": "The diff shows state reset when `appointment` exists (edit mode) but does not include the rendered UI/conditional logic to verify the selector is hidden/disabled in edit mode due to truncation.",
+      "id": "REQ-2",
+      "requirement": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year, the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month (including year boundary).",
+      "reason": "The shared helper `getPreviousMonthCredit` returns `previousClient.soldeRestant` and even notes it is using `soldeRestant` from backend. This does not demonstrate that the value equals the prior month’s ending credit/balance as displayed, nor that it chains correctly month-to-month (March uses February ending credit, etc.). Also, no direct evidence is shown of Monthly Listing UI/backend using this corrected carryover for all months.",
       "evidence": [
-        "frontend/src/components/AppointmentDialog.tsx (truncated; contains edit-mode form population and `setSelectedExistingClient(null)` but not the JSX that would show/hide/disable the selector)"
+        "frontend/src/utils/monthlyListing.ts"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Enforce uniqueness of the client reference field during both client creation and appointment creation with server-side validation and UI error display.",
+      "reason": "The diff shows only client-side duplicate checks in the appointment and client forms. The BuildRequest requires server-side enforcement (cannot be bypassed), but the backend diff excerpt does not show any uniqueness validation added to the actor methods.",
+      "evidence": [
+        "frontend/src/components/AppointmentDialog.tsx",
+        "frontend/src/pages/ClientDatabasePage.tsx",
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients (respecting filtering/sorting).",
+      "reason": "No evidence in the provided ClientDatabasePage diff excerpt (or summaries) shows an added totals row under headers, nor computation of the displayed clients’ \"Paid this year\" sum.",
+      "evidence": [
+        "frontend/src/pages/ClientDatabasePage.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.56,
+  "hallucinated_features": [
+    {
+      "description": "Added backend migration scaffolding (new `backend/migration.mo` and `(with migration = Migration.run)` wiring).",
+      "reason": "The BuildRequest did not request a migration framework/scaffold; it focuses on calculation fixes, uniqueness validation, and a totals row.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "description": "Adjusted Rapport PDF calculations to reuse Monthly Listing utilities and added previous-month listing fetching logic for the report.",
+      "reason": "The BuildRequest does not mention changing the Rapport PDF page; changes appear unrelated to the specified requirements.",
+      "evidence": [
+        "frontend/src/pages/RapportPDFPage.tsx",
+        "frontend/src/utils/monthlyListing.ts"
+      ]
+    }
+  ],
+  "confidence": 0.68,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/components/AppointmentActionDialog.tsx",
     "frontend/src/components/AppointmentDialog.tsx",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/pages/ClientDatabasePage.tsx",
+    "frontend/src/pages/RapportPDFPage.tsx",
+    "frontend/src/utils/monthlyListing.ts",
     "project_state.json"
   ]
 }

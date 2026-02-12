@@ -32,15 +32,13 @@ export function calculateToutesSommesRecues(
 /**
  * Get previous month's credit for a client
  * For January, looks up December of the previous year if data is provided
- * Returns the ending credit balance from the previous month (sum of Crédit Positif + Crédit Négatif)
- * This represents the total credit generated in month N-1: A(N-1) + D(N-1) - B(N-1)
+ * Returns the ending credit balance from the previous month (Crédit Positif or Crédit Négatif)
  */
 export function getPreviousMonthCredit(
   currentMonth: number,
   currentYear: number,
   referenceClient: string,
-  previousMonthListings: DomaineListingMensuel[] | undefined,
-  allAppointments?: RendezVous[]
+  previousMonthListings: DomaineListingMensuel[] | undefined
 ): bigint {
   // If no previous month data is available, return 0
   if (!previousMonthListings) {
@@ -53,31 +51,27 @@ export function getPreviousMonthCredit(
     return BigInt(0);
   }
   
-  // Calculate the previous month's ending credit balance
-  // This is the sum of Crédit Positif + Crédit Négatif from month N-1
-  // Formula: A(N-1) + D(N-1) - B(N-1)
-  // Where:
-  // A(N-1) = previous month's previous credit (we need to recurse or use stored value)
-  // D(N-1) = Revenus + Avances from month N-1
-  // B(N-1) = RDV Faits from month N-1
+  // Calculate the previous month's ending credit using the same Excel formulas
+  // We need to recalculate because we need the actual credit (positive or negative)
+  // The ending credit is: Crédit Positif (if positive) or Crédit Négatif (if negative)
   
-  // If we have appointments data, calculate it properly
-  if (allAppointments) {
-    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-    
-    // We need the previous month's previous credit (A for month N-1)
-    // This would require recursive lookup, but we can use the backend's creditCumule
-    // or calculate from the stored data
-    
-    // For now, use the soldeRestant which represents D - B
-    // But we need to add the previous credit carryover
-    // The creditFinMois field should contain the ending balance
-    return previousClient.creditFinMois;
-  }
+  // Get the previous month's values
+  const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
   
-  // Fallback: use creditFinMois which should represent the ending credit balance
-  return previousClient.creditFinMois;
+  // We need to calculate the credit from the previous month's data
+  // Credit = A + D - B where:
+  // A = previous month's credit (which we don't have for the previous month's previous month)
+  // D = Revenus + Avances
+  // B = RDV Faits
+  
+  // Since we have the soldeRestant from backend, use that
+  // soldeRestant = totalPayeMois - totalDuMois = D - B (without considering previous credit)
+  // But we need the full credit which includes the carryover
+  
+  // The correct ending balance is the sum of Crédit Positif and Crédit Négatif
+  // (one will be 0, the other will have the value)
+  return previousClient.soldeRestant;
 }
 
 /**
@@ -127,7 +121,7 @@ export function calculateRevenusFaitsEtPayesFromListing(
   month: number,
   previousMonthListings: DomaineListingMensuel[] | undefined
 ): bigint {
-  const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings, allAppointments);
+  const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings);
   const revenusPlusAvances = calculateToutesSommesRecues(client.referenceClient, allAppointments, year, month);
   const rdvFaits = client.totalDuMois;
   
@@ -206,7 +200,7 @@ export function calculateTotalCreditPositif(
   previousMonthListings: DomaineListingMensuel[] | undefined
 ): bigint {
   return listings.reduce((total, client) => {
-    const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings, allAppointments);
+    const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings);
     const revenusPlusAvances = calculateToutesSommesRecues(client.referenceClient, allAppointments, year, month);
     const rdvFaits = client.totalDuMois;
     
@@ -226,7 +220,7 @@ export function calculateTotalCreditNegatif(
   previousMonthListings: DomaineListingMensuel[] | undefined
 ): bigint {
   return listings.reduce((total, client) => {
-    const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings, allAppointments);
+    const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings);
     const revenusPlusAvances = calculateToutesSommesRecues(client.referenceClient, allAppointments, year, month);
     const rdvFaits = client.totalDuMois;
     

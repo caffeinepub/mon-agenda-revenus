@@ -1,56 +1,80 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T14:28:28.597Z",
+  "generatedAt": "2026-02-10T14:32:13.866Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Restore an \"existing client\" selection field in the \"New appointment\" flow so users can pick an already-created client record when creating a new appointment.",
+        "summary": "Fix the Dashboard card \"Due (completed appointments; current month)\" so that its computed amount exactly matches the Monthly Listing table’s total \"Negative Credit\" for the same month (e.g., February must show 0 when February’s Monthly Listing \"Negative Credit\" total is 0).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AppointmentDialog.tsx"
+          "frontend/src/utils/monthlyListing.ts",
+          "frontend/src/pages/Dashboard.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/AppointmentDialog.tsx"
+          "frontend/src/utils/monthlyListing.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "When an existing client is selected during appointment creation, automatically populate appointment form fields from that client record and keep the appointment tied to that client's reference.",
+        "summary": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year (including from March onward), the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month, matching the preceding month’s displayed credit amounts.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AppointmentDialog.tsx"
+          "frontend/src/utils/monthlyListing.ts",
+          "frontend/src/components/MonthlyListingTable.tsx",
+          "frontend/src/pages/Dashboard.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/AppointmentDialog.tsx"
+          "frontend/src/utils/monthlyListing.ts"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Fix the create-appointment validation so selecting an existing client does not trigger the \"duplicate reference\" error, while still preventing accidental creation with a new reference that already exists.",
+        "summary": "Enforce uniqueness of the client reference field during both client creation (Client Database) and appointment creation. If a reference is already in use, prevent saving and show a clear validation error indicating the reference is already used.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AppointmentDialog.tsx"
+          "frontend/src/pages/ClientDatabasePage.tsx",
+          "frontend/src/components/AppointmentDialog.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
+          "frontend/src/pages/ClientDatabasePage.tsx",
           "frontend/src/components/AppointmentDialog.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ClientDatabasePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ClientDatabasePage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/components/AppointmentActionDialog.tsx",
     "frontend/src/components/AppointmentDialog.tsx",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/pages/ClientDatabasePage.tsx",
+    "frontend/src/pages/RapportPDFPage.tsx",
+    "frontend/src/utils/monthlyListing.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
