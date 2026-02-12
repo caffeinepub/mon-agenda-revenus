@@ -1,77 +1,34 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App de gestion (Tableau de bord, Listing Mensuel, Base Client) avec calculs de crédits/dus et gestion de rendez-vous/clients.",
+  "summary": "New project",
   "architectural_notes": [
-    "Les montants affichés sur le Tableau de bord doivent être cohérents avec le tableau « Listing Mensuel » (mêmes règles de calcul/report).",
-    "La référence utilisée lors de la création RDV/client doit être unique et validée à la saisie."
+    "Dashboard widget “Dus (RDV Faits ; Mois Courant)” appears to recalculate dues independently instead of reading the same monthly totals as “Listing Mensuel”, leading to inconsistent results."
   ],
   "known_issues": [
-    "Erreur de calcul sur « Dus (RDV Faits ; Mois Courant) » en février (affiche 4400 au lieu de 0).",
-    "Report incorrect de « Crédit du mois précédent » à partir de mars dans le Listing Mensuel."
+    "Bug: On “Tableau de bord”, the frame “Dus (RDV Faits ; Mois Courant)” shows an incorrect due sum for February (shows 4400) while February “Listing Mensuel” correctly shows 0 negative credit."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-dashboard-card-due-completed-appointments-current-month-so-that-its-computed-amount-exactly-matches-the-monthly-listing-table-s-total-negative-credit-for-the-same-month-e-g-february-must-show-0-when-february-s-monthly-listing-negative-credit-total-is-0",
-      "title": "Fix the Dashboard card \"Due (completed appointments; current month)\" so that its computed amount exactly matches the Monthly Listing table’s total \"Negative Credit\" for the same month (e.g., February must show 0 when February’s Monthly Listing \"Negative Credit\" total is 0).",
+      "id": "feature-update-the-dashboard-calculation-for-the-card-dus-rdv-faits-mois-courant-so-it-uses-the-exact-same-logic-as-the-listing-mensuel-table-total-for-cr-dit-n-gatif-i-e-the-monthlylisting-ts-excel-formula-calculation-instead-of-reading-backend-field-totalsolderestantnegatif",
+      "title": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-fix-the-monthly-listing-previous-month-credit-carryover-so-that-for-every-month-of-the-year-including-from-march-onward-the-previous-month-credit-column-equals-the-ending-credit-balance-from-the-immediately-preceding-month-matching-the-preceding-month-s-displayed-credit-amounts",
-      "title": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year (including from March onward), the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month, matching the preceding month’s displayed credit amounts.",
+      "id": "feature-ensure-the-dashboard-has-access-to-the-required-inputs-for-the-shared-negative-credit-calculation-current-month-listings-previous-month-listings-for-credit-carry-over-and-all-appointments-and-use-them-consistently-for-the-dus-card-computation",
+      "title": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-enforce-uniqueness-of-the-client-reference-field-during-both-client-creation-client-database-and-appointment-creation-if-a-reference-is-already-in-use-prevent-saving-and-show-a-clear-validation-error-indicating-the-reference-is-already-used",
-      "title": "Enforce uniqueness of the client reference field during both client creation (Client Database) and appointment creation. If a reference is already in use, prevent saving and show a clear validation error indicating the reference is already used.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-on-the-client-database-page-add-a-totals-row-directly-under-the-table-headers-that-shows-the-grand-total-sum-of-the-paid-this-year-column-across-all-displayed-clients",
-      "title": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Corriger le calcul du cadre « Dus (RDV Faits ; Mois Courant) » sur le Tableau de bord (erreur en février : 4400 au lieu de 0 en crédit négatif).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Empêcher les références dupliquées lors de la création d’un nouveau rendez-vous et d’un client (validation d’unicité + message si déjà utilisée).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Corriger le report « Crédit du mois précédent » dans le Listing Mensuel à partir de mars (doit reprendre exactement les crédits du mois précédent toute l’année).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Ajouter une ligne de total en haut du tableau « Liste des clients » (Base Client) pour la somme de la colonne « Payé cette année ».",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "projectName": "Fix Dashboard due/credit calculations, enforce unique client reference, and add totals row in Client Database",
+  "new_feature_requests": [],
+  "projectName": "Fix Dashboard 'Due (Completed appointments; current month)' to match Monthly Listing negative credit total",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

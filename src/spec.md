@@ -1,12 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Fix inconsistencies in monthly due/credit calculations, enforce unique client references, and add a “Paid this year” totals row in the Client Database.
+**Goal:** Fix the Dashboard card “Dus (RDV Faits ; Mois Courant)” so its displayed due amount matches the “Listing Mensuel” total for “Crédit Négatif” for the current month.
 
 **Planned changes:**
-- Align the Dashboard card “Due (completed appointments; current month)” calculation to exactly match the Monthly Listing total “Negative Credit” for the same selected month.
-- Correct the Monthly Listing “Previous month credit” carryover so each month’s value equals the immediately preceding month’s ending credit/balance (including March onward, and January using prior December when available).
-- Enforce server-side uniqueness of the client reference during both client creation and appointment creation; block saves and show a clear “reference already used” validation error when duplicated (while keeping the existing rule that client references can’t be changed after creation).
-- Add a totals row under the Client Database table headers that sums “Paid this year” across all currently displayed clients, updating as displayed rows/data changes.
+- Update the Dashboard “Dus (RDV Faits ; Mois Courant)” calculation to reuse the same negative-credit computation logic used by the Monthly Listing table (monthlyListing.ts Excel-formula calculation), instead of using the backend field totalSoldeRestantNegatif.
+- Ensure the Dashboard uses the same required inputs as the Monthly Listing logic (current month listings, previous month listings for carry-over, and all appointments) so results do not diverge between the Dashboard card and the Monthly Listing table.
 
-**User-visible outcome:** Dashboard due amounts match Monthly Listing negative credit totals for the same month, monthly credit carryovers remain correct across the year, duplicate client references are prevented with clear errors, and the Client Database shows an up-to-date “Paid this year” grand total row.
+**User-visible outcome:** The Dashboard “Dus (RDV Faits ; Mois Courant)” card shows the same value as the Monthly Listing “Crédit Négatif” total for the current month (e.g., February displays 0 instead of 4400 when the Monthly Listing shows 0).

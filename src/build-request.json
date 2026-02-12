@@ -1,93 +1,67 @@
 {
   "kind": "build_request",
-  "title": "Fix Dashboard due/credit calculations, enforce unique client reference, and add totals row in Client Database",
+  "title": "Fix Dashboard 'Due (Completed appointments; current month)' to match Monthly Listing negative credit total",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the Dashboard card \"Due (completed appointments; current month)\" so that its computed amount exactly matches the Monthly Listing table’s total \"Negative Credit\" for the same month (e.g., February must show 0 when February’s Monthly Listing \"Negative Credit\" total is 0).",
-      "target": "both",
+      "text": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-4",
+          "msg-6"
         ],
         "quotes": [
-          "Page « Tableau de bord », Cadre « Dus (RDV Faits ; Mois Courant) » le calcul ... au mois de février n’est pas correct ... dans ... « Listing Mensuel » du mois de février ... zéro ... mais ... « Dus ... » il y a 4400"
+          "Page « Tableau de bord », Cadre « Dus (RDV Faits ; Mois Courant) » le calcul de la somme due du mois courant au mois de février  n’est pas correct.",
+          "Dans le tableau «  Listing Mensuel » du mois de février, il y à zéro en crédit négatif, c’est correct mais pas dans le Cadre « Dus (RDV Faits ; Mois Courant) » il y a 4400 et cela n’est pas correct."
         ]
       },
       "acceptanceCriteria": [
-        "When the Monthly Listing for February displays a total Negative Credit of 0, the Dashboard \"Due (completed appointments; current month)\" card displays 0 for February as well.",
-        "Dashboard due computation uses the same month selection and the same underlying credit logic as the Monthly Listing totals (no divergence between components).",
-        "No regressions: the Dashboard due card remains consistent with the Monthly Listing totals for all other months when navigating/refreshing."
+        "On the Dashboard, the displayed value for \"Dus (RDV Faits ; Mois Courant)\" equals abs(totalCreditNegatif) computed using the same functions as MonthlyListingTable for the current month.",
+        "For February in the same dataset where the February Monthly Listing total row shows 0 for \"Crédit Négatif\", the Dashboard \"Dus (RDV Faits ; Mois Courant)\" card displays 0 (not 4400)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year (including from March onward), the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month, matching the preceding month’s displayed credit amounts.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-7"
-        ],
-        "quotes": [
-          "Page « Tableau de bord », cadre « Listing Mensuel » ... jusqu’au mois de février ... reprend ... du mois précédent ... Mais à partir du mois de mars il ne reporte pas les mêmes montants. Il faut corriger ..."
-        ]
-      },
-      "acceptanceCriteria": [
-        "For any displayed month M, each client row’s \"Previous month credit\" equals the same client’s ending credit/balance from month M-1.",
-        "March’s \"Previous month credit\" values match February’s ending credit/balance values for the same clients.",
-        "This carryover remains correct for all months (April uses March, etc.), including January using December of the previous year when available."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Enforce uniqueness of the client reference field during both client creation (Client Database) and appointment creation. If a reference is already in use, prevent saving and show a clear validation error indicating the reference is already used.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-7"
-        ],
-        "quotes": [
-          "Le champ référence, dans la création de nouveau rendez-vous et création base client, ne doit pas avoir 2 fois la même référence sinon, il faut indiquer lors de la création que cette référence est déjà utilisé."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Attempting to create a client with a referenceClient that already exists for the same signed-in user is rejected (backend validation) and the UI shows an error.",
-        "Attempting to create an appointment using a client reference that conflicts with an existing client reference rule is rejected according to the same uniqueness policy (backend validation) and the UI shows an error.",
-        "Uniqueness is enforced server-side (cannot be bypassed via direct calls).",
-        "The existing behavior that prevents changing a client reference after creation remains unchanged."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients.",
+      "text": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-4",
+          "msg-6"
         ],
         "quotes": [
-          "Page « Base Client » Tableau « Liste des clients » il faut, en haut du tableau sous les noms des colonnes, ajouter une ligne totale qui indique la somme total de la colonne « Payé cette année »"
+          "Dans le tableau «  Listing Mensuel » du mois de février, il y à zéro en crédit négatif, c’est correct mais pas dans le Cadre « Dus (RDV Faits ; Mois Courant) » il y a 4400 et cela n’est pas correct.",
+          "Tu veux que je corrige maintenant ? / Oui"
         ]
       },
       "acceptanceCriteria": [
-        "A totals row is visible immediately under the column headers in the client list table.",
-        "The totals row displays the correct sum of \"Paid this year\" across all clients currently shown in the table (respecting any active sorting/filtering that affects which rows are displayed).",
-        "The total updates correctly when clients/appointments data changes (e.g., after adding/editing appointments or clients)."
+        "The \"Dus\" card computation uses previous-month listing data in the same way the Monthly Listing table does (so months that depend on prior credit do not diverge between the card and the table).",
+        "No other Dashboard cards regress (\"RDV faits...\" still matches the Monthly Listing totalDuMois for the current month, and \"Revenus du Mois en Cours (Faits et Payés)\" remains unchanged)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Do not modify files listed as immutable in SYSTEM_CONTEXT (compose UI using existing components instead)."
+    "Do not edit files under frontend/src/components/ui (compose existing UI components only).",
+    "Do not modify immutable frontend hook files listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
   ],
   "nonGoals": [
-    "Adding new authentication methods (Internet Identity remains the only auth).",
-    "Adding external databases or third-party services.",
-    "Redesigning unrelated UI pages or changing existing accounting formulas beyond what is needed to restore consistency and correct carryover."
+    "Do not change the UI labels, language, or formatting unless required to fix the calculation mismatch.",
+    "Do not change backend financial schemas or how TotauxListingMensuel.totalSoldeRestantNegatif is computed (this fix is to make the Dashboard card consistent with the Monthly Listing table)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

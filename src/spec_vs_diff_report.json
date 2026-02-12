@@ -1,65 +1,38 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T14:32:13.864Z",
-  "summary": "REQ-1 appears implemented on the frontend by unifying the Dashboard “Due” computation with the Monthly Listing “Negative Credit” logic via shared utilities. REQ-2 is not convincingly implemented: the new shared carryover helper returns `soldeRestant`, which does not clearly equal the prior month’s ending credit/balance, so the “Previous month credit” carryover requirement is likely still unmet. REQ-3 is only enforced client-side in the UI; server-side uniqueness enforcement is not evidenced in the backend diff. REQ-4 (totals row in Client Database) is not evidenced in the shown ClientDatabasePage changes.",
-  "missing_requirements": [
-    {
-      "id": "REQ-2",
-      "requirement": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year, the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month (including year boundary).",
-      "reason": "The shared helper `getPreviousMonthCredit` returns `previousClient.soldeRestant` and even notes it is using `soldeRestant` from backend. This does not demonstrate that the value equals the prior month’s ending credit/balance as displayed, nor that it chains correctly month-to-month (March uses February ending credit, etc.). Also, no direct evidence is shown of Monthly Listing UI/backend using this corrected carryover for all months.",
-      "evidence": [
-        "frontend/src/utils/monthlyListing.ts"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Enforce uniqueness of the client reference field during both client creation and appointment creation with server-side validation and UI error display.",
-      "reason": "The diff shows only client-side duplicate checks in the appointment and client forms. The BuildRequest requires server-side enforcement (cannot be bypassed), but the backend diff excerpt does not show any uniqueness validation added to the actor methods.",
-      "evidence": [
-        "frontend/src/components/AppointmentDialog.tsx",
-        "frontend/src/pages/ClientDatabasePage.tsx",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients (respecting filtering/sorting).",
-      "reason": "No evidence in the provided ClientDatabasePage diff excerpt (or summaries) shows an added totals row under headers, nor computation of the displayed clients’ \"Paid this year\" sum.",
-      "evidence": [
-        "frontend/src/pages/ClientDatabasePage.tsx"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-09T18:16:57.903Z",
+  "summary": "Dashboard.tsx was updated to compute the \"Dus (RDV Faits ; Mois Courant)\" value using shared monthly listing utilities (calculateTotalCreditNegatif) and to fetch the additional inputs (all appointments and previous-month listing data). The diff summary also indicates unrelated UI/label/formatting changes in FinancialOverview and additional dashboard computations/routes not requested by the BuildRequest.",
+  "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Added backend migration scaffolding (new `backend/migration.mo` and `(with migration = Migration.run)` wiring).",
-      "reason": "The BuildRequest did not request a migration framework/scaffold; it focuses on calculation fixes, uniqueness validation, and a totals row.",
+      "description": "Changed FinancialOverview card labels and numeric formatting (e.g., “updated French labels” and “numeric values only (no currency symbols)”).",
+      "reason": "The BuildRequest explicitly lists as a non-goal: do not change UI labels/language/formatting unless required to fix the calculation mismatch. The diff summary indicates label/formatting changes beyond the calculation fix.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (truncated)"
+        "frontend-file-summaries.txt (FinancialOverview summary)"
       ]
     },
     {
-      "description": "Adjusted Rapport PDF calculations to reuse Monthly Listing utilities and added previous-month listing fetching logic for the report.",
-      "reason": "The BuildRequest does not mention changing the Rapport PDF page; changes appear unrelated to the specified requirements.",
+      "description": "Added/changed annual statistics computation on Dashboard (sum of 12 monthly “Revenus (Faits et Payés)” values) and added fetching monthly listings for all 12 months of the current year.",
+      "reason": "Not requested by REQ-1/REQ-2 (which focus specifically on making the “Dus” card match the Monthly Listing negative credit logic and ensuring required inputs for that calculation).",
       "evidence": [
-        "frontend/src/pages/RapportPDFPage.tsx",
-        "frontend/src/utils/monthlyListing.ts"
+        "frontend-file-summaries.txt (Dashboard.tsx summary)",
+        "frontend/src/pages/Dashboard.tsx (shows 12 monthlyListingQueries and previousMonthQueries)"
+      ]
+    },
+    {
+      "description": "Added a new “/client-database” route and “Base Client” navigation tab (and multiple other app-wide features summarized).",
+      "reason": "Not part of the BuildRequest scope, which is limited to fixing the Dashboard “Dus” calculation consistency with the Monthly Listing table.",
+      "evidence": [
+        "frontend-file-summaries.txt (App.tsx summary)",
+        "frontend-file-summaries.txt (Header.tsx summary)"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.66,
   "changed_files": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/AppointmentActionDialog.tsx",
-    "frontend/src/components/AppointmentDialog.tsx",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/pages/ClientDatabasePage.tsx",
-    "frontend/src/pages/RapportPDFPage.tsx",
-    "frontend/src/utils/monthlyListing.ts",
+    "frontend/src/pages/Dashboard.tsx",
     "project_state.json"
   ]
 }

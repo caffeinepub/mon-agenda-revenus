@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-dashboard-card-due-completed-appointments-current-month-so-that-its-computed-amount-exactly-matches-the-monthly-listing-table-s-total-negative-credit-for-the-same-month-e-g-february-must-show-0-when-february-s-monthly-listing-negative-credit-total-is-0",
-      "featureTitle": "Fix the Dashboard card \"Due (completed appointments; current month)\" so that its computed amount exactly matches the Monthly Listing table’s total \"Negative Credit\" for the same month (e.g., February must show 0 when February’s Monthly Listing \"Negative Credit\" total is 0).",
+      "featureId": "feature-update-the-dashboard-calculation-for-the-card-dus-rdv-faits-mois-courant-so-it-uses-the-exact-same-logic-as-the-listing-mensuel-table-total-for-cr-dit-n-gatif-i-e-the-monthlylisting-ts-excel-formula-calculation-instead-of-reading-backend-field-totalsolderestantnegatif",
+      "featureTitle": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
       "files": [
-        "frontend/src/utils/monthlyListing.ts"
+        "frontend/src/pages/Dashboard.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,10 +21,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-the-monthly-listing-previous-month-credit-carryover-so-that-for-every-month-of-the-year-including-from-march-onward-the-previous-month-credit-column-equals-the-ending-credit-balance-from-the-immediately-preceding-month-matching-the-preceding-month-s-displayed-credit-amounts",
-      "featureTitle": "Fix the Monthly Listing \"Previous month credit\" carryover so that for every month of the year (including from March onward), the \"Previous month credit\" column equals the ending credit/balance from the immediately preceding month, matching the preceding month’s displayed credit amounts.",
+      "featureId": "feature-ensure-the-dashboard-has-access-to-the-required-inputs-for-the-shared-negative-credit-calculation-current-month-listings-previous-month-listings-for-credit-carry-over-and-all-appointments-and-use-them-consistently-for-the-dus-card-computation",
+      "featureTitle": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
       "files": [
-        "frontend/src/utils/monthlyListing.ts"
+        "frontend/src/pages/Dashboard.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -36,45 +36,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-enforce-uniqueness-of-the-client-reference-field-during-both-client-creation-client-database-and-appointment-creation-if-a-reference-is-already-in-use-prevent-saving-and-show-a-clear-validation-error-indicating-the-reference-is-already-used",
-      "featureTitle": "Enforce uniqueness of the client reference field during both client creation (Client Database) and appointment creation. If a reference is already in use, prevent saving and show a clear validation error indicating the reference is already used.",
-      "files": [
-        "frontend/src/components/AppointmentDialog.tsx",
-        "frontend/src/pages/ClientDatabasePage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-on-the-client-database-page-add-a-totals-row-directly-under-the-table-headers-that-shows-the-grand-total-sum-of-the-paid-this-year-column-across-all-displayed-clients",
-      "featureTitle": "On the Client Database page, add a totals row directly under the table headers that shows the grand total (sum) of the \"Paid this year\" column across all displayed clients.",
-      "files": [
-        "frontend/src/pages/ClientDatabasePage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
       ],
       "confidence": "high"
     }

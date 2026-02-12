@@ -113,11 +113,9 @@ export default function AppointmentActionDialog({
       {showEditDialog && appointment && (
         <AppointmentDialog
           open={showEditDialog}
-          onOpenChange={(open) => {
-            if (!open) handleCloseEditDialog();
-          }}
+          onClose={handleCloseEditDialog}
           appointment={appointment}
-          demandeEdition={editMode || DemandeEdition.unique}
+          editMode={editMode || DemandeEdition.unique}
         />
       )}
 
