@@ -1,34 +1,93 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "New project",
+  "projectStateVersion": 5,
+  "summary": "Healthcare/appointment management application with dashboard for financial tracking",
   "architectural_notes": [
-    "Dashboard widget “Dus (RDV Faits ; Mois Courant)” appears to recalculate dues independently instead of reading the same monthly totals as “Listing Mensuel”, leading to inconsistent results."
+    "Dashboard page contains: 'Résumé Mensuels (Année en Cours)', 'Listing Mensuel', and financial summary cards",
+    "Financial calculations must reference existing data sections rather than independent calculations",
+    "Listing Mensuel has a month selector that controls which month's data is displayed and referenced by dashboard cards",
+    "Dashboard cards must reference the selected month from Listing Mensuel's month selector, not the current system date"
   ],
   "known_issues": [
-    "Bug: On “Tableau de bord”, the frame “Dus (RDV Faits ; Mois Courant)” shows an incorrect due sum for February (shows 4400) while February “Listing Mensuel” correctly shows 0 negative credit."
+    "Previous version (135) incorrectly modified design and removed fields when implementing month selector",
+    "Reverted to Version 134 due to calculation errors and unwanted design changes"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-dashboard-calculation-for-the-card-dus-rdv-faits-mois-courant-so-it-uses-the-exact-same-logic-as-the-listing-mensuel-table-total-for-cr-dit-n-gatif-i-e-the-monthlylisting-ts-excel-formula-calculation-instead-of-reading-backend-field-totalsolderestantnegatif",
-      "title": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+      "id": "feature-in-the-revenus-du-mois-en-cours-faits-et-pay-s-card-on-the-dashboard-page-retrieve-the-amount-for-the-currently-selected-month-from-the-month-selector-in-the-listing-mensuel-section-directly-from-the-r-sum-mensuels-ann-e-en-cours-section-instead-of-recalculating-it",
+      "title": "In the 'Revenus du Mois en Cours (Faits et Payés)' card on the Dashboard page, retrieve the amount for the currently selected month (from the month selector in the 'Listing Mensuel' section) directly from the 'Résumé Mensuels (Année en Cours)' section instead of recalculating it",
       "reqIds": [
-        "REQ-1"
+        "REQ-5"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-dashboard-has-access-to-the-required-inputs-for-the-shared-negative-credit-calculation-current-month-listings-previous-month-listings-for-credit-carry-over-and-all-appointments-and-use-them-consistently-for-the-dus-card-computation",
-      "title": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+      "id": "feature-in-the-dus-rdv-faits-mois-courant-card-on-the-dashboard-page-retrieve-the-total-from-the-cr-dit-n-gatif-column-of-the-listing-mensuel-section-for-the-currently-selected-month-instead-of-recalculating-it",
+      "title": "In the 'Dus (RDV Faits ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Crédit Négatif' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
       "reqIds": [
-        "REQ-2"
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-rdv-faits-pay-s-et-impay-s-mois-courant-card-on-the-dashboard-page-retrieve-the-total-from-the-revenus-faits-et-pay-s-column-of-the-listing-mensuel-section-for-the-currently-selected-month-instead-of-recalculating-it",
+      "title": "In the 'RDV faits (Payés et Impayés ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Revenus (Faits et Payés)' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
+      "reqIds": [
+        "REQ-7"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix Dashboard 'Due (Completed appointments; current month)' to match Monthly Listing negative credit total",
+  "new_feature_requests": [
+    {
+      "id": "AR-3",
+      "summary": "Recalculate 'Statistiques annuelles 2026' as sum of all months from 'Résumé Mensuels'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Recalculate 'Revenu moyen 2026' as average of completed months (previous months only) from 'Résumé Mensuels'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Recalculate the 'Statistiques annuelles 2026' card to sum all monthly amounts from the 'Résumé Mensuels (Année en Cours)' section",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Recalculate the 'Revenu moyen 2026' card to compute the average using only completed months (all months before the current month) from the 'Résumé Mensuels (Année en Cours)' section",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Récupérer le montant du mois sélectionné (via le sélecteur dans 'Listing Mensuel') depuis 'Résumé Mensuels' pour le cadre 'Revenus du Mois en Cours (Faits et Payés)'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Récupérer le total de la colonne 'Crédit Négatif' du 'Listing Mensuel' pour le mois sélectionné dans le cadre 'Dus (RDV Faits ; Mois Courant)'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Récupérer le total de la colonne 'Revenus (Faits et Payés)' du 'Listing Mensuel' pour le mois sélectionné dans le cadre 'RDV faits (Payés et Impayés ; Mois Courant)'",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Recalculate Dashboard Financial Metrics Using Existing Data Sources",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -8,7 +8,6 @@ import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
 import ProfileSetupModal from './components/ProfileSetupModal';
 import Dashboard from './pages/Dashboard';
-import ComptaMoisPage from './pages/ComptaMoisPage';
 import RapportPDFPage from './pages/RapportPDFPage';
 import ClientDatabasePage from './pages/ClientDatabasePage';
 import { Toaster } from '@/components/ui/sonner';
@@ -37,12 +36,6 @@ const dashboardRoute = createRoute({
   component: Dashboard,
 });
 
-const comptaMoisRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/compta-mois',
-  component: ComptaMoisPage,
-});
-
 const rapportPDFRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/rapport-pdf',
@@ -55,7 +48,7 @@ const clientDatabaseRoute = createRoute({
   component: ClientDatabasePage,
 });
 
-const routeTree = rootRoute.addChildren([dashboardRoute, comptaMoisRoute, rapportPDFRoute, clientDatabaseRoute]);
+const routeTree = rootRoute.addChildren([dashboardRoute, rapportPDFRoute, clientDatabaseRoute]);
 
 const router = createRouter({ routeTree });
 

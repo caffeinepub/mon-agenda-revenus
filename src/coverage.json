@@ -1,32 +1,46 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T18:16:57.907Z",
+  "generatedAt": "2026-02-23T09:37:30.061Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+        "id": "REQ-5",
+        "summary": "In the 'Revenus du Mois en Cours (Faits et Payés)' card on the Dashboard page, retrieve the amount for the currently selected month (from the month selector in the 'Listing Mensuel' section) directly from the 'Résumé Mensuels (Année en Cours)' section instead of recalculating it",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/components/FinancialOverview.tsx"
         ],
         "matchedFiles": [
           "frontend/src/pages/Dashboard.tsx"
         ]
       },
       {
-        "id": "REQ-2",
-        "summary": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+        "id": "REQ-6",
+        "summary": "In the 'Dus (RDV Faits ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Crédit Négatif' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/components/FinancialOverview.tsx"
+        ],
+        "matchedFiles": [
           "frontend/src/pages/Dashboard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "In the 'RDV faits (Payés et Impayés ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Revenus (Faits et Payés)' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/components/FinancialOverview.tsx"
         ],
         "matchedFiles": [
           "frontend/src/pages/Dashboard.tsx"
@@ -36,7 +50,6 @@
   },
   "changedFiles": [
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",

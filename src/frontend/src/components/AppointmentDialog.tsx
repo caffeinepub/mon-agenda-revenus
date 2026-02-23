@@ -164,20 +164,26 @@ export default function AppointmentDialog({
     const client = clientRecords.find((c) => c.id.toString() === clientId);
     if (client) {
       setSelectedClientId(clientId);
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         nomClient: client.clientName,
         referenceClient: client.referenceClient,
         numeroTelephone: client.phoneNumber,
         adresse: client.address,
         service: client.service,
-      });
+      }));
     }
     setClientSelectOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // In create mode, require client selection
+    if (!appointment && !selectedClientId) {
+      toast.error('Veuillez sélectionner un client existant dans la Base Client');
+      return;
+    }
 
     // Validate required fields
     if (!formData.referenceClient) {
@@ -392,16 +398,17 @@ export default function AppointmentDialog({
             </div>
           </div>
 
-          {/* Client Details (read-only when client selected) */}
+          {/* Client Details (read-only, populated by client selection) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nomClient">Nom du client *</Label>
               <Input
                 id="nomClient"
                 value={formData.nomClient}
-                onChange={(e) => setFormData({ ...formData, nomClient: e.target.value })}
-                required
-                disabled={isLoading || !!selectedClientId}
+                readOnly
+                disabled
+                className="bg-muted cursor-not-allowed"
+                placeholder="Sélectionnez un client ci-dessus"
               />
             </div>
             <div className="space-y-2">
@@ -409,11 +416,10 @@ export default function AppointmentDialog({
               <Input
                 id="referenceClient"
                 value={formData.referenceClient}
-                onChange={(e) =>
-                  setFormData({ ...formData, referenceClient: e.target.value })
-                }
-                required
-                disabled={isLoading || !!selectedClientId}
+                readOnly
+                disabled
+                className="bg-muted cursor-not-allowed"
+                placeholder="Sélectionnez un client ci-dessus"
               />
             </div>
           </div>
@@ -524,16 +530,7 @@ export default function AppointmentDialog({
               Annuler
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent mr-2" />
-                  Enregistrement...
-                </>
-              ) : appointment ? (
-                'Modifier'
-              ) : (
-                'Créer'
-              )}
+              {isLoading ? 'Enregistrement...' : appointment ? 'Modifier' : 'Créer'}
             </Button>
           </DialogFooter>
         </form>

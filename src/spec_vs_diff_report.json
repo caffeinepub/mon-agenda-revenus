@@ -1,35 +1,11 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T18:16:57.903Z",
-  "summary": "Dashboard.tsx was updated to compute the \"Dus (RDV Faits ; Mois Courant)\" value using shared monthly listing utilities (calculateTotalCreditNegatif) and to fetch the additional inputs (all appointments and previous-month listing data). The diff summary also indicates unrelated UI/label/formatting changes in FinancialOverview and additional dashboard computations/routes not requested by the BuildRequest.",
+  "generatedAt": "2026-02-23T09:37:30.058Z",
+  "summary": "All three requirements (REQ-5, REQ-6, REQ-7) are implemented in the Dashboard.tsx file. The financial overview data is now calculated by referencing existing sections: REQ-5 retrieves from monthlyRevenues array (Résumé Mensuels), REQ-6 retrieves from totals.totalSoldeRestantNegatif (Listing Mensuel), and REQ-7 retrieves from totals.totalFaitEtPaye (Listing Mensuel). All three cards update based on the selectedMonth state variable.",
   "missing_requirements": [],
-  "hallucinated_features": [
-    {
-      "description": "Changed FinancialOverview card labels and numeric formatting (e.g., “updated French labels” and “numeric values only (no currency symbols)”).",
-      "reason": "The BuildRequest explicitly lists as a non-goal: do not change UI labels/language/formatting unless required to fix the calculation mismatch. The diff summary indicates label/formatting changes beyond the calculation fix.",
-      "evidence": [
-        "frontend-file-summaries.txt (FinancialOverview summary)"
-      ]
-    },
-    {
-      "description": "Added/changed annual statistics computation on Dashboard (sum of 12 monthly “Revenus (Faits et Payés)” values) and added fetching monthly listings for all 12 months of the current year.",
-      "reason": "Not requested by REQ-1/REQ-2 (which focus specifically on making the “Dus” card match the Monthly Listing negative credit logic and ensuring required inputs for that calculation).",
-      "evidence": [
-        "frontend-file-summaries.txt (Dashboard.tsx summary)",
-        "frontend/src/pages/Dashboard.tsx (shows 12 monthlyListingQueries and previousMonthQueries)"
-      ]
-    },
-    {
-      "description": "Added a new “/client-database” route and “Base Client” navigation tab (and multiple other app-wide features summarized).",
-      "reason": "Not part of the BuildRequest scope, which is limited to fixing the Dashboard “Dus” calculation consistency with the Monthly Listing table.",
-      "evidence": [
-        "frontend-file-summaries.txt (App.tsx summary)",
-        "frontend-file-summaries.txt (Header.tsx summary)"
-      ]
-    }
-  ],
-  "confidence": 0.66,
+  "hallucinated_features": [],
+  "confidence": 0.95,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/pages/Dashboard.tsx",

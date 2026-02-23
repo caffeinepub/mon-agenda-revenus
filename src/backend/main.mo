@@ -136,8 +136,8 @@ actor {
     referenceClient : Text;
     nomClient : Text;
     nbRendezVousFaits : Nat;
-    totalSommesRecues : Nat;
     totalSommesDues : Nat;
+    totalSommesRecues : Nat;
     totalCredits : Nat;
   };
 
@@ -263,11 +263,6 @@ actor {
         return true;
       };
     };
-    for ((_, rv) in rendezVousMap.entries()) {
-      if (rv.owner == caller and rv.referenceClient == referenceClient) {
-        return true;
-      };
-    };
     false;
   };
 
@@ -283,6 +278,9 @@ actor {
     };
     if (clientRef.referenceClient == "") {
       Runtime.trap("La référence client est obligatoire");
+    };
+    if (not callerOwnsReferenceClient(caller, clientRef.referenceClient)) {
+      Runtime.trap("La référence client doit exister dans votre base client");
     };
   };
 
@@ -1418,4 +1416,3 @@ actor {
     clientMap.values().toArray();
   };
 };
-

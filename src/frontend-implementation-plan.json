@@ -1,35 +1,68 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Align Dashboard “Dus (RDV Faits ; Mois Courant)” with Monthly Listing Excel-formula Crédit Négatif total",
+  "title": "Fix dashboard financial calculations by referencing existing data sections",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Replace Dashboard “Dus (RDV Faits ; Mois Courant)” calculation to use the same monthlyListing.ts Excel-formula total for “Crédit Négatif” (absolute value) instead of totals.totalSoldeRestantNegatif.",
+      "id": "REQ-5",
+      "summary": "Reference monthly revenue directly from 'Résumé Mensuels' section instead of recalculating",
       "acceptanceCriteria": [
-        "On the Dashboard, the displayed value for \"Dus (RDV Faits ; Mois Courant)\" equals abs(totalCreditNegatif) computed using the same functions as MonthlyListingTable for the current month.",
-        "For February in the same dataset where the February Monthly Listing total row shows 0 for \"Crédit Négatif\", the Dashboard \"Dus (RDV Faits ; Mois Courant)\" card displays 0 (not 4400)."
+        "The 'Revenus du Mois en Cours (Faits et Payés)' card displays the exact amount shown for the selected month in the 'Résumé Mensuels (Année en Cours)' section",
+        "When the month selector in 'Listing Mensuel' changes, the amount updates to match the corresponding month in 'Résumé Mensuels'",
+        "No independent calculation is performed; the value is directly retrieved from the existing 'Résumé Mensuels' data"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/Dashboard.tsx",
           "operation": "modify",
-          "description": "Update the “Dus (RDV Faits ; Mois Courant)” computation to: (1) compute totalCreditNegatif for the current month using the shared monthlyListing.ts Excel-formula helpers (same as MonthlyListingTable’s totalCreditNegatif), including prior-month carry-over, and (2) display bigintAbs(totalCreditNegatif) as the card value instead of using TotauxListingMensuel.totalSoldeRestantNegatif."
+          "description": "Modify the FinancialOverview component to pass the monthly revenue value from MonthlySummarySection data for the selected month instead of calculating it independently. Extract the selected month from the month selector state and look up the corresponding value from the monthly summary data array. Ensure the value updates reactively when the month selector changes."
+        },
+        {
+          "path": "frontend/src/components/FinancialOverview.tsx",
+          "operation": "modify",
+          "description": "Update the first card ('Revenus du Mois en Cours (Faits et Payés)') to accept and display a prop value directly instead of performing any calculations. Remove any internal calculation logic for this card and replace it with the prop value passed from Dashboard."
         }
       ]
     },
     {
-      "id": "REQ-2",
-      "summary": "Ensure Dashboard consistently fetches and uses the same inputs as Monthly Listing for negative-credit computation (current month listings, previous month listings for carry-over, and all appointments), without changing other Dashboard card behavior.",
+      "id": "REQ-6",
+      "summary": "Reference 'Crédit Négatif' total from 'Listing Mensuel' instead of recalculating",
       "acceptanceCriteria": [
-        "The \"Dus\" card computation uses previous-month listing data in the same way the Monthly Listing table does (so months that depend on prior credit do not diverge between the card and the table).",
-        "No other Dashboard cards regress (\"RDV faits...\" still matches the Monthly Listing totalDuMois for the current month, and \"Revenus du Mois en Cours (Faits et Payés)\" remains unchanged)."
+        "The 'Dus (RDV Faits ; Mois Courant)' card displays the exact total shown in the 'Crédit Négatif' column footer of the 'Listing Mensuel' section",
+        "When the month selector in 'Listing Mensuel' changes, the amount updates to match the 'Crédit Négatif' total for that month",
+        "No independent calculation is performed; the value is directly retrieved from the existing 'Listing Mensuel' totals"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/Dashboard.tsx",
           "operation": "modify",
-          "description": "Add/adjust Dashboard data dependencies so the “Dus” calculation has: (a) current-month listing rows, (b) previous-month listing rows for the current month (including January→December prior year handling), and (c) all appointments; then compute the “Dus” card from these inputs using the same monthlyListing.ts functions used by MonthlyListingTable, while keeping existing logic for the other cards unchanged."
+          "description": "Modify the FinancialOverview component to pass the 'Crédit Négatif' total from MonthlyListingTable totals data for the selected month instead of calculating it independently. Extract this value from the TotauxListingMensuel data structure returned by the obtenirListingMensuel query. Ensure the value updates reactively when the month selector changes."
+        },
+        {
+          "path": "frontend/src/components/FinancialOverview.tsx",
+          "operation": "modify",
+          "description": "Update the second card ('Dus (RDV Faits ; Mois Courant)') to accept and display a prop value directly instead of performing any calculations. Remove any internal calculation logic for this card and replace it with the prop value passed from Dashboard representing the 'Crédit Négatif' total."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Reference 'Revenus (Faits et Payés)' total from 'Listing Mensuel' instead of recalculating",
+      "acceptanceCriteria": [
+        "The 'RDV faits (Payés et Impayés ; Mois Courant)' card displays the exact total shown in the 'Revenus (Faits et Payés)' column footer of the 'Listing Mensuel' section",
+        "When the month selector in 'Listing Mensuel' changes, the amount updates to match the 'Revenus (Faits et Payés)' total for that month",
+        "No independent calculation is performed; the value is directly retrieved from the existing 'Listing Mensuel' totals"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Modify the FinancialOverview component to pass the 'Revenus (Faits et Payés)' total from MonthlyListingTable totals data for the selected month instead of calculating it independently. Extract this value from the TotauxListingMensuel data structure returned by the obtenirListingMensuel query. Ensure the value updates reactively when the month selector changes."
+        },
+        {
+          "path": "frontend/src/components/FinancialOverview.tsx",
+          "operation": "modify",
+          "description": "Update the third card ('RDV faits (Payés et Impayés ; Mois Courant)') to accept and display a prop value directly instead of performing any calculations. Remove any internal calculation logic for this card and replace it with the prop value passed from Dashboard representing the 'Revenus (Faits et Payés)' total."
         }
       ]
     }

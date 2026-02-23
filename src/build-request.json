@@ -1,67 +1,80 @@
 {
   "kind": "build_request",
-  "title": "Fix Dashboard 'Due (Completed appointments; current month)' to match Monthly Listing negative credit total",
-  "priority": "normal",
+  "title": "Fix dashboard financial calculations by referencing existing data sections",
+  "projectName": "Revenue Tracker",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+      "id": "REQ-5",
+      "text": "In the 'Revenus du Mois en Cours (Faits et Payés)' card on the Dashboard page, retrieve the amount for the currently selected month (from the month selector in the 'Listing Mensuel' section) directly from the 'Résumé Mensuels (Année en Cours)' section instead of recalculating it",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4",
-          "msg-6"
+          "msg-user-latest"
         ],
         "quotes": [
-          "Page « Tableau de bord », Cadre « Dus (RDV Faits ; Mois Courant) » le calcul de la somme due du mois courant au mois de février  n’est pas correct.",
-          "Dans le tableau «  Listing Mensuel » du mois de février, il y à zéro en crédit négatif, c’est correct mais pas dans le Cadre « Dus (RDV Faits ; Mois Courant) » il y a 4400 et cela n’est pas correct."
+          "Dans le cadre « Revenus du Mois en Cours (Faits et Payés) » il faut récupérer le montant du mois en cours dans le cadre « Résumé Mensuels (Année en Cours) », le mois en cours est celui affiché par le cadre \"Listing Mensuel\""
         ]
       },
       "acceptanceCriteria": [
-        "On the Dashboard, the displayed value for \"Dus (RDV Faits ; Mois Courant)\" equals abs(totalCreditNegatif) computed using the same functions as MonthlyListingTable for the current month.",
-        "For February in the same dataset where the February Monthly Listing total row shows 0 for \"Crédit Négatif\", the Dashboard \"Dus (RDV Faits ; Mois Courant)\" card displays 0 (not 4400)."
+        "The 'Revenus du Mois en Cours (Faits et Payés)' card displays the exact amount shown for the selected month in the 'Résumé Mensuels (Année en Cours)' section",
+        "When the month selector in 'Listing Mensuel' changes, the amount updates to match the corresponding month in 'Résumé Mensuels'",
+        "No independent calculation is performed; the value is directly retrieved from the existing 'Résumé Mensuels' data"
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+      "id": "REQ-6",
+      "text": "In the 'Dus (RDV Faits ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Crédit Négatif' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4",
-          "msg-6"
+          "msg-user-latest"
         ],
         "quotes": [
-          "Dans le tableau «  Listing Mensuel » du mois de février, il y à zéro en crédit négatif, c’est correct mais pas dans le Cadre « Dus (RDV Faits ; Mois Courant) » il y a 4400 et cela n’est pas correct.",
-          "Tu veux que je corrige maintenant ? / Oui"
+          "Dans le cadre « Dus (RDV Faits ; Mois Courant) » il faut récupérer uniquement le total du montant dus du mois en cours, sans recalculer, juste prendre le total dans le cadre « Listing Mensuel » dans la colonne « Crédit Négatif »"
         ]
       },
       "acceptanceCriteria": [
-        "The \"Dus\" card computation uses previous-month listing data in the same way the Monthly Listing table does (so months that depend on prior credit do not diverge between the card and the table).",
-        "No other Dashboard cards regress (\"RDV faits...\" still matches the Monthly Listing totalDuMois for the current month, and \"Revenus du Mois en Cours (Faits et Payés)\" remains unchanged)."
+        "The 'Dus (RDV Faits ; Mois Courant)' card displays the exact total shown in the 'Crédit Négatif' column footer of the 'Listing Mensuel' section",
+        "When the month selector in 'Listing Mensuel' changes, the amount updates to match the 'Crédit Négatif' total for that month",
+        "No independent calculation is performed; the value is directly retrieved from the existing 'Listing Mensuel' totals"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "In the 'RDV faits (Payés et Impayés ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Revenus (Faits et Payés)' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-latest"
+        ],
+        "quotes": [
+          "Dans le cadre « RDV faits (Payés et Impayés ; Mois Courant) » il faut récupérer uniquement le total du montant dus du mois courant, sans recalculer, juste prendre le total dans le cadre « Listing Mensuel » dans la colonne « Revenus (Faits et Payés) »"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The 'RDV faits (Payés et Impayés ; Mois Courant)' card displays the exact total shown in the 'Revenus (Faits et Payés)' column footer of the 'Listing Mensuel' section",
+        "When the month selector in 'Listing Mensuel' changes, the amount updates to match the 'Revenus (Faits et Payés)' total for that month",
+        "No independent calculation is performed; the value is directly retrieved from the existing 'Listing Mensuel' totals"
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (compose existing UI components only).",
-    "Do not modify immutable frontend hook files listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
+    "Do not modify any calculations other than the three specified in the requirements",
+    "Preserve all existing design including line widths and heights",
+    "Do not modify the design or layout of any components",
+    "All values must be retrieved from existing sections, not recalculated independently",
+    "The month selector in the 'Listing Mensuel' section must be the single source of truth for which month is currently selected"
   ],
   "nonGoals": [
-    "Do not change the UI labels, language, or formatting unless required to fix the calculation mismatch.",
-    "Do not change backend financial schemas or how TotauxListingMensuel.totalSoldeRestantNegatif is computed (this fix is to make the Dashboard card consistent with the Monthly Listing table)."
+    "Modifying the month selector implementation or its visual design",
+    "Changing any other financial calculations on the dashboard",
+    "Modifying the structure or layout of the 'Résumé Mensuels' or 'Listing Mensuel' sections",
+    "Adding new cards or sections to the dashboard",
+    "Changing the design, styling, or dimensions of any existing components"
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

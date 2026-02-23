@@ -1,16 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import type { DomaineListingMensuel, TotauxListingMensuel, RendezVous } from '../backend';
 import {
-  calculateRevenusFaitsEtPayes,
+  calculateMonthlyListingRow,
   calculateTotalRevenusFaitsEtPayes,
-  calculateToutesSommesRecues,
-  calculateTotalToutesSommesRecues,
-  getPreviousMonthCredit,
-  calculateCreditPositif,
-  calculateCreditNegatif,
+  calculateTotalRevenusPlusAvances,
   calculateTotalCreditPositif,
   calculateTotalCreditNegatif,
+  type MonthlyListingRow,
 } from '../utils/monthlyListing';
 
 interface MonthlyListingTableProps {
@@ -19,7 +17,6 @@ interface MonthlyListingTableProps {
   allAppointments: RendezVous[];
   year: number;
   month: number;
-  previousMonthListings?: DomaineListingMensuel[];
 }
 
 export default function MonthlyListingTable({
@@ -28,8 +25,10 @@ export default function MonthlyListingTable({
   allAppointments,
   year,
   month,
-  previousMonthListings,
 }: MonthlyListingTableProps) {
+  // State for manual January credit overrides (per client)
+  const [januaryCredits, setJanuaryCredits] = useState<Record<string, bigint>>({});
+
   const formatNumber = (amount: bigint | number) => {
     return Number(amount).toLocaleString('fr-FR');
   };
@@ -46,130 +45,121 @@ export default function MonthlyListingTable({
     );
   };
 
-  // Calculate totals using Excel formulas
-  const totalRevenusFaitsEtPayes = useMemo(() => {
-    return calculateTotalRevenusFaitsEtPayes(listings, allAppointments, year, month, previousMonthListings);
-  }, [listings, allAppointments, year, month, previousMonthListings]);
+  // Calculate all rows in a single memoized pass
+  const calculatedRows = useMemo<MonthlyListingRow[]>(() => {
+    return listings.map(client => {
+      const manualCredit = januaryCredits[client.referenceClient];
+      return calculateMonthlyListingRow(
+        client.referenceClient,
+        client.nomClient,
+        allAppointments,
+        year,
+        month,
+        manualCredit
+      );
+    });
+  }, [listings, allAppointments, year, month, januaryCredits]);
 
-  const totalToutesSommesRecues = useMemo(() => {
-    return calculateTotalToutesSommesRecues(listings, allAppointments, year, month);
-  }, [listings, allAppointments, year, month]);
+  // Calculate totals from calculated rows
+  const totalNbRdv = useMemo(() => {
+    return calculatedRows.reduce((sum, row) => sum + row.nbRendezVousFaits, 0);
+  }, [calculatedRows]);
+
+  const totalRdvFaits = useMemo(() => {
+    return calculatedRows.reduce((sum, row) => sum + row.rdvFaits, BigInt(0));
+  }, [calculatedRows]);
+
+  const totalRevenusFaitsEtPayes = useMemo(() => {
+    return calculateTotalRevenusFaitsEtPayes(calculatedRows);
+  }, [calculatedRows]);
+
+  const totalRevenusPlusAvances = useMemo(() => {
+    return calculateTotalRevenusPlusAvances(calculatedRows);
+  }, [calculatedRows]);
 
   const totalCreditPositif = useMemo(() => {
-    return calculateTotalCreditPositif(listings, allAppointments, year, month, previousMonthListings);
-  }, [listings, allAppointments, year, month, previousMonthListings]);
+    return calculateTotalCreditPositif(calculatedRows);
+  }, [calculatedRows]);
 
   const totalCreditNegatif = useMemo(() => {
-    return calculateTotalCreditNegatif(listings, allAppointments, year, month, previousMonthListings);
-  }, [listings, allAppointments, year, month, previousMonthListings]);
+    return calculateTotalCreditNegatif(calculatedRows);
+  }, [calculatedRows]);
+
+  const handleJanuaryCreditChange = (referenceClient: string, value: string) => {
+    const numValue = value.replace(/[^0-9-]/g, '');
+    if (numValue === '' || numValue === '-') {
+      setJanuaryCredits(prev => {
+        const next = { ...prev };
+        delete next[referenceClient];
+        return next;
+      });
+    } else {
+      const bigintValue = BigInt(numValue);
+      setJanuaryCredits(prev => ({
+        ...prev,
+        [referenceClient]: bigintValue,
+      }));
+    }
+  };
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Réf
-            </TableHead>
-            <TableHead className="font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Nom
-            </TableHead>
-            <TableHead className="text-center font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Nbr
-            </TableHead>
-            <TableHead className="text-right font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Crédit du mois précédent
-            </TableHead>
-            <TableHead className="text-right font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              RDV Faits (Payés + impayés)
-            </TableHead>
-            <TableHead className="text-right font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Revenus (Faits et Payés)
-            </TableHead>
-            <TableHead className="text-right font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Revenus + Avances (RDV Payés + Avances)
-            </TableHead>
-            <TableHead className="text-right font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Crédit Positif
-            </TableHead>
-            <TableHead className="text-right font-semibold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-              Crédit Négatif
-            </TableHead>
+            <TableHead className="table-header">Réf</TableHead>
+            <TableHead className="table-header">Nom</TableHead>
+            <TableHead className="text-right table-header">Nbr</TableHead>
+            <TableHead className="text-right table-header">Crédit du mois précédent</TableHead>
+            <TableHead className="text-right table-header">RDV Faits (Payés + impayés)</TableHead>
+            <TableHead className="text-right table-header">Revenus (Faits et Payés)</TableHead>
+            <TableHead className="text-right table-header">Revenus + Avances (RDV Payés + Avances)</TableHead>
+            <TableHead className="text-right table-header">Crédit Positif</TableHead>
+            <TableHead className="text-right table-header">Crédit Négatif</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {/* Total Row */}
-          {totals && (
-            <TableRow className="bg-muted/50 font-bold">
-              <TableCell colSpan={2} className="font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                TOTAL
+          <TableRow className="bg-muted/50">
+            <TableCell colSpan={2} className="table-header">TOTAL</TableCell>
+            <TableCell className="text-right sum-total">{totalNbRdv}</TableCell>
+            <TableCell className="text-right sum-total">-</TableCell>
+            <TableCell className="text-right sum-total">{formatNumber(totalRdvFaits)}</TableCell>
+            <TableCell className="text-right sum-total">{formatNumber(totalRevenusFaitsEtPayes)}</TableCell>
+            <TableCell className="text-right sum-total">{formatNumber(totalRevenusPlusAvances)}</TableCell>
+            <TableCell className="text-right sum-total">{formatBalance(totalCreditPositif)}</TableCell>
+            <TableCell className="text-right sum-total">{formatBalance(totalCreditNegatif)}</TableCell>
+          </TableRow>
+
+          {/* Client Rows */}
+          {calculatedRows.map((row) => (
+            <TableRow key={row.referenceClient}>
+              <TableCell className="table-data">{row.referenceClient}</TableCell>
+              <TableCell className="table-data">{row.nomClient}</TableCell>
+              <TableCell className="text-right table-data">{row.nbRendezVousFaits}</TableCell>
+              <TableCell className="text-right table-data">
+                {month === 1 ? (
+                  <Input
+                    type="text"
+                    value={januaryCredits[row.referenceClient]?.toString() ?? '0'}
+                    onChange={(e) => handleJanuaryCreditChange(row.referenceClient, e.target.value)}
+                    className="w-24 h-6 table-data text-right"
+                  />
+                ) : (
+                  formatBalance(row.creditDuMoisPrecedent)
+                )}
               </TableCell>
-              <TableCell className="text-center font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                {Number(totals.totalNbRendezVousFaits)}
+              <TableCell className="text-right table-data">{formatNumber(row.rdvFaits)}</TableCell>
+              <TableCell className="text-right table-data">{formatNumber(row.revenusFaitsEtPayes)}</TableCell>
+              <TableCell className="text-right table-data">{formatNumber(row.revenusPlusAvances)}</TableCell>
+              <TableCell className="text-right table-data">
+                {row.creditPositif > BigInt(0) ? formatBalance(row.creditPositif) : '0'}
               </TableCell>
-              <TableCell className="text-right font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                -
-              </TableCell>
-              <TableCell className="text-right font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                {formatNumber(totals.totalDuMois)}
-              </TableCell>
-              <TableCell className="text-right font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                {formatNumber(totalRevenusFaitsEtPayes)}
-              </TableCell>
-              <TableCell className="text-right font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                {formatNumber(totalToutesSommesRecues)}
-              </TableCell>
-              <TableCell className="text-right font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                {formatBalance(totalCreditPositif, false)}
-              </TableCell>
-              <TableCell className="text-right font-bold" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                {formatBalance(totalCreditNegatif, false)}
+              <TableCell className="text-right table-data">
+                {row.creditNegatif < BigInt(0) ? formatBalance(row.creditNegatif) : '0'}
               </TableCell>
             </TableRow>
-          )}
-          
-          {/* Client Rows */}
-          {listings.map((client) => {
-            const creditPrecedent = getPreviousMonthCredit(month, year, client.referenceClient, previousMonthListings);
-            const revenusPlusAvances = calculateToutesSommesRecues(client.referenceClient, allAppointments, year, month);
-            const rdvFaits = client.totalDuMois;
-            
-            const revenus = calculateRevenusFaitsEtPayes(revenusPlusAvances, rdvFaits, creditPrecedent);
-            const creditPositif = calculateCreditPositif(creditPrecedent, revenusPlusAvances, rdvFaits);
-            const creditNegatif = calculateCreditNegatif(creditPrecedent, revenusPlusAvances, rdvFaits);
-            
-            return (
-              <TableRow key={client.referenceClient}>
-                <TableCell className="text-muted-foreground font-medium" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {client.referenceClient}
-                </TableCell>
-                <TableCell className="font-medium" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {client.nomClient}
-                </TableCell>
-                <TableCell className="text-center" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {Number(client.nbRendezVousFaits)}
-                </TableCell>
-                <TableCell className="text-right" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {formatBalance(creditPrecedent)}
-                </TableCell>
-                <TableCell className="text-right" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {formatNumber(rdvFaits)}
-                </TableCell>
-                <TableCell className="text-right" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {formatNumber(revenus)}
-                </TableCell>
-                <TableCell className="text-right" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {formatNumber(revenusPlusAvances)}
-                </TableCell>
-                <TableCell className="text-right" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {creditPositif > BigInt(0) ? formatBalance(creditPositif, false) : '0'}
-                </TableCell>
-                <TableCell className="text-right" style={{ fontFamily: 'Cambria, serif', fontSize: '10px' }}>
-                  {creditNegatif < BigInt(0) ? formatBalance(creditNegatif, false) : '0'}
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          ))}
         </TableBody>
       </Table>
     </div>

@@ -216,18 +216,16 @@ export default function ClientDatabasePage() {
       }));
 
       const csvContent = arrayToCsv(exportData, [
-        { key: 'referenceClient', label: 'Référence Client' },
+        { key: 'referenceClient', label: 'Référence' },
         { key: 'clientName', label: 'Nom' },
         { key: 'phoneNumber', label: 'Téléphone' },
         { key: 'address', label: 'Adresse' },
         { key: 'service', label: 'Service' },
         { key: 'notes', label: 'Notes' },
-        { key: 'paidThisYear', label: 'Payé cette année' },
+        { key: 'paidThisYear', label: 'Payé en 2026' },
       ]);
 
-      const timestamp = new Date().toISOString().split('T')[0];
-      downloadCsv(csvContent, `base-client-${timestamp}.csv`);
-      
+      downloadCsv(csvContent, 'clients-export.csv');
       toast.success('Export CSV réussi');
     } catch (error) {
       console.error('Error exporting CSV:', error);
@@ -235,279 +233,248 @@ export default function ClientDatabasePage() {
     }
   };
 
-  const isLoading = addClient.isPending || updateClient.isPending || deleteClient.isPending;
+  if (clientsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="table-data text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Base Client</h1>
-          <p className="text-muted-foreground">
-            Gérez vos clients et consultez leurs informations
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-4 py-8">
+        <h1 className="frame-title text-3xl mb-8">Base de données clients</h1>
 
-      {/* Client Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{editingClientId ? 'Modifier le client' : 'Nouveau client'}</CardTitle>
-          <CardDescription>
-            {editingClientId
-              ? 'Modifiez les informations du client sélectionné'
-              : 'Ajoutez un nouveau client à votre base'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="referenceClient">Référence Client *</Label>
-                <Input
-                  id="referenceClient"
-                  placeholder="REF-2026-001"
-                  value={formData.referenceClient}
-                  onChange={(e) =>
-                    setFormData({ ...formData, referenceClient: e.target.value })
-                  }
-                  required
-                  disabled={isLoading || !!editingClientId}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="clientName">Nom *</Label>
-                <Input
-                  id="clientName"
-                  placeholder="Jean Dupont"
-                  value={formData.clientName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, clientName: e.target.value })
-                  }
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Numéro de téléphone</Label>
-                <Input
-                  id="phoneNumber"
-                  placeholder="+33 6 12 34 56 78"
-                  value={formData.phoneNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phoneNumber: e.target.value })
-                  }
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Adresse</Label>
-                <Input
-                  id="address"
-                  placeholder="123 Rue de la Paix, Paris"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="service">Service</Label>
-                <Input
-                  id="service"
-                  placeholder="Consultation"
-                  value={formData.service}
-                  onChange={(e) =>
-                    setFormData({ ...formData, service: e.target.value })
-                  }
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Notes supplémentaires..."
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                disabled={isLoading}
-                rows={3}
-              />
-            </div>
-
-            <ClientPhotoField
-              value={formData.photo}
-              onChange={(photo) => setFormData({ ...formData, photo })}
-              disabled={isLoading}
-            />
-
-            <div className="flex gap-2">
-              <Button type="submit" disabled={isLoading} className="gap-2">
-                {isLoading ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                    Enregistrement...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    {editingClientId ? 'Modifier' : 'Ajouter'}
-                  </>
-                )}
-              </Button>
-              {editingClientId && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetForm}
-                  disabled={isLoading}
-                  className="gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Annuler
-                </Button>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Clients Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Liste des clients</CardTitle>
-              <CardDescription>
-                Cliquez sur une ligne pour modifier un client
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Form Section */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="frame-title">
+                {editingClientId ? 'Modifier le client' : 'Ajouter un client'}
+              </CardTitle>
+              <CardDescription className="table-data">
+                {editingClientId
+                  ? 'Modifiez les informations du client sélectionné'
+                  : 'Remplissez le formulaire pour ajouter un nouveau client'}
               </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setSortAlphabetically(!sortAlphabetically)}
-                className="gap-2"
-                disabled={clientsLoading || clients.length === 0}
-              >
-                <ArrowUpDown className="h-4 w-4" />
-                {sortAlphabetically ? 'Ordre original' : 'Trier A-Z'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleExportCsv}
-                className="gap-2"
-                disabled={clientsLoading || clients.length === 0}
-              >
-                <Download className="h-4 w-4" />
-                Exporter
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {clientsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-          ) : sortedClients.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Aucun client enregistré
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Photo</TableHead>
-                    <TableHead>Référence</TableHead>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Téléphone</TableHead>
-                    <TableHead>Adresse</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead className="text-right">Payé cette année</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedClients.map((client) => {
-                    const paidThisYear = calculatePaidThisYear(client.referenceClient);
-                    return (
-                      <TableRow
-                        key={client.id.toString()}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleClientSelect(client)}
-                      >
-                        <TableCell>
-                          {client.photo ? (
-                            <img
-                              src={photoToUrl(client.photo)}
-                              alt={client.clientName}
-                              className="w-10 h-12 object-cover rounded border"
-                              style={{ aspectRatio: '35/45' }}
-                            />
-                          ) : (
-                            <div className="w-10 h-12 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">
-                              Aucune
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {client.referenceClient}
-                        </TableCell>
-                        <TableCell>{client.clientName}</TableCell>
-                        <TableCell>{client.phoneNumber || '-'}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {client.address || '-'}
-                        </TableCell>
-                        <TableCell>{client.service || '-'}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {client.notes || '-'}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {paidThisYear.toFixed(0)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(client.id);
-                            }}
-                            disabled={isLoading}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="clientName" className="table-header">Nom du client *</Label>
+                  <Input
+                    id="clientName"
+                    value={formData.clientName}
+                    onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                    required
+                    className="table-data"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="referenceClient" className="table-header">Référence client *</Label>
+                  <Input
+                    id="referenceClient"
+                    value={formData.referenceClient}
+                    onChange={(e) => setFormData({ ...formData, referenceClient: e.target.value })}
+                    required
+                    disabled={!!editingClientId}
+                    className="table-data"
+                  />
+                  {editingClientId && (
+                    <p className="table-data text-muted-foreground mt-1">
+                      La référence ne peut pas être modifiée
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="phoneNumber" className="table-header">Téléphone</Label>
+                  <Input
+                    id="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    className="table-data"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="address" className="table-header">Adresse</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="table-data"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="service" className="table-header">Service</Label>
+                  <Input
+                    id="service"
+                    value={formData.service}
+                    onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                    className="table-data"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="notes" className="table-header">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    rows={3}
+                    className="table-data"
+                  />
+                </div>
+
+                <ClientPhotoField
+                  value={formData.photo}
+                  onChange={(photo) => setFormData({ ...formData, photo })}
+                />
+
+                <div className="flex gap-2">
+                  <Button type="submit" className="flex-1 table-data">
+                    <Save className="h-4 w-4 mr-2" />
+                    {editingClientId ? 'Mettre à jour' : 'Ajouter'}
+                  </Button>
+                  {editingClientId && (
+                    <Button type="button" variant="outline" onClick={resetForm} className="table-data">
+                      <X className="h-4 w-4 mr-2" />
+                      Annuler
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Table Section */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="frame-title">Liste des clients</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortAlphabetically(!sortAlphabetically)}
+                    className="table-data"
+                  >
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    {sortAlphabetically ? 'Ordre original' : 'Tri A-Z'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportCsv}
+                    disabled={sortedClients.length === 0}
+                    className="table-data"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="table-header">Photo</TableHead>
+                      <TableHead className="table-header">Nom</TableHead>
+                      <TableHead className="table-header">Référence</TableHead>
+                      <TableHead className="table-header">Téléphone</TableHead>
+                      <TableHead className="table-header">Adresse</TableHead>
+                      <TableHead className="table-header">Service</TableHead>
+                      <TableHead className="table-header">Notes</TableHead>
+                      <TableHead className="text-right table-header">Payé en 2026</TableHead>
+                      <TableHead className="table-header">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedClients.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center table-data text-muted-foreground">
+                          Aucun client enregistré
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    ) : (
+                      sortedClients.map((client) => (
+                        <TableRow
+                          key={client.id.toString()}
+                          className={editingClientId === client.id ? 'bg-muted/50' : ''}
+                        >
+                          <TableCell className="table-data">
+                            {client.photo ? (
+                              <img
+                                src={photoToUrl(client.photo)}
+                                alt={client.clientName}
+                                className="w-10 h-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-10 h-12 bg-muted rounded flex items-center justify-center table-data">
+                                -
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="table-data">{client.clientName}</TableCell>
+                          <TableCell className="table-data">{client.referenceClient}</TableCell>
+                          <TableCell className="table-data">{client.phoneNumber || '-'}</TableCell>
+                          <TableCell className="table-data">{client.address || '-'}</TableCell>
+                          <TableCell className="table-data">{client.service || '-'}</TableCell>
+                          <TableCell className="table-data max-w-xs truncate" title={client.notes}>
+                            {client.notes || '-'}
+                          </TableCell>
+                          <TableCell className="text-right table-data">
+                            {calculatePaidThisYear(client.referenceClient).toLocaleString('fr-FR')}
+                          </TableCell>
+                          <TableCell className="table-data">
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleClientSelect(client)}
+                                className="table-data"
+                              >
+                                Modifier
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteClick(client.id)}
+                                className="table-data"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="frame-title">Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription className="table-data">
               Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel className="table-data">Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="table-data">
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -3,7 +3,7 @@ import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
-import { Calendar, LogOut, User, LayoutDashboard, Plus, Calculator, FileBarChart, Users } from 'lucide-react';
+import { Calendar, LogOut, User, LayoutDashboard, Plus, FileBarChart, Users } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,15 +59,6 @@ export default function Header({ userName }: HeaderProps) {
                   Tableau de bord
                 </Button>
                 <Button
-                  variant={currentPath === '/compta-mois' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => navigate({ to: '/compta-mois' })}
-                >
-                  <Calculator className="h-4 w-4" />
-                  Compta Mois
-                </Button>
-                <Button
                   variant={currentPath === '/rapport-pdf' ? 'default' : 'ghost'}
                   size="sm"
                   className="gap-2"
@@ -111,10 +102,6 @@ export default function Header({ userName }: HeaderProps) {
                     <DropdownMenuItem onClick={() => navigate({ to: '/' })}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Tableau de bord
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate({ to: '/compta-mois' })}>
-                      <Calculator className="mr-2 h-4 w-4" />
-                      Compta Mois
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: '/rapport-pdf' })}>
                       <FileBarChart className="mr-2 h-4 w-4" />

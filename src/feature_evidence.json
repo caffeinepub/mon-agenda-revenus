@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-dashboard-calculation-for-the-card-dus-rdv-faits-mois-courant-so-it-uses-the-exact-same-logic-as-the-listing-mensuel-table-total-for-cr-dit-n-gatif-i-e-the-monthlylisting-ts-excel-formula-calculation-instead-of-reading-backend-field-totalsolderestantnegatif",
-      "featureTitle": "Update the Dashboard calculation for the card \"Dus (RDV Faits ; Mois Courant)\" so it uses the exact same logic as the \"Listing Mensuel\" table total for \"Crédit Négatif\" (i.e., the monthlyListing.ts Excel-formula calculation), instead of reading backend field totalSoldeRestantNegatif.",
+      "featureId": "feature-in-the-revenus-du-mois-en-cours-faits-et-pay-s-card-on-the-dashboard-page-retrieve-the-amount-for-the-currently-selected-month-from-the-month-selector-in-the-listing-mensuel-section-directly-from-the-r-sum-mensuels-ann-e-en-cours-section-instead-of-recalculating-it",
+      "featureTitle": "In the 'Revenus du Mois en Cours (Faits et Payés)' card on the Dashboard page, retrieve the amount for the currently selected month (from the month selector in the 'Listing Mensuel' section) directly from the 'Résumé Mensuels (Année en Cours)' section instead of recalculating it",
       "files": [
         "frontend/src/pages/Dashboard.tsx"
       ],
@@ -16,13 +16,13 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-5"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-dashboard-has-access-to-the-required-inputs-for-the-shared-negative-credit-calculation-current-month-listings-previous-month-listings-for-credit-carry-over-and-all-appointments-and-use-them-consistently-for-the-dus-card-computation",
-      "featureTitle": "Ensure the Dashboard has access to the required inputs for the shared negative-credit calculation (current month listings, previous month listings for credit carry-over, and all appointments), and use them consistently for the \"Dus\" card computation.",
+      "featureId": "feature-in-the-dus-rdv-faits-mois-courant-card-on-the-dashboard-page-retrieve-the-total-from-the-cr-dit-n-gatif-column-of-the-listing-mensuel-section-for-the-currently-selected-month-instead-of-recalculating-it",
+      "featureTitle": "In the 'Dus (RDV Faits ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Crédit Négatif' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
       "files": [
         "frontend/src/pages/Dashboard.tsx"
       ],
@@ -35,7 +35,26 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-the-rdv-faits-pay-s-et-impay-s-mois-courant-card-on-the-dashboard-page-retrieve-the-total-from-the-revenus-faits-et-pay-s-column-of-the-listing-mensuel-section-for-the-currently-selected-month-instead-of-recalculating-it",
+      "featureTitle": "In the 'RDV faits (Payés et Impayés ; Mois Courant)' card on the Dashboard page, retrieve the total from the 'Revenus (Faits et Payés)' column of the 'Listing Mensuel' section for the currently selected month instead of recalculating it",
+      "files": [
+        "frontend/src/pages/Dashboard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
       ],
       "confidence": "high"
     }
