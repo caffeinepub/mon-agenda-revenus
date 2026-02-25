@@ -1,0 +1,23 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T08:46:42.827Z",
+  "summary": "The diff modifies RapportPDFPage.tsx to add report type selection (mensuel/annuel), a year dropdown with years 2022-2026, and annual aggregation logic. REQ-1 and REQ-2 appear fully implemented. REQ-3 is partially implemented — the aggregation logic is present and calls existing calculation functions per month without modifying them, but the diff is truncated so it is unclear whether the annual report renders the same structural sections/tables/frames as the monthly report in the UI output.",
+  "missing_requirements": [
+    {
+      "id": "REQ-3",
+      "requirement": "The annual report must render the same structural sections/tables/frames as the monthly report (appointment listings, revenue summaries, financial tables) in the PDF output.",
+      "reason": "The diff is truncated after the annualCalculatedRows computation and the decemberRow aggregation logic. It is not possible to confirm whether the JSX/render section actually displays the same structural sections/tables/frames for the annual report as for the monthly report, since that portion of the file was cut off.",
+      "evidence": [
+        "frontend/src/pages/RapportPDFPage.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [],
+  "confidence": 0.62,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/pages/RapportPDFPage.tsx",
+    "project_state.json"
+  ]
+}

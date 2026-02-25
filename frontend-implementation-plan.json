@@ -1,0 +1,58 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Add annual report selection to PDF Report page",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Add report type selector to RapportPDFPage allowing users to choose between Monthly Report and Annual Report modes without changing existing monthly report behavior",
+      "acceptanceCriteria": [
+        "A report type selector (radio buttons, tabs, or dropdown) is visible on the PDF Report page.",
+        "Selecting 'Monthly Report' shows the existing month selector and monthly report — behavior is unchanged.",
+        "Selecting 'Annual Report' hides the month selector and shows a year selector instead.",
+        "No existing calculation logic is modified."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/RapportPDFPage.tsx",
+          "operation": "modify",
+          "description": "Add a report type selector (radio button group or tabs) above the existing month selector that toggles between 'Monthly Report' and 'Annual Report' modes. When 'Monthly Report' is selected, show the existing month selector and preserve all existing monthly report rendering logic. When 'Annual Report' is selected, hide the month selector and show the year selector instead. Use local state to track the selected report type and conditionally render the appropriate selector and report content."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add year dropdown selector containing years 2022-2026 that appears when Annual Report mode is active",
+      "acceptanceCriteria": [
+        "A year dropdown appears when 'Annual Report' mode is active.",
+        "The dropdown contains exactly: 2022, 2023, 2024, 2025, 2026.",
+        "Changing the year updates the annual report content accordingly."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/RapportPDFPage.tsx",
+          "operation": "modify",
+          "description": "Add a year dropdown selector that renders when the report type is 'Annual Report'. Populate the dropdown with exactly five years: 2022, 2023, 2024, 2025, and 2026. Store the selected year in local state. When the year changes, trigger re-computation of the annual report data using the newly selected year. Position the year selector in the same layout area where the month selector appears for monthly reports."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Render annual report with same sections as monthly report but aggregated across all 12 months of selected year by summing monthly values without modifying existing calculation functions",
+      "acceptanceCriteria": [
+        "The annual report renders the same structural sections as the monthly report.",
+        "Data is aggregated across all 12 months of the selected year.",
+        "Annual totals are computed as the sum of values across all 12 months.",
+        "No existing calculation functions in monthlyListing.ts, timeRange.ts, or elsewhere are modified.",
+        "Row and column widths/heights in all tables remain unchanged."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/RapportPDFPage.tsx",
+          "operation": "modify",
+          "description": "When the report type is 'Annual Report', compute annual aggregated data by iterating through all 12 months (January through December) of the selected year. For each month, call the existing obtenirRapportPDF backend method with RapportType.mensuel and aggregate the returned RapportPDFData arrays by summing values for matching clients (by referenceClient). Do not modify any existing calculation logic in monthlyListing.ts or timeRange.ts. Render the aggregated annual data using the same table structure, column widths, and row heights as the existing monthly report. Update the report title and period label to reflect the selected year instead of the selected month."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-in-the-pdf-report-page-rapportpdfpage-tsx-add-a-report-type-selector-radio-buttons-tabs-or-dropdown-that-lets-the-user-choose-between-monthly-report-and-annual-report-the-existing-monthly-report-flow-must-remain-fully-intact-and-unchanged",
+      "featureTitle": "In the PDF Report page (RapportPDFPage.tsx), add a report type selector (radio buttons, tabs, or dropdown) that lets the user choose between 'Monthly Report' and 'Annual Report'. The existing monthly report flow must remain fully intact and unchanged.",
+      "files": [
+        "frontend/src/pages/RapportPDFPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-when-annual-report-is-selected-display-a-year-dropdown-containing-the-years-2022-2023-2024-2025-and-2026-the-selected-year-determines-the-scope-of-the-annual-report",
+      "featureTitle": "When 'Annual Report' is selected, display a year dropdown containing the years 2022, 2023, 2024, 2025, and 2026. The selected year determines the scope of the annual report.",
+      "files": [
+        "frontend/src/pages/RapportPDFPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-the-annual-report-must-include-the-same-sections-tables-frames-as-the-monthly-report-e-g-appointment-listings-revenue-summaries-financial-tables-but-aggregated-across-all-12-months-of-the-selected-year-compute-annual-totals-by-summing-each-monthly-value-across-january-through-december-of-the-selected-year-do-not-alter-any-existing-calculation-functions-only-add-new-aggregation-logic-that-calls-them-per-month",
+      "featureTitle": "The annual report must include the same sections/tables/frames as the monthly report (e.g., appointment listings, revenue summaries, financial tables), but aggregated across all 12 months of the selected year. Compute annual totals by summing each monthly value across January through December of the selected year. Do not alter any existing calculation functions — only add new aggregation logic that calls them per month.",
+      "files": [
+        "frontend/src/pages/RapportPDFPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

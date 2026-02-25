@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.625rem;
+        --background: 0.98 0 0;
+        --foreground: 0.145 0 0;
+        --card: 1 0 0;
+        --card-foreground: 0.145 0 0;
+        --popover: 1 0 0;
+        --popover-foreground: 0.145 0 0;
+        --primary: 0.55 0.18 240;
+        --primary-foreground: 0.99 0 0;
+        --secondary: 0.96 0.01 240;
+        --secondary-foreground: 0.145 0 0;
+        --muted: 0.96 0.01 240;
+        --muted-foreground: 0.50 0.01 240;
+        --accent: 0.65 0.20 160;
+        --accent-foreground: 0.99 0 0;
+        --destructive: 0.577 0.245 27.325;
+        --destructive-foreground: 0.985 0 0;
+        --border: 0.92 0.01 240;
+        --input: 0.92 0.01 240;
+        --ring: 0.55 0.18 240;
+        --chart-1: 0.55 0.18 240;
+        --chart-2: 0.65 0.20 160;
+        --chart-3: 0.70 0.15 200;
+        --chart-4: 0.60 0.22 280;
+        --chart-5: 0.75 0.18 140;
+        --sidebar: 0.985 0 0;
+        --sidebar-foreground: 0.145 0 0;
+        --sidebar-primary: 0.55 0.18 240;
+        --sidebar-primary-foreground: 0.99 0 0;
+        --sidebar-accent: 0.96 0.01 240;
+        --sidebar-accent-foreground: 0.145 0 0;
+        --sidebar-border: 0.92 0.01 240;
+        --sidebar-ring: 0.55 0.18 240;
+        --sunday-pink: 0.85 0.12 350;
+        --sunday-pink-light: 0.95 0.08 350;
+    }
+
+    .dark {
+        --background: 0.145 0 0;
+        --foreground: 0.985 0 0;
+        --card: 0.18 0 0;
+        --card-foreground: 0.985 0 0;
+        --popover: 0.20 0 0;
+        --popover-foreground: 0.985 0 0;
+        --primary: 0.65 0.20 240;
+        --primary-foreground: 0.99 0 0;
+        --secondary: 0.25 0.01 240;
+        --secondary-foreground: 0.985 0 0;
+        --muted: 0.25 0.01 240;
+        --muted-foreground: 0.65 0.01 240;
+        --accent: 0.70 0.22 160;
+        --accent-foreground: 0.99 0 0;
+        --destructive: 0.60 0.22 27;
+        --destructive-foreground: 0.99 0 0;
+        --border: 0.30 0.01 240;
+        --input: 0.30 0.01 240;
+        --ring: 0.65 0.20 240;
+        --chart-1: 0.65 0.20 240;
+        --chart-2: 0.70 0.22 160;
+        --chart-3: 0.75 0.18 200;
+        --chart-4: 0.68 0.24 280;
+        --chart-5: 0.78 0.20 140;
+        --sidebar: 0.18 0 0;
+        --sidebar-foreground: 0.985 0 0;
+        --sidebar-primary: 0.65 0.20 240;
+        --sidebar-primary-foreground: 0.99 0 0;
+        --sidebar-accent: 0.25 0.01 240;
+        --sidebar-accent-foreground: 0.985 0 0;
+        --sidebar-border: 0.30 0.01 240;
+        --sidebar-ring: 0.65 0.20 240;
+        --sunday-pink: 0.55 0.15 350;
+        --sunday-pink-light: 0.35 0.10 350;
+    }
+
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* Verdana Typography Classes */
+@layer components {
+    /* Titres des cadres : Verdana, taille 12, gras, sans espace avant/après */
+    .frame-title {
+        font-family: Verdana, sans-serif;
+        font-size: 12px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    /* Totaux de sommes : Verdana, taille 14, gras, sans espace avant/après */
+    .sum-total {
+        font-family: Verdana, sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    /* Noms des lignes/colonnes de tableaux : Verdana, taille 10, gras, sans espace avant/après */
+    .table-header {
+        font-family: Verdana, sans-serif;
+        font-size: 10px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    /* Données des tableaux : Verdana, taille 9, non gras, sans espace avant/après */
+    .table-data {
+        font-family: Verdana, sans-serif;
+        font-size: 9px;
+        font-weight: normal;
+        margin: 0;
+    }
+}
+
+/* Compta Mois grid alignment styles */
+@layer components {
+    .compta-mois-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .compta-mois-table td,
+    .compta-mois-table th {
+        box-sizing: border-box;
+    }
+
+    /* Narrow day columns - minimal width with nowrap */
+    .compta-mois-day-header {
+        padding: 2px 4px;
+        white-space: nowrap;
+        width: auto;
+        min-width: fit-content;
+    }
+
+    /* Hour column header */
+    .compta-mois-hour-header {
+        padding: 2px 4px;
+        width: 40px;
+        min-width: 40px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Consistent 30-minute slot height */
+    .compta-mois-time-row {
+        height: 20px;
+    }
+
+    .compta-mois-hour-cell {
+        position: relative;
+        vertical-align: middle;
+        text-align: center;
+        height: 20px;
+        padding: 1px 2px;
+    }
+
+    .compta-mois-day-cell {
+        position: relative;
+        box-sizing: border-box;
+        height: 20px;
+        padding: 1px;
+    }
+
+    .compta-mois-day-cell.has-separator::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: oklch(var(--primary) / 0.3);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    /* Sunday styling - pink backgrounds */
+    .compta-mois-sunday-header {
+        background-color: oklch(var(--sunday-pink) / 1) !important;
+        color: oklch(var(--foreground) / 1);
+    }
+
+    .compta-mois-sunday-empty {
+        background-color: oklch(var(--sunday-pink-light) / 1);
+    }
+
+    /* Sunday appointments - subtle border accent, preserve status colors */
+    .compta-mois-sunday-appointment {
+        border-left: 3px solid oklch(var(--sunday-pink) / 0.8) !important;
+        border-right: 3px solid oklch(var(--sunday-pink) / 0.8) !important;
+    }
+}

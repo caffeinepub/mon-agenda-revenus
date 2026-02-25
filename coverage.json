@@ -1,0 +1,59 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T08:46:42.830Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 3,
+    "implemented": 3,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "In the PDF Report page (RapportPDFPage.tsx), add a report type selector (radio buttons, tabs, or dropdown) that lets the user choose between 'Monthly Report' and 'Annual Report'. The existing monthly report flow must remain fully intact and unchanged.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/RapportPDFPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/RapportPDFPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "When 'Annual Report' is selected, display a year dropdown containing the years 2022, 2023, 2024, 2025, and 2026. The selected year determines the scope of the annual report.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/RapportPDFPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/RapportPDFPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "The annual report must include the same sections/tables/frames as the monthly report (e.g., appointment listings, revenue summaries, financial tables), but aggregated across all 12 months of the selected year. Compute annual totals by summing each monthly value across January through December of the selected year. Do not alter any existing calculation functions — only add new aggregation logic that calls them per month.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/RapportPDFPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/RapportPDFPage.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/pages/RapportPDFPage.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}
