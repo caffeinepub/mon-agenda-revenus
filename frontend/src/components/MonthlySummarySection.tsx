@@ -20,10 +20,9 @@ export default function MonthlySummarySection({ year, allAppointments }: Monthly
     const revenues: { month: string; revenue: bigint }[] = [];
 
     for (let month = 1; month <= 12; month++) {
-      // Get unique clients for this month
       const monthStart = BigInt(new Date(year, month - 1, 1).getTime()) * BigInt(1_000_000);
       const monthEnd = BigInt(new Date(year, month, 0, 23, 59, 59, 999).getTime()) * BigInt(1_000_000);
-      
+
       const clientsInMonth = new Map<string, string>();
       allAppointments.forEach(apt => {
         if (apt.dateHeure >= monthStart && apt.dateHeure <= monthEnd) {
@@ -31,7 +30,6 @@ export default function MonthlySummarySection({ year, allAppointments }: Monthly
         }
       });
 
-      // Calculate monthly listing rows for all clients
       const rows = Array.from(clientsInMonth.entries()).map(([referenceClient, nomClient]) => {
         return calculateMonthlyListingRow(
           referenceClient,
@@ -42,7 +40,6 @@ export default function MonthlySummarySection({ year, allAppointments }: Monthly
         );
       });
 
-      // Sum up the "Revenus (Faits et Payés)" column
       const monthRevenue = calculateTotalRevenusFaitsEtPayes(rows);
 
       revenues.push({
@@ -52,7 +49,7 @@ export default function MonthlySummarySection({ year, allAppointments }: Monthly
     }
 
     return revenues;
-  }, [year, allAppointments, monthNames]);
+  }, [year, allAppointments]);
 
   const totalRevenue = useMemo(() => {
     return monthlyRevenues.reduce((sum, item) => sum + item.revenue, BigInt(0));
@@ -63,11 +60,11 @@ export default function MonthlySummarySection({ year, allAppointments }: Monthly
   };
 
   return (
-    <Card className="mb-8">
+    <Card className="mb-0">
       <CardHeader>
         <CardTitle className="frame-title">Résumé Mensuels (Année en Cours)</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 pb-3">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -77,16 +74,20 @@ export default function MonthlySummarySection({ year, allAppointments }: Monthly
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* Total row moved to top, above January */}
+              <TableRow className="bg-muted/50">
+                <TableCell className="table-header py-1">TOTAL</TableCell>
+                <TableCell className="text-right sum-total py-1">{formatNumber(totalRevenue)}</TableCell>
+              </TableRow>
               {monthlyRevenues.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell className="table-data">{item.month}</TableCell>
-                  <TableCell className="text-right table-data">{formatNumber(item.revenue)}</TableCell>
+                <TableRow
+                  key={index}
+                  className={index % 2 === 1 ? 'bg-muted/50' : ''}
+                >
+                  <TableCell className="table-data py-1">{item.month}</TableCell>
+                  <TableCell className="text-right table-data py-1">{formatNumber(item.revenue)}</TableCell>
                 </TableRow>
               ))}
-              <TableRow className="bg-muted/50">
-                <TableCell className="table-header">TOTAL</TableCell>
-                <TableCell className="text-right sum-total">{formatNumber(totalRevenue)}</TableCell>
-              </TableRow>
             </TableBody>
           </Table>
         </div>

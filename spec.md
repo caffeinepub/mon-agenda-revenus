@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Add an annual report option to the PDF Report page, allowing users to generate a report aggregated across all 12 months of a selected year, while keeping the existing monthly report flow fully intact.
+**Goal:** Add a "Custom Range" period selection mode to the PDF Report page, allowing users to filter reports by a freely chosen start and end date.
 
 **Planned changes:**
-- Add a report type selector (radio buttons, tabs, or dropdown) at the top of the PDF Report page to switch between "Monthly Report" and "Annual Report" modes.
-- When "Monthly Report" is selected, the existing month selector and monthly report behavior remain unchanged.
-- When "Annual Report" is selected, hide the month selector and show a year dropdown containing 2022, 2023, 2024, 2025, and 2026.
-- Render the annual report with the same sections/tables/frames as the monthly report, but with data aggregated across all 12 months of the selected year by summing each monthly value.
-- Add new aggregation logic that calls existing calculation functions per month without modifying them.
+- Add a third period selector option "Custom Range" alongside the existing "By Month" and "By Year" modes on `RapportPDFPage.tsx`
+- When "Custom Range" is selected, display two date pickers (start date and end date)
+- Update the data aggregation/filtering logic to support filtering appointments by an arbitrary start and end date range
+- Reuse the existing report table format and PDF layout for the custom range output
 
-**User-visible outcome:** Users can now select "Annual Report" on the PDF Report page, pick a year (2022–2026), and view a full-year report with the same structure as the monthly report but with data summed across all 12 months.
+**User-visible outcome:** Users can select a custom date range (e.g., January 1st to March 31st) on the PDF Report page and generate a correctly filtered report using the same table and PDF format as the existing monthly and yearly reports.

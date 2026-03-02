@@ -1,81 +1,59 @@
 {
   "kind": "build_request",
-  "title": "Add annual report selection to PDF Report page",
+  "title": "Add custom date range selection to PDF Report page",
   "projectName": "Mon Agenda Revenus",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In the PDF Report page (RapportPDFPage.tsx), add a report type selector (radio buttons, tabs, or dropdown) that lets the user choose between 'Monthly Report' and 'Annual Report'. The existing monthly report flow must remain fully intact and unchanged.",
+      "text": "On the PDF Report page (RapportPDFPage.tsx), add a third period selection mode called 'Custom Range' (alongside the existing 'Month' and 'Year' modes). This mode must allow the user to pick a start date and an end date freely (e.g., January 1st to March 31st). The existing table format used for monthly and yearly reports must be reused unchanged for this custom range output.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-8"
+          "msg-4"
         ],
         "quotes": [
-          "La sélection du type de rapport (mensuel vs annuel) doit se faire via un bouton radio / onglet / liste déroulante.",
-          "il faut ajouter une sélection annuelle pour avoir un rapport annuel"
+          "je peux choisir par sélection un rapport sur un mois que je choisi ou un rapport sur une année que je choisi. Je voudrai pouvoir choisir par exemple du 1er janvier au 31 mars, en gardant le même tableau"
         ]
       },
       "acceptanceCriteria": [
-        "A report type selector (radio buttons, tabs, or dropdown) is visible on the PDF Report page.",
-        "Selecting 'Monthly Report' shows the existing month selector and monthly report — behavior is unchanged.",
-        "Selecting 'Annual Report' hides the month selector and shows a year selector instead.",
-        "No existing calculation logic is modified."
+        "The report period selector on RapportPDFPage shows three options: By Month, By Year, and Custom Range.",
+        "When 'Custom Range' is selected, two date pickers appear: one for start date and one for end date.",
+        "The user can set start date to January 1st and end date to March 31st and generate a report covering exactly that period.",
+        "The generated report uses the same table format as the existing monthly/yearly reports.",
+        "Appointments and financial data are filtered to include only records whose dates fall within the selected start and end dates (inclusive).",
+        "The existing 'By Month' and 'By Year' modes continue to work as before without any regression."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "When 'Annual Report' is selected, display a year dropdown containing the years 2022, 2023, 2024, 2025, and 2026. The selected year determines the scope of the annual report.",
+      "text": "Update the data aggregation logic in RapportPDFPage.tsx to support filtering appointments by an arbitrary date range (start timestamp to end timestamp), so that the custom range period feeds into the same report-building pipeline used by month and year modes.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-4"
         ],
         "quotes": [
-          "On doit pouvoir sélectionner l'année dans une liste d'années (ex. 2022, 2023, 2024, 2025, 2026)."
+          "en gardant le même tableau"
         ]
       },
       "acceptanceCriteria": [
-        "A year dropdown appears when 'Annual Report' mode is active.",
-        "The dropdown contains exactly: 2022, 2023, 2024, 2025, 2026.",
-        "Changing the year updates the annual report content accordingly."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "The annual report must include the same sections/tables/frames as the monthly report (e.g., appointment listings, revenue summaries, financial tables), but aggregated across all 12 months of the selected year. Compute annual totals by summing each monthly value across January through December of the selected year. Do not alter any existing calculation functions — only add new aggregation logic that calls them per month.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-8"
-        ],
-        "quotes": [
-          "Le rapport annuel doit regrouper les mêmes cadres/tableaux que le rapport mensuel mais sur les 12 mois de l'année sélectionnée."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The annual report renders the same structural sections as the monthly report.",
-        "Data is aggregated across all 12 months of the selected year.",
-        "Annual totals are computed as the sum of values across all 12 months.",
-        "No existing calculation functions in monthlyListing.ts, timeRange.ts, or elsewhere are modified.",
-        "Row and column widths/heights in all tables remain unchanged."
+        "A shared filtering utility or inline logic accepts a startDate and endDate and returns appointments within that range.",
+        "The custom range report totals (revenue, appointments, credits) are computed correctly using the same calculation functions as the existing modes.",
+        "The PDF download triggered from custom range mode produces a valid, well-formatted document matching the existing PDF layout."
       ]
     }
   ],
   "constraints": [
-    "Do NOT modify any existing calculation logic anywhere in the codebase.",
-    "Do NOT change the design, row heights, column widths, or layout of any existing tables or frames on any page.",
-    "Do NOT alter the existing monthly report flow — it must continue to work exactly as before.",
-    "Do NOT modify any files listed in frontend.immutablePaths."
+    "Do not modify the existing table format used for PDF reports.",
+    "Do not break the existing 'By Month' and 'By Year' report modes.",
+    "Do not edit files listed in frontend.immutablePaths."
   ],
   "nonGoals": [
-    "Changing the visual design or styling of any existing page.",
-    "Adding new data fields or backend schema changes.",
-    "Modifying calculations in monthlyListing.ts, timeRange.ts, or any other utility file.",
-    "Adding years outside the range 2022–2026 to the year selector.",
-    "Changing the Dashboard, ClientDatabasePage, or any other page."
+    "Adding new columns or sections to the existing report table.",
+    "Backend changes — all filtering can be done client-side using already-fetched appointment data.",
+    "Multi-employee or per-service filtering.",
+    "Changing the PDF visual design or branding."
   ],
   "imageRequirements": {
     "required": [],

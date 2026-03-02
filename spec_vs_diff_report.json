@@ -1,20 +1,11 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T08:46:42.827Z",
-  "summary": "The diff modifies RapportPDFPage.tsx to add report type selection (mensuel/annuel), a year dropdown with years 2022-2026, and annual aggregation logic. REQ-1 and REQ-2 appear fully implemented. REQ-3 is partially implemented — the aggregation logic is present and calls existing calculation functions per month without modifying them, but the diff is truncated so it is unclear whether the annual report renders the same structural sections/tables/frames as the monthly report in the UI output.",
-  "missing_requirements": [
-    {
-      "id": "REQ-3",
-      "requirement": "The annual report must render the same structural sections/tables/frames as the monthly report (appointment listings, revenue summaries, financial tables) in the PDF output.",
-      "reason": "The diff is truncated after the annualCalculatedRows computation and the decemberRow aggregation logic. It is not possible to confirm whether the JSX/render section actually displays the same structural sections/tables/frames for the annual report as for the monthly report, since that portion of the file was cut off.",
-      "evidence": [
-        "frontend/src/pages/RapportPDFPage.tsx"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-28T16:25:15.329Z",
+  "summary": "The diff shows modifications to RapportPDFPage.tsx that implement a third report type ('plage' / Custom Range) with rangeStart/rangeEnd state, date pickers, and aggregation logic for the custom range. The implementation appears to cover both REQ-1 and REQ-2 based on the visible code. However, the diff is truncated and we cannot fully verify all acceptance criteria, particularly around the PDF download for custom range and the complete UI rendering of the date pickers and selector options.",
+  "missing_requirements": [],
   "hallucinated_features": [],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/pages/RapportPDFPage.tsx",

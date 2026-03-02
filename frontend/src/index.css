@@ -39,6 +39,12 @@
         --sidebar-ring: 0.55 0.18 240;
         --sunday-pink: 0.85 0.12 350;
         --sunday-pink-light: 0.95 0.08 350;
+        --today-blue: 0.92 0.06 220;
+        --today-blue-header: 0.85 0.10 220;
+        /* Pale pink for full-hour separators and hour cell background */
+        --hour-pink: 0.92 0.06 350;
+        /* Pale grey for half-hour separators */
+        --halfhour-grey: 0.88 0 0;
     }
 
     .dark {
@@ -76,6 +82,12 @@
         --sidebar-ring: 0.65 0.20 240;
         --sunday-pink: 0.55 0.15 350;
         --sunday-pink-light: 0.35 0.10 350;
+        --today-blue: 0.30 0.08 220;
+        --today-blue-header: 0.40 0.12 220;
+        /* Pale pink for full-hour separators and hour cell background (dark mode) */
+        --hour-pink: 0.45 0.08 350;
+        /* Pale grey for half-hour separators (dark mode) */
+        --halfhour-grey: 0.35 0 0;
     }
 
     * {
@@ -88,15 +100,16 @@
 
 /* Verdana Typography Classes */
 @layer components {
-    /* Titres des cadres : Verdana, taille 12, gras, sans espace avant/après */
+    /* Titres des cadres : Verdana, taille 13, gras, sans espace avant/après */
     .frame-title {
         font-family: Verdana, sans-serif;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: bold;
         margin: 0;
     }
 
     /* Totaux de sommes : Verdana, taille 14, gras, sans espace avant/après */
+    /* NOTE: sum-total is intentionally kept at 14px — used by A/B/C and E/F/G stat cards */
     .sum-total {
         font-family: Verdana, sans-serif;
         font-size: 14px;
@@ -104,18 +117,18 @@
         margin: 0;
     }
 
-    /* Noms des lignes/colonnes de tableaux : Verdana, taille 10, gras, sans espace avant/après */
+    /* Noms des lignes/colonnes de tableaux : Verdana, taille 11, gras, sans espace avant/après */
     .table-header {
         font-family: Verdana, sans-serif;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: bold;
         margin: 0;
     }
 
-    /* Données des tableaux : Verdana, taille 9, non gras, sans espace avant/après */
+    /* Données des tableaux : Verdana, taille 10, non gras, sans espace avant/après */
     .table-data {
         font-family: Verdana, sans-serif;
-        font-size: 9px;
+        font-size: 10px;
         font-weight: normal;
         margin: 0;
     }
@@ -170,21 +183,24 @@
         padding: 1px;
     }
 
-    .compta-mois-day-cell.has-separator::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background-color: oklch(var(--primary) / 0.3);
-        pointer-events: none;
-        z-index: 1;
+    /* Hour separator: thick pale pink top border at the start of each full hour */
+    .compta-mois-hour-separator td {
+        border-top: 3px solid oklch(var(--hour-pink)) !important;
     }
 
-    /* Sunday styling - pink backgrounds */
+    /* Half-hour separator: thin pale grey top border at the 30-minute mark */
+    .compta-mois-halfhour-separator td {
+        border-top: 1px solid oklch(var(--halfhour-grey)) !important;
+    }
+
+    /* Pale pink background only on the hour label cell (full hours) */
+    .compta-mois-hour-label-cell {
+        background-color: oklch(var(--hour-pink)) !important;
+    }
+
+    /* Sunday styling - light pink backgrounds */
     .compta-mois-sunday-header {
-        background-color: oklch(var(--sunday-pink) / 1) !important;
+        background-color: oklch(var(--sunday-pink-light) / 1) !important;
         color: oklch(var(--foreground) / 1);
     }
 
@@ -196,5 +212,21 @@
     .compta-mois-sunday-appointment {
         border-left: 3px solid oklch(var(--sunday-pink) / 0.8) !important;
         border-right: 3px solid oklch(var(--sunday-pink) / 0.8) !important;
+    }
+
+    /* Today column - light blue backgrounds */
+    .compta-mois-today-header {
+        background-color: oklch(var(--today-blue-header) / 1) !important;
+        color: oklch(var(--foreground) / 1);
+    }
+
+    .compta-mois-today-empty {
+        background-color: oklch(var(--today-blue) / 1);
+    }
+
+    /* Today appointments - subtle blue border accent, preserve status colors */
+    .compta-mois-today-appointment {
+        border-left: 3px solid oklch(var(--today-blue-header) / 1) !important;
+        border-right: 3px solid oklch(var(--today-blue-header) / 1) !important;
     }
 }

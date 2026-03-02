@@ -1,19 +1,25 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetAllAppointments, useGetMonthlyListing } from '../hooks/useQueries';
-import FinancialOverview from '../components/FinancialOverview';
 import MonthlyListingTable from '../components/MonthlyListingTable';
 import ComptaMoisCalendarTable from '../components/ComptaMoisCalendarTable';
 import MonthlySummarySection from '../components/MonthlySummarySection';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { 
-  calculateMonthlyListingRow, 
+import {
+  calculateMonthlyListingRow,
   calculateTotalRevenusFaitsEtPayes,
   calculateTotalCreditNegatif,
   type MonthlyListingRow
 } from '../utils/monthlyListing';
 import { bigintAbs } from '../utils/bigintMath';
+
+const MONTH_NAMES = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+];
+
+function formatNum(amount: bigint): string {
+  return Number(amount).toLocaleString('fr-FR');
+}
 
 export default function Dashboard() {
   const currentDate = new Date();
@@ -26,37 +32,18 @@ export default function Dashboard() {
   const listings = monthlyListingData?.[0] ?? [];
   const totals = monthlyListingData?.[1] ?? null;
 
-  const monthNames = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-  ];
-
-  const handlePreviousMonth = () => {
-    if (selectedMonth === 1) {
-      setSelectedMonth(12);
-      setSelectedYear(selectedYear - 1);
-    } else {
-      setSelectedMonth(selectedMonth - 1);
-    }
+  const handleMonthChange = (year: number, month: number) => {
+    setSelectedYear(year);
+    setSelectedMonth(month);
   };
 
-  const handleNextMonth = () => {
-    if (selectedMonth === 12) {
-      setSelectedMonth(1);
-      setSelectedYear(selectedYear + 1);
-    } else {
-      setSelectedMonth(selectedMonth + 1);
-    }
-  };
-
-  // Calculate monthly revenues for the entire year (used by MonthlySummarySection)
+  // Monthly revenues for the entire year (used by MonthlySummarySection and annual stats)
   const monthlyRevenues = useMemo(() => {
     const revenues: bigint[] = [];
-
     for (let month = 1; month <= 12; month++) {
       const monthStart = BigInt(new Date(selectedYear, month - 1, 1).getTime()) * BigInt(1_000_000);
       const monthEnd = BigInt(new Date(selectedYear, month, 0, 23, 59, 59, 999).getTime()) * BigInt(1_000_000);
-      
+
       const clientsInMonth = new Map<string, string>();
       allAppointments.forEach(apt => {
         if (apt.dateHeure >= monthStart && apt.dateHeure <= monthEnd) {
@@ -64,79 +51,57 @@ export default function Dashboard() {
         }
       });
 
-      const rows = Array.from(clientsInMonth.entries()).map(([referenceClient, nomClient]) => {
-        return calculateMonthlyListingRow(
-          referenceClient,
-          nomClient,
-          allAppointments,
-          selectedYear,
-          month
-        );
-      });
+      const rows = Array.from(clientsInMonth.entries()).map(([referenceClient, nomClient]) =>
+        calculateMonthlyListingRow(referenceClient, nomClient, allAppointments, selectedYear, month)
+      );
 
-      const monthRevenue = calculateTotalRevenusFaitsEtPayes(rows);
-      revenues.push(monthRevenue);
+      revenues.push(calculateTotalRevenusFaitsEtPayes(rows));
     }
-
     return revenues;
   }, [selectedYear, allAppointments]);
 
-  // Calculate rows for the selected month using the same logic as MonthlyListingTable
-  // This ensures consistency between the table display and the financial cards
+  // Rows for the selected month (for financial cards E/F/G)
   const calculatedRows = useMemo<MonthlyListingRow[]>(() => {
-    return listings.map(client => {
-      return calculateMonthlyListingRow(
+    return listings.map(client =>
+      calculateMonthlyListingRow(
         client.referenceClient,
         client.nomClient,
         allAppointments,
         selectedYear,
         selectedMonth
-      );
-    });
+      )
+    );
   }, [listings, allAppointments, selectedYear, selectedMonth]);
 
-  // Calculate financial overview data by referencing existing sections
+  // Cards E, F, G — Mois courant
   const financialOverviewData = useMemo(() => {
-    // Card G: Revenus du Mois en Cours (Faits et Payés) 
-    // Source: Résumé Mensuels table, column "Revenus (Faits et Payés)" for selected month
-    const selectedMonthIndex = selectedMonth - 1; // 0-based index
+    const selectedMonthIndex = selectedMonth - 1;
     const totalPaid = monthlyRevenues[selectedMonthIndex] ?? BigInt(0);
-
-    // Card E: Dus (RDV Faits ; Mois Courant)
-    // Source: Listing Mensuel table, sum of "Crédit Négatif" column (negative creditNegatif values)
-    // This represents amounts owed by clients (negative balances)
     const creditNegatifTotal = calculateTotalCreditNegatif(calculatedRows);
-
-    // Card F: RDV faits (Payés et Impayés ; Mois Courant)
-    // Source: Listing Mensuel table, sum of "RDV Faits (Payés + impayés)" column (rdvFaits)
-    // FIXED: Now correctly summing rdvFaits instead of revenusFaitsEtPayes
     const totalRdvFaitsMoisCourant = calculatedRows.reduce(
       (sum, row) => sum + row.rdvFaits,
       BigInt(0)
     );
-
     return {
-      totalDue: bigintAbs(creditNegatifTotal), // Display as positive value
+      totalDue: bigintAbs(creditNegatifTotal),
       totalPaid,
       totalRdvFaitsMoisCourant,
     };
   }, [selectedMonth, monthlyRevenues, calculatedRows]);
 
-  // Calculate annual statistics
+  // Cards A, B, C — Synthèse de l'année
   const annualStats = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
 
-    // 3. Statistiques annuelles 2026 - sum of all 12 months from Résumé Mensuels
     let totalRevenue = BigInt(0);
-    monthlyRevenues.forEach(revenue => {
-      totalRevenue += revenue;
-    });
+    monthlyRevenues.forEach(r => { totalRevenue += r; });
 
-    // 4. Revenu moyen 2026 - average of only completed months (months before current month)
-    const completedMonthsCount = selectedYear < currentYear ? 12 : (selectedYear === currentYear ? currentMonth - 1 : 0);
-    
+    const completedMonthsCount =
+      selectedYear < currentYear ? 12 :
+      selectedYear === currentYear ? currentMonth - 1 : 0;
+
     let totalCompletedRevenue = BigInt(0);
     for (let i = 0; i < completedMonthsCount; i++) {
       totalCompletedRevenue += monthlyRevenues[i];
@@ -146,78 +111,140 @@ export default function Dashboard() {
       ? totalCompletedRevenue / BigInt(completedMonthsCount)
       : BigInt(0);
 
-    return {
-      totalRevenue,
-      averageRevenue,
-      completedMonthsCount,
-    };
+    return { totalRevenue, averageRevenue, completedMonthsCount };
   }, [monthlyRevenues, selectedYear]);
 
-  // Create Date object for ComptaMoisCalendarTable
-  const calendarDate = useMemo(() => {
-    return new Date(selectedYear, selectedMonth - 1, 1);
-  }, [selectedYear, selectedMonth]);
+  const currentMonthLabel = MONTH_NAMES[selectedMonth - 1];
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
-        <h1 className="frame-title text-3xl mb-8">Tableau de bord</h1>
+        <h1 className="frame-title text-3xl mb-6">Tableau de bord</h1>
 
-        {/* Financial Overview Cards */}
-        <FinancialOverview
-          totalDue={financialOverviewData.totalDue}
-          totalPaid={financialOverviewData.totalPaid}
-          totalRdvFaitsMoisCourant={financialOverviewData.totalRdvFaitsMoisCourant}
-        />
+        {/* ── TOP SECTION: 3-column grid ── */}
+        <div className="grid grid-cols-[1fr_2fr_1fr] gap-4 mb-6 items-start">
 
-        {/* Annual Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="frame-title">Statistiques annuelles {selectedYear}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="table-data text-muted-foreground">Total reçu</p>
-              <p className="sum-total">{Number(annualStats.totalRevenue).toLocaleString('fr-FR')}</p>
-            </CardContent>
-          </Card>
+          {/* ── LEFT COLUMN: A / B / C — Synthèse de l'année ── */}
+          <div className="flex flex-col gap-4">
+            {/* Section label — increased 3 font-size steps, bold */}
+            <p className="text-center font-bold text-xl" style={{ fontFamily: 'Verdana, sans-serif' }}>
+              Synthèse de l'année
+            </p>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="frame-title">Revenu moyen {selectedYear}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="table-data text-muted-foreground">
-                Basé sur {annualStats.completedMonthsCount} mois terminé{annualStats.completedMonthsCount > 1 ? 's' : ''}
-              </p>
-              <p className="sum-total">{Number(annualStats.averageRevenue).toLocaleString('fr-FR')}</p>
-            </CardContent>
-          </Card>
+            {/* Card A — Revenu moyen */}
+            <Card className="flex-1">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="frame-title">Revenu moyen {selectedYear}</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <p className="table-data text-muted-foreground">
+                  Basé sur {annualStats.completedMonthsCount} mois terminé{annualStats.completedMonthsCount > 1 ? 's' : ''}
+                </p>
+                <p className="sum-total text-2xl font-bold mt-1">
+                  {formatNum(annualStats.averageRevenue)}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Card B — Revenu moyen (duplicate as per design) */}
+            <Card className="flex-1">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="frame-title">Revenu moyen {selectedYear}</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <p className="table-data text-muted-foreground">
+                  Basé sur {annualStats.completedMonthsCount} mois terminé{annualStats.completedMonthsCount > 1 ? 's' : ''}
+                </p>
+                <p className="sum-total text-2xl font-bold mt-1">
+                  {formatNum(annualStats.averageRevenue)}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Card C — Statistiques annuelles */}
+            <Card className="flex-1">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="frame-title">Statistiques annuelles {selectedYear}</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <p className="table-data text-muted-foreground">Total reçu</p>
+                <p className="sum-total text-2xl font-bold mt-1">
+                  {formatNum(annualStats.totalRevenue)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── CENTER COLUMN: D — Résumé Mensuels ── */}
+          <div className="flex flex-col gap-4">
+            {/* Section label — increased 3 font-size steps, bold */}
+            <p className="text-center font-bold text-xl" style={{ fontFamily: 'Verdana, sans-serif' }}>
+              ANNEE : {selectedYear}
+            </p>
+            <MonthlySummarySection
+              year={selectedYear}
+              allAppointments={allAppointments}
+            />
+          </div>
+
+          {/* ── RIGHT COLUMN: E / F / G — Mois courant ── */}
+          <div className="flex flex-col gap-4">
+            {/* Section label — increased 3 font-size steps, bold */}
+            <p className="text-center font-bold text-xl" style={{ fontFamily: 'Verdana, sans-serif' }}>
+              Mois de : {currentMonthLabel}
+            </p>
+
+            {/* Card E — Dus (RDV Faits ; Mois Courant) */}
+            <Card className="flex-1">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="frame-title">Dus (RDV Faits ; Mois Courant)</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <p className="sum-total text-2xl font-bold text-orange-600 mt-1">
+                  {formatNum(financialOverviewData.totalDue)}
+                </p>
+                <p className="table-data text-muted-foreground mt-1">
+                  Montants restant à percevoir
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Card F — RDV faits (Payés et Impayés ; Mois Courant) */}
+            <Card className="flex-1">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="frame-title">RDV faits (Payés et Impayés ; Mois Courant)</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <p className="sum-total text-2xl font-bold text-blue-600 mt-1">
+                  {formatNum(financialOverviewData.totalRdvFaitsMoisCourant)}
+                </p>
+                <p className="table-data text-muted-foreground mt-1">
+                  Total des montants dus pour les rendez-vous effectués
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Card G — Revenus du Mois en Cours (Faits et Payés) */}
+            <Card className="flex-1">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="frame-title">Revenus du Mois en Cours (Faits et Payés)</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <p className="sum-total text-2xl font-bold text-green-600 mt-1">
+                  {formatNum(financialOverviewData.totalPaid)}
+                </p>
+                <p className="table-data text-muted-foreground mt-1">
+                  Montants perçus pour les rendez-vous effectués
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* Monthly Summary Section */}
-        <MonthlySummarySection
-          year={selectedYear}
-          allAppointments={allAppointments}
-        />
-
-        {/* Monthly Listing Section */}
-        <Card className="mb-8">
+        {/* ── FRAME H — Listing Mensuel (full width) ── */}
+        <Card className="mb-6 w-full">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="frame-title">Listing Mensuel</CardTitle>
-              <div className="flex items-center gap-4">
-                <Button variant="outline" size="sm" onClick={handlePreviousMonth}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="frame-title min-w-[200px] text-center">
-                  {monthNames[selectedMonth - 1]} {selectedYear}
-                </span>
-                <Button variant="outline" size="sm" onClick={handleNextMonth}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <CardTitle className="frame-title">Listing Mensuel</CardTitle>
           </CardHeader>
           <CardContent>
             <MonthlyListingTable
@@ -230,14 +257,16 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Calendar Section */}
+        {/* ── FRAME I — Calendrier mensuel (untouched) ── */}
         <Card>
           <CardHeader>
             <CardTitle className="frame-title">Calendrier mensuel</CardTitle>
           </CardHeader>
           <CardContent>
             <ComptaMoisCalendarTable
-              initialMonth={calendarDate}
+              year={selectedYear}
+              month={selectedMonth}
+              onMonthChange={handleMonthChange}
             />
           </CardContent>
         </Card>

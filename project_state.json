@@ -1,35 +1,24 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Application de rapport PDF avec sélection mensuelle et annuelle. Tous les calculs existants sont validés et ne doivent pas être modifiés. Le design (largeurs/hauteurs des lignes) ne doit pas être touché.",
-  "architectural_notes": [
-    "Ne jamais modifier les calculs existants sur toutes les pages, cadres et tableaux",
-    "Ne pas modifier le design : ne pas changer la largeur ni la hauteur des lignes sur toutes les pages"
-  ],
+  "summary": "Application with PDF report functionality. Currently supports monthly and yearly report selection. Adding custom date range selection (e.g., January 1st to March 31st) while keeping the same table format.",
+  "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-in-the-pdf-report-page-rapportpdfpage-tsx-add-a-report-type-selector-radio-buttons-tabs-or-dropdown-that-lets-the-user-choose-between-monthly-report-and-annual-report-the-existing-monthly-report-flow-must-remain-fully-intact-and-unchanged",
-      "title": "In the PDF Report page (RapportPDFPage.tsx), add a report type selector (radio buttons, tabs, or dropdown) that lets the user choose between 'Monthly Report' and 'Annual Report'. The existing monthly report flow must remain fully intact and unchanged.",
+      "id": "feature-on-the-pdf-report-page-rapportpdfpage-tsx-add-a-third-period-selection-mode-called-custom-range-alongside-the-existing-month-and-year-modes-this-mode-must-allow-the-user-to-pick-a-start-date-and-an-end-date-freely-e-g-january-1st-to-march-31st-the-existing-table-format-used-for-monthly-and-yearly-reports-must-be-reused-unchanged-for-this-custom-range-output",
+      "title": "On the PDF Report page (RapportPDFPage.tsx), add a third period selection mode called 'Custom Range' (alongside the existing 'Month' and 'Year' modes). This mode must allow the user to pick a start date and an end date freely (e.g., January 1st to March 31st). The existing table format used for monthly and yearly reports must be reused unchanged for this custom range output.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-when-annual-report-is-selected-display-a-year-dropdown-containing-the-years-2022-2023-2024-2025-and-2026-the-selected-year-determines-the-scope-of-the-annual-report",
-      "title": "When 'Annual Report' is selected, display a year dropdown containing the years 2022, 2023, 2024, 2025, and 2026. The selected year determines the scope of the annual report.",
+      "id": "feature-update-the-data-aggregation-logic-in-rapportpdfpage-tsx-to-support-filtering-appointments-by-an-arbitrary-date-range-start-timestamp-to-end-timestamp-so-that-the-custom-range-period-feeds-into-the-same-report-building-pipeline-used-by-month-and-year-modes",
+      "title": "Update the data aggregation logic in RapportPDFPage.tsx to support filtering appointments by an arbitrary date range (start timestamp to end timestamp), so that the custom range period feeds into the same report-building pipeline used by month and year modes.",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-the-annual-report-must-include-the-same-sections-tables-frames-as-the-monthly-report-e-g-appointment-listings-revenue-summaries-financial-tables-but-aggregated-across-all-12-months-of-the-selected-year-compute-annual-totals-by-summing-each-monthly-value-across-january-through-december-of-the-selected-year-do-not-alter-any-existing-calculation-functions-only-add-new-aggregation-logic-that-calls-them-per-month",
-      "title": "The annual report must include the same sections/tables/frames as the monthly report (e.g., appointment listings, revenue summaries, financial tables), but aggregated across all 12 months of the selected year. Compute annual totals by summing each monthly value across January through December of the selected year. Do not alter any existing calculation functions — only add new aggregation logic that calls them per month.",
-      "reqIds": [
-        "REQ-3"
       ],
       "version": 1
     }
@@ -37,7 +26,7 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Ajouter sélection annuelle dans la page Rapport PDF : bouton radio/onglet pour choisir mensuel vs annuel, liste déroulante d'années (2022-2026), rapport annuel agrège les mêmes cadres/tableaux que le rapport mensuel sur les 12 mois de l'année sélectionnée",
+      "summary": "Ajouter une option de plage de dates personnalisée dans le rapport PDF (en plus du mois et de l'année), permettant de choisir une date de début et une date de fin, en conservant le même format de tableau.",
       "reqIds": [],
       "status": "pending"
     }

@@ -3,10 +3,12 @@ import { useGetMonthlyListing, useGetAllAppointments } from '../hooks/useQueries
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Download } from 'lucide-react';
 import { generateMonthlyListingHTML, calculateMonthlyListingRow, type MonthlyListingRow } from '../utils/monthlyListing';
 
-type ReportType = 'mensuel' | 'annuel';
+type ReportType = 'mensuel' | 'annuel' | 'plage';
 
 const AVAILABLE_YEARS = [2022, 2023, 2024, 2025, 2026];
 
@@ -20,6 +22,13 @@ export default function RapportPDFPage() {
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [annualYear, setAnnualYear] = useState(2026);
+
+  // Custom date range state
+  const today = new Date();
+  const firstDayOfYear = `${today.getFullYear()}-01-01`;
+  const todayStr = today.toISOString().split('T')[0];
+  const [rangeStart, setRangeStart] = useState<string>(firstDayOfYear);
+  const [rangeEnd, setRangeEnd] = useState<string>(todayStr);
 
   const { data: monthlyListingData } = useGetMonthlyListing(selectedYear, selectedMonth);
   const { data: allAppointments = [] } = useGetAllAppointments();
@@ -41,8 +50,7 @@ export default function RapportPDFPage() {
   const annualCalculatedRows: MonthlyListingRow[] = useMemo(() => {
     if (reportType !== 'annuel' || allAppointments.length === 0) return [];
 
-    // Collect all unique clients that have appointments in the selected annual year
-    const clientMap = new Map<string, string>(); // referenceClient -> nomClient
+    const clientMap = new Map<string, string>();
     const yearStart = new Date(annualYear, 0, 1).getTime();
     const yearEnd = new Date(annualYear + 1, 0, 1).getTime();
     const yearStartNs = BigInt(yearStart) * BigInt(1_000_000);
@@ -59,7 +67,6 @@ export default function RapportPDFPage() {
     const rows: MonthlyListingRow[] = [];
 
     for (const [referenceClient, nomClient] of clientMap.entries()) {
-      // Aggregate across all 12 months
       let totalNbRendezVousFaits = 0;
       let totalRdvFaits = BigInt(0);
       let totalRevenusFaitsEtPayes = BigInt(0);
@@ -79,8 +86,6 @@ export default function RapportPDFPage() {
         totalRevenusPlusAvances += monthRow.revenusPlusAvances;
       }
 
-      // For annual report: creditDuMoisPrecedent = January credit (start of year = 0)
-      // creditPositif and creditNegatif = December end-of-year credit state
       const decemberRow = calculateMonthlyListingRow(
         referenceClient,
         nomClient,
@@ -93,7 +98,7 @@ export default function RapportPDFPage() {
         referenceClient,
         nomClient,
         nbRendezVousFaits: totalNbRendezVousFaits,
-        creditDuMoisPrecedent: BigInt(0), // Start of year = no prior credit
+        creditDuMoisPrecedent: BigInt(0),
         rdvFaits: totalRdvFaits,
         revenusFaitsEtPayes: totalRevenusFaitsEtPayes,
         revenusPlusAvances: totalRevenusPlusAvances,
@@ -105,13 +110,130 @@ export default function RapportPDFPage() {
     return rows;
   }, [reportType, annualYear, allAppointments]);
 
-  const calculatedRows = reportType === 'mensuel' ? monthlyCalculatedRows : annualCalculatedRows;
+  // Custom date range calculated rows
+  const rangeCalculatedRows: MonthlyListingRow[] = useMemo(() => {
+    if (reportType !== 'plage' || allAppointments.length === 0) return [];
+    if (!rangeStart || !rangeEnd) return [];
+
+    const startDate = new Date(rangeStart);
+    const endDate = new Date(rangeEnd);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return [];
+    if (startDate > endDate) return [];
+
+    // Convert to nanoseconds for comparison
+    const startNs = BigInt(startDate.getTime()) * BigInt(1_000_000);
+    // End of the end date (inclusive: end of day)
+    const endOfDay = new Date(endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    const endNs = BigInt(endOfDay.getTime()) * BigInt(1_000_000);
+
+    // Collect all unique clients that have appointments in the range
+    const clientMap = new Map<string, string>();
+    for (const apt of allAppointments) {
+      if (apt.dateHeure >= startNs && apt.dateHeure <= endNs) {
+        if (!clientMap.has(apt.referenceClient)) {
+          clientMap.set(apt.referenceClient, apt.nomClient);
+        }
+      }
+    }
+
+    // Determine which year/month combinations fall within the range
+    // We iterate month by month from startDate to endDate
+    const monthsInRange: Array<{ year: number; month: number }> = [];
+    const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+
+    while (cursor <= endMonth) {
+      monthsInRange.push({ year: cursor.getFullYear(), month: cursor.getMonth() + 1 });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    const rows: MonthlyListingRow[] = [];
+
+    for (const [referenceClient, nomClient] of clientMap.entries()) {
+      let totalNbRendezVousFaits = 0;
+      let totalRdvFaits = BigInt(0);
+      let totalRevenusFaitsEtPayes = BigInt(0);
+      let totalRevenusPlusAvances = BigInt(0);
+
+      for (const { year, month } of monthsInRange) {
+        // Filter appointments for this client in this month, but only within the range
+        const monthStart = new Date(year, month - 1, 1);
+        const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+
+        // Clamp to the user-defined range
+        const effectiveStart = monthStart < startDate ? startDate : monthStart;
+        const effectiveEnd = monthEnd > endOfDay ? endOfDay : monthEnd;
+
+        const effectiveStartNs = BigInt(effectiveStart.getTime()) * BigInt(1_000_000);
+        const effectiveEndNs = BigInt(effectiveEnd.getTime()) * BigInt(1_000_000);
+
+        // Count appointments in this clamped window
+        const aptsInWindow = allAppointments.filter(apt =>
+          apt.referenceClient === referenceClient &&
+          apt.dateHeure >= effectiveStartNs &&
+          apt.dateHeure <= effectiveEndNs
+        );
+
+        const nbFaits = aptsInWindow.filter(apt => apt.fait).length;
+        const rdvFaits = aptsInWindow
+          .filter(apt => apt.fait && !apt.annule)
+          .reduce((sum, apt) => sum + apt.montantDu, BigInt(0));
+        const revenusPlusAvances = aptsInWindow
+          .reduce((sum, apt) => sum + apt.montantPaye, BigInt(0));
+
+        // Revenus faits et payés: MIN(rdvFaits, revenusPlusAvances) when both > 0
+        const revenusFaitsEtPayes = rdvFaits > BigInt(0) && revenusPlusAvances > BigInt(0)
+          ? rdvFaits < revenusPlusAvances ? rdvFaits : revenusPlusAvances
+          : BigInt(0);
+
+        totalNbRendezVousFaits += nbFaits;
+        totalRdvFaits += rdvFaits;
+        totalRevenusFaitsEtPayes += revenusFaitsEtPayes;
+        totalRevenusPlusAvances += revenusPlusAvances;
+      }
+
+      // Credit: difference between total paid and total due
+      const creditRaw = totalRevenusPlusAvances - totalRdvFaits;
+      const creditPositif = creditRaw > BigInt(0) ? creditRaw : BigInt(0);
+      const creditNegatif = creditRaw < BigInt(0) ? creditRaw : BigInt(0);
+
+      rows.push({
+        referenceClient,
+        nomClient,
+        nbRendezVousFaits: totalNbRendezVousFaits,
+        creditDuMoisPrecedent: BigInt(0),
+        rdvFaits: totalRdvFaits,
+        revenusFaitsEtPayes: totalRevenusFaitsEtPayes,
+        revenusPlusAvances: totalRevenusPlusAvances,
+        creditPositif,
+        creditNegatif,
+      });
+    }
+
+    return rows;
+  }, [reportType, rangeStart, rangeEnd, allAppointments]);
+
+  const calculatedRows =
+    reportType === 'mensuel' ? monthlyCalculatedRows :
+    reportType === 'annuel' ? annualCalculatedRows :
+    rangeCalculatedRows;
+
+  const getReportTitle = () => {
+    if (reportType === 'mensuel') {
+      return `Rapport Mensuel - ${monthNames[selectedMonth - 1]} ${selectedYear}`;
+    } else if (reportType === 'annuel') {
+      return `Rapport Annuel - ${annualYear}`;
+    } else {
+      const startLabel = rangeStart ? new Date(rangeStart).toLocaleDateString('fr-FR') : '...';
+      const endLabel = rangeEnd ? new Date(rangeEnd).toLocaleDateString('fr-FR') : '...';
+      return `Rapport du ${startLabel} au ${endLabel}`;
+    }
+  };
 
   const handleExportHTML = () => {
     const htmlContent = generateMonthlyListingHTML(calculatedRows);
-    const reportTitle = reportType === 'mensuel'
-      ? `Rapport Mensuel - ${monthNames[selectedMonth - 1]} ${selectedYear}`
-      : `Rapport Annuel - ${annualYear}`;
+    const reportTitle = getReportTitle();
 
     const fullHTML = `
 <!DOCTYPE html>
@@ -172,9 +294,14 @@ export default function RapportPDFPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    const filename = reportType === 'mensuel'
-      ? `rapport-mensuel-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.html`
-      : `rapport-annuel-${annualYear}.html`;
+    let filename: string;
+    if (reportType === 'mensuel') {
+      filename = `rapport-mensuel-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.html`;
+    } else if (reportType === 'annuel') {
+      filename = `rapport-annuel-${annualYear}.html`;
+    } else {
+      filename = `rapport-plage-${rangeStart}-au-${rangeEnd}.html`;
+    }
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -198,16 +325,25 @@ export default function RapportPDFPage() {
     );
   };
 
-  const reportTitle = reportType === 'mensuel'
+  const previewTitle = reportType === 'mensuel'
     ? `Aperçu du rapport - ${monthNames[selectedMonth - 1]} ${selectedYear}`
-    : `Aperçu du rapport annuel - ${annualYear}`;
+    : reportType === 'annuel'
+    ? `Aperçu du rapport annuel - ${annualYear}`
+    : `Aperçu du rapport - ${rangeStart ? new Date(rangeStart).toLocaleDateString('fr-FR') : '...'} au ${rangeEnd ? new Date(rangeEnd).toLocaleDateString('fr-FR') : '...'}`;
+
+  const isRangeValid = reportType !== 'plage' || (
+    !!rangeStart && !!rangeEnd &&
+    !isNaN(new Date(rangeStart).getTime()) &&
+    !isNaN(new Date(rangeEnd).getTime()) &&
+    new Date(rangeStart) <= new Date(rangeEnd)
+  );
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Rapport PDF</h1>
-          <Button onClick={handleExportHTML} className="gap-2">
+          <Button onClick={handleExportHTML} className="gap-2" disabled={!isRangeValid}>
             <Download className="h-4 w-4" />
             Exporter en HTML
           </Button>
@@ -219,7 +355,7 @@ export default function RapportPDFPage() {
             <CardTitle>Type de rapport</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -242,6 +378,17 @@ export default function RapportPDFPage() {
                 />
                 <span className="font-medium">Rapport Annuel</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="reportType"
+                  value="plage"
+                  checked={reportType === 'plage'}
+                  onChange={() => setReportType('plage')}
+                  className="accent-primary w-4 h-4"
+                />
+                <span className="font-medium">Plage de dates</span>
+              </label>
             </div>
           </CardContent>
         </Card>
@@ -252,7 +399,7 @@ export default function RapportPDFPage() {
             <CardTitle>Sélectionner la période</CardTitle>
           </CardHeader>
           <CardContent>
-            {reportType === 'mensuel' ? (
+            {reportType === 'mensuel' && (
               <div className="flex gap-4">
                 <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
                   <SelectTrigger className="w-[200px]">
@@ -266,8 +413,22 @@ export default function RapportPDFPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AVAILABLE_YEARS.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ) : (
+            )}
+
+            {reportType === 'annuel' && (
               <div className="flex gap-4">
                 <Select value={annualYear.toString()} onValueChange={(v) => setAnnualYear(parseInt(v))}>
                   <SelectTrigger className="w-[200px]">
@@ -283,12 +444,42 @@ export default function RapportPDFPage() {
                 </Select>
               </div>
             )}
+
+            {reportType === 'plage' && (
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="range-start">Date de début</Label>
+                  <Input
+                    id="range-start"
+                    type="date"
+                    value={rangeStart}
+                    onChange={(e) => setRangeStart(e.target.value)}
+                    className="w-[180px]"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="range-end">Date de fin</Label>
+                  <Input
+                    id="range-end"
+                    type="date"
+                    value={rangeEnd}
+                    onChange={(e) => setRangeEnd(e.target.value)}
+                    className="w-[180px]"
+                  />
+                </div>
+                {rangeStart && rangeEnd && new Date(rangeStart) > new Date(rangeEnd) && (
+                  <p className="text-destructive text-sm self-end pb-2">
+                    La date de début doit être antérieure à la date de fin.
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>{reportTitle}</CardTitle>
+            <CardTitle>{previewTitle}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -330,6 +521,15 @@ export default function RapportPDFPage() {
                       <td className="border p-2 text-right">{row.creditNegatif < BigInt(0) ? formatBalance(row.creditNegatif) : '0'}</td>
                     </tr>
                   ))}
+                  {calculatedRows.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="border p-4 text-center text-muted-foreground">
+                        {reportType === 'plage' && !isRangeValid
+                          ? 'Veuillez sélectionner une plage de dates valide.'
+                          : 'Aucune donnée pour cette période.'}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
