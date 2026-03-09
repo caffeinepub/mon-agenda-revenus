@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import { DemandeEdition, type RendezVous } from '../backend';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,10 +7,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useDeleteAppointment } from '../hooks/useQueries';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+} from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { DemandeEdition, type RendezVous } from "../backend";
+import { useDeleteAppointment } from "../hooks/useQueries";
 
 interface AppointmentDeleteDialogProps {
   open: boolean;
@@ -36,12 +36,12 @@ export default function AppointmentDeleteDialog({
       await deleteAppointment.mutateAsync({ id: appointment.id, mode });
       toast.success(
         mode === DemandeEdition.unique
-          ? 'Rendez-vous supprimé avec succès'
-          : 'Rendez-vous futurs supprimés avec succès'
+          ? "Rendez-vous supprimé avec succès"
+          : "Rendez-vous futurs supprimés avec succès",
       );
       onClose();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error("Erreur lors de la suppression");
       console.error(error);
     } finally {
       setDeleteMode(null);
@@ -59,6 +59,7 @@ export default function AppointmentDeleteDialog({
         </AlertDialogHeader>
         <div className="space-y-3 py-4">
           <button
+            type="button"
             onClick={() => handleDelete(DemandeEdition.unique)}
             disabled={deleteAppointment.isPending}
             className="w-full text-left rounded-lg border border-border bg-card p-4 hover:bg-accent/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -68,7 +69,9 @@ export default function AppointmentDeleteDialog({
                 <Loader2 className="h-5 w-5 animate-spin" />
               )}
               <div>
-                <div className="font-semibold">Supprimer uniquement ce rendez-vous</div>
+                <div className="font-semibold">
+                  Supprimer uniquement ce rendez-vous
+                </div>
                 <div className="text-xs text-muted-foreground">
                   Seul ce rendez-vous sera supprimé
                 </div>
@@ -76,6 +79,7 @@ export default function AppointmentDeleteDialog({
             </div>
           </button>
           <button
+            type="button"
             onClick={() => handleDelete(DemandeEdition.futursDuClient)}
             disabled={deleteAppointment.isPending}
             className="w-full text-left rounded-lg border border-border bg-card p-4 hover:bg-accent/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -85,7 +89,9 @@ export default function AppointmentDeleteDialog({
                 <Loader2 className="h-5 w-5 animate-spin" />
               )}
               <div>
-                <div className="font-semibold">Supprimer tous les rendez-vous futurs du même client</div>
+                <div className="font-semibold">
+                  Supprimer tous les rendez-vous futurs du même client
+                </div>
                 <div className="text-xs text-muted-foreground">
                   Tous les rendez-vous futurs de ce client seront supprimés
                 </div>

@@ -29,7 +29,11 @@ export function getNowNanos(): bigint {
 /**
  * Check if a bigint timestamp is within a month range (inclusive start, exclusive end)
  */
-export function isInMonth(timestamp: bigint, year: number, month: number): boolean {
+export function isInMonth(
+  timestamp: bigint,
+  year: number,
+  month: number,
+): boolean {
   const start = getMonthStartNanos(year, month);
   const end = getMonthEndNanos(year, month);
   return timestamp >= start && timestamp <= end;

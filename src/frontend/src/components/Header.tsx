@@ -1,9 +1,4 @@
-import { useState } from 'react';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
-import { Calendar, LogOut, User, LayoutDashboard, Plus, FileBarChart, Users } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +6,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import AppointmentDialog from './AppointmentDialog';
+} from "@/components/ui/dropdown-menu";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  Calendar,
+  FileBarChart,
+  LayoutDashboard,
+  LogOut,
+  Plus,
+  User,
+  Users,
+} from "lucide-react";
+import { useState } from "react";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import AppointmentDialog from "./AppointmentDialog";
 
 interface HeaderProps {
   userName?: string;
@@ -41,8 +49,12 @@ export default function Header({ userName }: HeaderProps) {
               <Calendar className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Mon Agenda Revenus</h1>
-              <p className="text-xs text-muted-foreground">Gestion de rendez-vous</p>
+              <h1 className="text-xl font-bold text-foreground">
+                Mon Agenda Revenus
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Gestion de rendez-vous
+              </p>
             </div>
           </div>
 
@@ -50,28 +62,30 @@ export default function Header({ userName }: HeaderProps) {
             <div className="flex items-center gap-2">
               <nav className="hidden md:flex items-center gap-2">
                 <Button
-                  variant={currentPath === '/' ? 'default' : 'ghost'}
+                  variant={currentPath === "/" ? "default" : "ghost"}
                   size="sm"
                   className="gap-2"
-                  onClick={() => navigate({ to: '/' })}
+                  onClick={() => navigate({ to: "/" })}
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Tableau de bord
                 </Button>
                 <Button
-                  variant={currentPath === '/rapport-pdf' ? 'default' : 'ghost'}
+                  variant={currentPath === "/rapport-pdf" ? "default" : "ghost"}
                   size="sm"
                   className="gap-2"
-                  onClick={() => navigate({ to: '/rapport-pdf' })}
+                  onClick={() => navigate({ to: "/rapport-pdf" })}
                 >
                   <FileBarChart className="h-4 w-4" />
                   Rapport PDF
                 </Button>
                 <Button
-                  variant={currentPath === '/client-database' ? 'default' : 'ghost'}
+                  variant={
+                    currentPath === "/client-database" ? "default" : "ghost"
+                  }
                   size="sm"
                   className="gap-2"
-                  onClick={() => navigate({ to: '/client-database' })}
+                  onClick={() => navigate({ to: "/client-database" })}
                 >
                   <Users className="h-4 w-4" />
                   Base Client
@@ -92,28 +106,37 @@ export default function Header({ userName }: HeaderProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2">
                     <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">{userName || 'Mon compte'}</span>
+                    <span className="hidden sm:inline">
+                      {userName || "Mon compte"}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="md:hidden">
-                    <DropdownMenuItem onClick={() => navigate({ to: '/' })}>
+                    <DropdownMenuItem onClick={() => navigate({ to: "/" })}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Tableau de bord
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate({ to: '/rapport-pdf' })}>
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: "/rapport-pdf" })}
+                    >
                       <FileBarChart className="mr-2 h-4 w-4" />
                       Rapport PDF
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate({ to: '/client-database' })}>
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: "/client-database" })}
+                    >
                       <Users className="mr-2 h-4 w-4" />
                       Base Client
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </div>
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Déconnexion
                   </DropdownMenuItem>

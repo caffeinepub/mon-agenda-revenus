@@ -1,11 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useGetAllAppointments, useUpdateAppointmentStatus, useUpdateMontantPaye } from '../hooks/useQueries';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { RendezVous } from '../backend';
-import { toast } from 'sonner';
-import AppointmentActionDialog from './AppointmentActionDialog';
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import type { RendezVous } from "../backend";
+import {
+  useGetAllAppointments,
+  useUpdateAppointmentStatus,
+  useUpdateMontantPaye,
+} from "../hooks/useQueries";
+import AppointmentActionDialog from "./AppointmentActionDialog";
 
 // Helper functions
 const getDaysInMonth = (year: number, month: number): number => {
@@ -13,56 +16,93 @@ const getDaysInMonth = (year: number, month: number): number => {
 };
 
 const timeToMinutes = (timeStr: string): number => {
-  const [hours, minutes] = timeStr.split(':').map(Number);
+  const [hours, minutes] = timeStr.split(":").map(Number);
   return hours * 60 + minutes;
 };
 
 const getWeekdayAbbreviation = (date: Date): string => {
-  const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
   return days[date.getDay()];
 };
 
+const isSameDay = (a: Date, b: Date): boolean => {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+};
+
 interface ComptaMoisCalendarTableProps {
+  /** Controlled: current year (1-based) */
+  year: number;
+  /** Controlled: current month (1-based) */
+  month: number;
+  /** Called when the user navigates to a different month */
+  onMonthChange: (year: number, month: number) => void;
+  /** @deprecated use year/month/onMonthChange instead */
   initialMonth?: Date;
 }
 
-export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCalendarTableProps) {
-  const { data: appointments = [], isLoading, refetch: refetchAppointments } = useGetAllAppointments();
+export default function ComptaMoisCalendarTable({
+  year,
+  month,
+  onMonthChange,
+  initialMonth: _initialMonth,
+}: ComptaMoisCalendarTableProps) {
+  const {
+    data: appointments = [],
+    isLoading,
+    refetch: refetchAppointments,
+  } = useGetAllAppointments();
   const updateStatusMutation = useUpdateAppointmentStatus();
   const updateMontantPayeMutation = useUpdateMontantPaye();
-  
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    if (initialMonth) return initialMonth;
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1);
-  });
 
-  const [editingMontantPaye, setEditingMontantPaye] = useState<{ id: bigint; value: string } | null>(null);
-  const [editingCommentaire, setEditingCommentaire] = useState<{ id: bigint; value: string } | null>(null);
-  const [selectedAppointment, setSelectedAppointment] = useState<RendezVous | null>(null);
+  const [editingMontantPaye, setEditingMontantPaye] = useState<{
+    id: bigint;
+    value: string;
+  } | null>(null);
+  const [editingCommentaire, setEditingCommentaire] = useState<{
+    id: bigint;
+    value: string;
+  } | null>(null);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<RendezVous | null>(null);
   const [showActionDialog, setShowActionDialog] = useState(false);
-  const [localMontantPayeUpdates, setLocalMontantPayeUpdates] = useState<Map<string, bigint>>(new Map());
-  const [localCommentaireUpdates, setLocalCommentaireUpdates] = useState<Map<string, string>>(new Map());
+  const [localMontantPayeUpdates, setLocalMontantPayeUpdates] = useState<
+    Map<string, bigint>
+  >(new Map());
+  const [localCommentaireUpdates, setLocalCommentaireUpdates] = useState<
+    Map<string, string>
+  >(new Map());
+
+  // Today's date for column highlighting
+  const today = useMemo(() => new Date(), []);
+
+  // Derive the current month Date from controlled props
+  const currentMonth = useMemo(() => {
+    return new Date(year, month - 1, 1);
+  }, [year, month]);
 
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
     for (let hour = 7; hour <= 23; hour++) {
-      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      slots.push(`${hour.toString().padStart(2, "0")}:00`);
       if (hour < 23) {
-        slots.push(`${hour.toString().padStart(2, '0')}:30`);
+        slots.push(`${hour.toString().padStart(2, "0")}:30`);
       }
     }
     return slots;
   }, []);
 
   const monthDays = useMemo(() => {
-    const year = currentMonth.getFullYear();
+    const y = currentMonth.getFullYear();
     const monthIndex = currentMonth.getMonth();
-    const daysInMonth = getDaysInMonth(year, monthIndex);
-    
+    const daysInMonth = getDaysInMonth(y, monthIndex);
+
     const days: Date[] = [];
     for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, monthIndex, i));
+      days.push(new Date(y, monthIndex, i));
     }
     return days;
   }, [currentMonth]);
@@ -70,27 +110,36 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
   useEffect(() => {
     setLocalMontantPayeUpdates(new Map());
     setLocalCommentaireUpdates(new Map());
-  }, [appointments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const isTimeSlotInAppointmentRange = (timeSlot: string, appointment: RendezVous): boolean => {
+  const isTimeSlotInAppointmentRange = (
+    timeSlot: string,
+    appointment: RendezVous,
+  ): boolean => {
     const slotMinutes = timeToMinutes(timeSlot);
     const startMinutes = timeToMinutes(appointment.heureDebut);
     const endMinutes = timeToMinutes(appointment.heureFin);
-    
+
     return slotMinutes >= startMinutes && slotMinutes < endMinutes;
   };
 
-  const getAppointmentStartingAtTimeSlot = (date: Date, timeSlot: string): RendezVous | null => {
-    return appointments.find((apt) => {
-      const aptDate = new Date(Number(apt.dateHeure) / 1000000);
-      if (aptDate.toDateString() !== date.toDateString()) {
-        return false;
-      }
-      return apt.heureDebut === timeSlot;
-    }) || null;
+  const getAppointmentStartingAtTimeSlot = (
+    date: Date,
+    timeSlot: string,
+  ): RendezVous | null => {
+    return (
+      appointments.find((apt) => {
+        const aptDate = new Date(Number(apt.dateHeure) / 1000000);
+        if (aptDate.toDateString() !== date.toDateString()) {
+          return false;
+        }
+        return apt.heureDebut === timeSlot;
+      }) || null
+    );
   };
 
-  const getAppointmentForDay = (date: Date): RendezVous[] => {
+  const _getAppointmentForDay = (date: Date): RendezVous[] => {
     return appointments.filter((apt) => {
       const aptDate = new Date(Number(apt.dateHeure) / 1000000);
       return aptDate.toDateString() === date.toDateString();
@@ -98,7 +147,10 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
   };
 
   const formatMonthYear = () => {
-    return currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    return currentMonth.toLocaleDateString("fr-FR", {
+      month: "long",
+      year: "numeric",
+    });
   };
 
   const getDisplayedMontantPaye = (appointment: RendezVous): string => {
@@ -120,27 +172,35 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
     if (localUpdate !== undefined) {
       return localUpdate;
     }
-    return appointment.commentaireManuel || '';
+    return appointment.commentaireManuel || "";
   };
 
+  // Navigation handlers — call parent callback instead of local state
   const goToPreviousMonth = () => {
-    const newDate = new Date(currentMonth);
-    newDate.setMonth(newDate.getMonth() - 1);
-    setCurrentMonth(newDate);
+    if (month === 1) {
+      onMonthChange(year - 1, 12);
+    } else {
+      onMonthChange(year, month - 1);
+    }
   };
 
   const goToNextMonth = () => {
-    const newDate = new Date(currentMonth);
-    newDate.setMonth(newDate.getMonth() + 1);
-    setCurrentMonth(newDate);
+    if (month === 12) {
+      onMonthChange(year + 1, 1);
+    } else {
+      onMonthChange(year, month + 1);
+    }
   };
 
   const goToCurrentMonth = () => {
-    const today = new Date();
-    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    const now = new Date();
+    onMonthChange(now.getFullYear(), now.getMonth() + 1);
   };
 
-  const handleToggleFait = async (appointment: RendezVous, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleToggleFait = async (
+    appointment: RendezVous,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     e.stopPropagation();
     try {
       await updateStatusMutation.mutateAsync({
@@ -148,14 +208,17 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
         fait: !appointment.fait,
         annule: appointment.annule ? false : null,
       });
-      toast.success('Statut mis à jour');
+      toast.success("Statut mis à jour");
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error("Erreur lors de la mise à jour");
       console.error(error);
     }
   };
 
-  const handleToggleAnnule = async (appointment: RendezVous, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleToggleAnnule = async (
+    appointment: RendezVous,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     e.stopPropagation();
     try {
       await updateStatusMutation.mutateAsync({
@@ -163,16 +226,21 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
         annule: !appointment.annule,
         fait: appointment.fait ? false : null,
       });
-      toast.success('Statut mis à jour');
+      toast.success("Statut mis à jour");
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error("Erreur lors de la mise à jour");
       console.error(error);
     }
   };
 
-  const handleMontantPayeClick = (appointment: RendezVous, e: React.MouseEvent) => {
+  const handleMontantPayeClick = (
+    appointment: RendezVous,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
-    const currentValue = localMontantPayeUpdates.get(appointment.id.toString()) ?? appointment.montantPaye;
+    const currentValue =
+      localMontantPayeUpdates.get(appointment.id.toString()) ??
+      appointment.montantPaye;
     setEditingMontantPaye({
       id: appointment.id,
       value: Number(currentValue).toString(),
@@ -192,39 +260,39 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
     if (!editingMontantPaye) return;
 
     const inputValue = editingMontantPaye.value.trim();
-    
-    if (inputValue === '') {
+
+    if (inputValue === "") {
       setEditingMontantPaye(null);
       return;
     }
 
     try {
-      const parsedValue = parseFloat(inputValue);
-      if (isNaN(parsedValue) || parsedValue < 0) {
-        toast.error('Veuillez entrer un montant valide');
+      const parsedValue = Number.parseFloat(inputValue);
+      if (Number.isNaN(parsedValue) || parsedValue < 0) {
+        toast.error("Veuillez entrer un montant valide");
         setEditingMontantPaye(null);
         return;
       }
 
       const newMontantPaye = BigInt(Math.round(parsedValue));
-      
+
       const newLocalUpdates = new Map(localMontantPayeUpdates);
       newLocalUpdates.set(appointment.id.toString(), newMontantPaye);
       setLocalMontantPayeUpdates(newLocalUpdates);
-      
+
       setEditingMontantPaye(null);
-      
+
       await updateMontantPayeMutation.mutateAsync({
         id: appointment.id,
         montantPaye: newMontantPaye,
         referenceClient: appointment.referenceClient,
       });
-      
-      toast.success('Montant payé mis à jour avec ajustement des crédits');
-      
+
+      toast.success("Montant payé mis à jour avec ajustement des crédits");
+
       await refetchAppointments();
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour du montant payé');
+      toast.error("Erreur lors de la mise à jour du montant payé");
       console.error(error);
       setEditingMontantPaye(null);
       const newLocalUpdates = new Map(localMontantPayeUpdates);
@@ -233,9 +301,15 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
     }
   };
 
-  const handleCommentaireClick = (appointment: RendezVous, e: React.MouseEvent) => {
+  const handleCommentaireClick = (
+    appointment: RendezVous,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
-    const currentValue = localCommentaireUpdates.get(appointment.id.toString()) ?? appointment.commentaireManuel ?? '';
+    const currentValue =
+      localCommentaireUpdates.get(appointment.id.toString()) ??
+      appointment.commentaireManuel ??
+      "";
     setEditingCommentaire({
       id: appointment.id,
       value: currentValue,
@@ -255,28 +329,28 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
     if (!editingCommentaire) return;
 
     const inputValue = editingCommentaire.value.trim();
-    
+
     const newLocalUpdates = new Map(localCommentaireUpdates);
     newLocalUpdates.set(appointment.id.toString(), inputValue);
     setLocalCommentaireUpdates(newLocalUpdates);
-    
+
     setEditingCommentaire(null);
-    
+
     try {
       await updateStatusMutation.mutateAsync({
         id: appointment.id,
         commentaireManuel: inputValue,
       });
-      
-      toast.success('Commentaire mis à jour');
-      
+
+      toast.success("Commentaire mis à jour");
+
       await refetchAppointments();
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour du commentaire');
+      toast.error("Erreur lors de la mise à jour du commentaire");
       console.error(error);
-      const newLocalUpdates = new Map(localCommentaireUpdates);
-      newLocalUpdates.delete(appointment.id.toString());
-      setLocalCommentaireUpdates(newLocalUpdates);
+      const newLocalUpdates2 = new Map(localCommentaireUpdates);
+      newLocalUpdates2.delete(appointment.id.toString());
+      setLocalCommentaireUpdates(newLocalUpdates2);
     }
   };
 
@@ -293,7 +367,9 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="table-data text-muted-foreground">Chargement du calendrier...</p>
+        <p className="table-data text-muted-foreground">
+          Chargement du calendrier...
+        </p>
       </div>
     );
   }
@@ -322,14 +398,20 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
           <thead>
             {/* Day of week row */}
             <tr>
-              <th className="compta-mois-hour-header table-header border bg-muted/50"></th>
-              {monthDays.map((date, index) => {
+              <th className="compta-mois-hour-header table-header border bg-muted/50" />
+              {monthDays.map((date) => {
                 const isSunday = date.getDay() === 0;
+                const isToday = isSameDay(date, today);
+                const dayKey = `wd-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
                 return (
                   <th
-                    key={index}
+                    key={dayKey}
                     className={`compta-mois-day-header table-header border text-center ${
-                      isSunday ? 'compta-mois-sunday-header' : 'bg-muted/50'
+                      isToday
+                        ? "compta-mois-today-header"
+                        : isSunday
+                          ? "compta-mois-sunday-header"
+                          : "bg-muted/50"
                     }`}
                   >
                     {getWeekdayAbbreviation(date)}
@@ -339,14 +421,20 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
             </tr>
             {/* Day number row */}
             <tr>
-              <th className="compta-mois-hour-header table-header border bg-muted/50"></th>
-              {monthDays.map((date, index) => {
+              <th className="compta-mois-hour-header table-header border bg-muted/50" />
+              {monthDays.map((date) => {
                 const isSunday = date.getDay() === 0;
+                const isToday = isSameDay(date, today);
+                const dayKey = `dn-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
                 return (
                   <th
-                    key={index}
+                    key={dayKey}
                     className={`compta-mois-day-header table-header border text-center ${
-                      isSunday ? 'compta-mois-sunday-header' : 'bg-muted/50'
+                      isToday
+                        ? "compta-mois-today-header"
+                        : isSunday
+                          ? "compta-mois-sunday-header"
+                          : "bg-muted/50"
                     }`}
                   >
                     {date.getDate()}
@@ -356,51 +444,91 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
             </tr>
           </thead>
           <tbody>
-            {timeSlots.map((timeSlot, slotIndex) => {
-              const isHourMark = timeSlot.endsWith(':00');
+            {timeSlots.map((timeSlot) => {
+              const isHourMark = timeSlot.endsWith(":00");
+              const isHalfHourMark = timeSlot.endsWith(":30");
               return (
-                <tr key={slotIndex} className="compta-mois-time-row">
-                  <td className="compta-mois-hour-cell table-data border bg-muted/30">
-                    {timeSlot}
+                <tr
+                  key={timeSlot}
+                  className={`compta-mois-time-row ${
+                    isHourMark
+                      ? "compta-mois-hour-separator"
+                      : isHalfHourMark
+                        ? "compta-mois-halfhour-separator"
+                        : ""
+                  }`}
+                >
+                  {/* Hour label cell: pale pink background only for full hours */}
+                  <td
+                    className={`compta-mois-hour-cell table-data border ${
+                      isHourMark ? "compta-mois-hour-label-cell" : "bg-muted/30"
+                    }`}
+                  >
+                    {isHourMark ? timeSlot : ""}
                   </td>
-                  {monthDays.map((date, dayIndex) => {
-                    const appointment = getAppointmentStartingAtTimeSlot(date, timeSlot);
+                  {monthDays.map((date) => {
+                    const appointment = getAppointmentStartingAtTimeSlot(
+                      date,
+                      timeSlot,
+                    );
                     const isSunday = date.getDay() === 0;
+                    const isToday = isSameDay(date, today);
+                    const cellKey = `${timeSlot}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 
                     if (appointment) {
                       const rowSpan = Math.ceil(
-                        (timeToMinutes(appointment.heureFin) - timeToMinutes(appointment.heureDebut)) / 30
+                        (timeToMinutes(appointment.heureFin) -
+                          timeToMinutes(appointment.heureDebut)) /
+                          30,
                       );
 
-                      let bgColor = 'bg-blue-50';
+                      let bgColor = "bg-blue-50";
                       if (appointment.annule) {
-                        bgColor = 'bg-red-100';
+                        bgColor = "bg-red-100";
                       } else if (appointment.fait) {
-                        bgColor = 'bg-green-100';
+                        bgColor = "bg-green-100";
                       }
 
                       return (
                         <td
-                          key={dayIndex}
+                          key={cellKey}
                           rowSpan={rowSpan}
                           className={`compta-mois-day-cell table-data border ${bgColor} ${
-                            isSunday ? 'compta-mois-sunday-appointment' : ''
-                          } ${isHourMark ? 'has-separator' : ''} cursor-pointer hover:opacity-80`}
+                            isSunday ? "compta-mois-sunday-appointment" : ""
+                          } ${isToday ? "compta-mois-today-appointment" : ""} cursor-pointer hover:opacity-80`}
                           onClick={() => handleAppointmentClick(appointment)}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" &&
+                            handleAppointmentClick(appointment)
+                          }
                         >
                           <div className="flex flex-col gap-0.5 p-0.5">
-                            <div className="table-data font-semibold">{appointment.nomClient}</div>
+                            <div className="table-data font-semibold">
+                              {appointment.nomClient}
+                            </div>
+                            {appointment.referenceClient && (
+                              <div
+                                className="table-data text-muted-foreground"
+                                style={{ fontSize: "8px" }}
+                              >
+                                {appointment.referenceClient}
+                              </div>
+                            )}
                             <div className="table-data text-muted-foreground">
                               {appointment.heureDebut} - {appointment.heureFin}
                             </div>
-                            <div className="table-data">{appointment.service}</div>
+                            <div className="table-data">
+                              {appointment.service}
+                            </div>
                             <div className="flex items-center gap-1">
                               <input
                                 type="checkbox"
                                 checked={appointment.fait}
-                                onChange={(e) => handleToggleFait(appointment, e)}
+                                onChange={(e) =>
+                                  handleToggleFait(appointment, e)
+                                }
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-3 h-3"
+                                className="w-4 h-4"
                               />
                               <span className="table-data">Fait</span>
                             </div>
@@ -408,7 +536,9 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
                               <input
                                 type="checkbox"
                                 checked={appointment.annule}
-                                onChange={(e) => handleToggleAnnule(appointment, e)}
+                                onChange={(e) =>
+                                  handleToggleAnnule(appointment, e)
+                                }
                                 onClick={(e) => e.stopPropagation()}
                                 className="w-3 h-3"
                               />
@@ -424,18 +554,23 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
                                   type="text"
                                   value={editingMontantPaye.value}
                                   onChange={handleMontantPayeChange}
-                                  onBlur={() => handleMontantPayeBlur(appointment)}
+                                  onBlur={() =>
+                                    handleMontantPayeBlur(appointment)
+                                  }
                                   onClick={(e) => e.stopPropagation()}
-                                  className="table-data w-16 px-1 border rounded"
-                                  autoFocus
+                                  className="table-data w-20 px-1 py-0.5 border rounded"
                                 />
                               ) : (
-                                <span
-                                  className="table-data cursor-pointer hover:underline"
-                                  onClick={(e) => handleMontantPayeClick(appointment, e)}
+                                <button
+                                  type="button"
+                                  className="table-data cursor-pointer hover:underline bg-white border border-gray-300 rounded px-2 py-0.5 min-w-[4rem] text-left"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMontantPayeClick(appointment, e);
+                                  }}
                                 >
                                   {getDisplayedMontantPaye(appointment)}
-                                </span>
+                                </button>
                               )}
                             </div>
                             <div className="flex items-center gap-1">
@@ -445,19 +580,23 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
                                   type="text"
                                   value={editingCommentaire.value}
                                   onChange={handleCommentaireChange}
-                                  onBlur={() => handleCommentaireBlur(appointment)}
+                                  onBlur={() =>
+                                    handleCommentaireBlur(appointment)
+                                  }
                                   onClick={(e) => e.stopPropagation()}
-                                  className="table-data flex-1 px-1 border rounded"
-                                  autoFocus
+                                  className="table-data w-20 px-1 border rounded"
                                 />
                               ) : (
-                                <span
-                                  className="table-data cursor-pointer hover:underline flex-1 truncate"
-                                  onClick={(e) => handleCommentaireClick(appointment, e)}
-                                  title={getDisplayedCommentaire(appointment)}
+                                <button
+                                  type="button"
+                                  className="table-data cursor-pointer hover:underline bg-transparent border-0 p-0 m-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCommentaireClick(appointment, e);
+                                  }}
                                 >
-                                  {getDisplayedCommentaire(appointment) || '(vide)'}
-                                </span>
+                                  {getDisplayedCommentaire(appointment) || "—"}
+                                </button>
                               )}
                             </div>
                           </div>
@@ -465,22 +604,32 @@ export default function ComptaMoisCalendarTable({ initialMonth }: ComptaMoisCale
                       );
                     }
 
-                    const dayAppointments = getAppointmentForDay(date);
-                    const isOccupied = dayAppointments.some((apt) =>
-                      isTimeSlotInAppointmentRange(timeSlot, apt)
-                    );
+                    // Check if this slot is covered by a spanning appointment
+                    const coveringAppointment = appointments.find((apt) => {
+                      const aptDate = new Date(Number(apt.dateHeure) / 1000000);
+                      if (aptDate.toDateString() !== date.toDateString())
+                        return false;
+                      return (
+                        isTimeSlotInAppointmentRange(timeSlot, apt) &&
+                        apt.heureDebut !== timeSlot
+                      );
+                    });
 
-                    if (isOccupied) {
+                    if (coveringAppointment) {
                       return null;
                     }
 
                     return (
                       <td
-                        key={dayIndex}
-                        className={`compta-mois-day-cell table-data border ${
-                          isSunday ? 'compta-mois-sunday-empty' : 'bg-background'
-                        } ${isHourMark ? 'has-separator' : ''}`}
-                      ></td>
+                        key={cellKey}
+                        className={`compta-mois-day-cell border ${
+                          isToday
+                            ? "compta-mois-today-empty"
+                            : isSunday
+                              ? "compta-mois-sunday-empty"
+                              : ""
+                        }`}
+                      />
                     );
                   })}
                 </tr>

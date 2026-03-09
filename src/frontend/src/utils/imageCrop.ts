@@ -11,13 +11,13 @@ export async function cropImageTo35x45(file: File): Promise<Uint8Array> {
       img.src = e.target?.result as string;
     };
 
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = () => reject(new Error("Failed to read file"));
 
     img.onload = () => {
       try {
         // Target aspect ratio: 35:45 = 0.7777...
         const targetRatio = 35 / 45;
-        
+
         // Calculate crop dimensions to maintain aspect ratio
         let sourceWidth = img.width;
         let sourceHeight = img.height;
@@ -41,13 +41,13 @@ export async function cropImageTo35x45(file: File): Promise<Uint8Array> {
         const outputHeight = 450; // 45mm * 10 pixels/mm
 
         // Create canvas and draw cropped/resized image
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = outputWidth;
         canvas.height = outputHeight;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
 
         if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
+          reject(new Error("Failed to get canvas context"));
           return;
         }
 
@@ -61,14 +61,14 @@ export async function cropImageTo35x45(file: File): Promise<Uint8Array> {
           0,
           0,
           outputWidth,
-          outputHeight
+          outputHeight,
         );
 
         // Convert to JPEG blob
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              reject(new Error('Failed to create blob'));
+              reject(new Error("Failed to create blob"));
               return;
             }
 
@@ -78,18 +78,18 @@ export async function cropImageTo35x45(file: File): Promise<Uint8Array> {
               const arrayBuffer = reader.result as ArrayBuffer;
               resolve(new Uint8Array(arrayBuffer));
             };
-            reader.onerror = () => reject(new Error('Failed to read blob'));
+            reader.onerror = () => reject(new Error("Failed to read blob"));
             reader.readAsArrayBuffer(blob);
           },
-          'image/jpeg',
-          0.9
+          "image/jpeg",
+          0.9,
         );
       } catch (error) {
         reject(error);
       }
     };
 
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onerror = () => reject(new Error("Failed to load image"));
 
     reader.readAsDataURL(file);
   });
@@ -101,14 +101,14 @@ export async function cropImageTo35x45(file: File): Promise<Uint8Array> {
 export function photoToUrl(photo: Uint8Array | number[]): string {
   // Convert to a proper Uint8Array with ArrayBuffer to satisfy TypeScript
   let uint8Array: Uint8Array;
-  
+
   if (photo instanceof Uint8Array) {
     // Create a new Uint8Array from the existing one to ensure proper ArrayBuffer type
     uint8Array = new Uint8Array(Array.from(photo));
   } else {
     uint8Array = new Uint8Array(photo);
   }
-  
-  const blob = new Blob([uint8Array as BlobPart], { type: 'image/jpeg' });
+
+  const blob = new Blob([uint8Array as BlobPart], { type: "image/jpeg" });
   return URL.createObjectURL(blob);
 }

@@ -1,16 +1,16 @@
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, Clock, DollarSign } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, DollarSign, TrendingUp } from "lucide-react";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 export default function LoginPage() {
   const { login, loginStatus } = useInternetIdentity();
-  const isLoggingIn = loginStatus === 'logging-in';
+  const isLoggingIn = loginStatus === "logging-in";
 
   const handleLogin = async () => {
     try {
       await login();
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
     }
   };
 
@@ -37,7 +37,9 @@ export default function LoginPage() {
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                 <Calendar className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mb-2 font-semibold text-card-foreground">Gestion des rendez-vous</h3>
+              <h3 className="mb-2 font-semibold text-card-foreground">
+                Gestion des rendez-vous
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Ajoutez, modifiez et organisez vos rendez-vous clients
               </p>
@@ -47,7 +49,9 @@ export default function LoginPage() {
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
                 <DollarSign className="h-6 w-6 text-accent-foreground" />
               </div>
-              <h3 className="mb-2 font-semibold text-card-foreground">Suivi des paiements</h3>
+              <h3 className="mb-2 font-semibold text-card-foreground">
+                Suivi des paiements
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Marquez les montants comme payés ou dus
               </p>
@@ -57,7 +61,9 @@ export default function LoginPage() {
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                 <TrendingUp className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mb-2 font-semibold text-card-foreground">Statistiques financières</h3>
+              <h3 className="mb-2 font-semibold text-card-foreground">
+                Statistiques financières
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Visualisez vos revenus et montants dus
               </p>
@@ -67,7 +73,9 @@ export default function LoginPage() {
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
                 <Clock className="h-6 w-6 text-accent-foreground" />
               </div>
-              <h3 className="mb-2 font-semibold text-card-foreground">Historique complet</h3>
+              <h3 className="mb-2 font-semibold text-card-foreground">
+                Historique complet
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Accédez à tous vos rendez-vous passés et futurs
               </p>
@@ -81,7 +89,7 @@ export default function LoginPage() {
               size="lg"
               className="px-8 text-base font-semibold shadow-lg"
             >
-              {isLoggingIn ? 'Connexion en cours...' : 'Se connecter'}
+              {isLoggingIn ? "Connexion en cours..." : "Se connecter"}
             </Button>
           </div>
         </div>

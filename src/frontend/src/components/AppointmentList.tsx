@@ -1,19 +1,23 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Phone, MapPin } from 'lucide-react';
-import type { RendezVous, TypeRepetition } from '../backend';
-import AppointmentActionDialog from './AppointmentActionDialog';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin, Phone } from "lucide-react";
+import { useState } from "react";
+import type { RendezVous, TypeRepetition } from "../backend";
+import AppointmentActionDialog from "./AppointmentActionDialog";
 
 interface AppointmentListProps {
   appointments: RendezVous[];
   unpaidCount?: number;
 }
 
-export default function AppointmentList({ appointments, unpaidCount }: AppointmentListProps) {
-  const [selectedAppointment, setSelectedAppointment] = useState<RendezVous | null>(null);
+export default function AppointmentList({
+  appointments,
+  unpaidCount,
+}: AppointmentListProps) {
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<RendezVous | null>(null);
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
 
   const handleAppointmentAction = (appointment: RendezVous) => {
@@ -28,38 +32,38 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
 
   const formatDate = (timestamp: bigint) => {
     const date = new Date(Number(timestamp) / 1000000);
-    return date.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    return date.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const getRepetitionLabel = (repetition: TypeRepetition): string => {
     switch (repetition.__kind__) {
-      case 'aucune':
-        return 'Aucune';
-      case 'hebdomadaire': {
+      case "aucune":
+        return "Aucune";
+      case "hebdomadaire": {
         const jours = repetition.hebdomadaire;
         const selectedDays: string[] = [];
-        if (jours.lundi) selectedDays.push('Lun');
-        if (jours.mardi) selectedDays.push('Mar');
-        if (jours.mercredi) selectedDays.push('Mer');
-        if (jours.jeudi) selectedDays.push('Jeu');
-        if (jours.vendredi) selectedDays.push('Ven');
-        if (jours.samedi) selectedDays.push('Sam');
-        if (jours.dimanche) selectedDays.push('Dim');
-        return selectedDays.length > 0 
-          ? `Hebdomadaire (${selectedDays.join(', ')})`
-          : 'Hebdomadaire';
+        if (jours.lundi) selectedDays.push("Lun");
+        if (jours.mardi) selectedDays.push("Mar");
+        if (jours.mercredi) selectedDays.push("Mer");
+        if (jours.jeudi) selectedDays.push("Jeu");
+        if (jours.vendredi) selectedDays.push("Ven");
+        if (jours.samedi) selectedDays.push("Sam");
+        if (jours.dimanche) selectedDays.push("Dim");
+        return selectedDays.length > 0
+          ? `Hebdomadaire (${selectedDays.join(", ")})`
+          : "Hebdomadaire";
       }
-      case 'mensuelle':
-        return 'Mensuelle';
-      case 'annuelle':
-        return 'Annuelle';
+      case "mensuelle":
+        return "Mensuelle";
+      case "annuelle":
+        return "Annuelle";
       default:
-        return 'Aucune';
+        return "Aucune";
     }
   };
 
@@ -67,17 +71,25 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
     return Number(a.dateHeure) - Number(b.dateHeure);
   });
 
-  const paidAppointments = sortedAppointments.filter((apt) => apt.montantPaye > 0);
-  const unpaidAppointments = sortedAppointments.filter((apt) => apt.montantPaye === BigInt(0));
+  const paidAppointments = sortedAppointments.filter(
+    (apt) => apt.montantPaye > 0,
+  );
+  const unpaidAppointments = sortedAppointments.filter(
+    (apt) => apt.montantPaye === BigInt(0),
+  );
 
   const renderAppointmentCard = (appointment: RendezVous) => {
     const isPaid = appointment.montantPaye > 0;
-    const timeRange = appointment.heureDebut && appointment.heureFin 
-      ? `${appointment.heureDebut} - ${appointment.heureFin}`
-      : '';
+    const timeRange =
+      appointment.heureDebut && appointment.heureFin
+        ? `${appointment.heureDebut} - ${appointment.heureFin}`
+        : "";
 
     return (
-      <Card key={appointment.id.toString()} className="hover:shadow-md transition-shadow">
+      <Card
+        key={appointment.id.toString()}
+        className="hover:shadow-md transition-shadow"
+      >
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2">
@@ -85,11 +97,17 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
                 <h3 className="text-lg font-semibold text-foreground">
                   {appointment.nomClient}
                   {appointment.referenceClient && (
-                    <span className="text-muted-foreground font-normal"> – Réf: {appointment.referenceClient}</span>
+                    <span className="text-muted-foreground font-normal">
+                      {" "}
+                      – Réf: {appointment.referenceClient}
+                    </span>
                   )}
                 </h3>
                 {isPaid ? (
-                  <Badge variant="default" className="bg-success text-success-foreground">
+                  <Badge
+                    variant="default"
+                    className="bg-success text-success-foreground"
+                  >
                     Payé
                   </Badge>
                 ) : (
@@ -100,7 +118,10 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
               <div className="space-y-1 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">📅</span>
-                  <span>{formatDate(appointment.dateHeure)} {timeRange && `à ${timeRange}`}</span>
+                  <span>
+                    {formatDate(appointment.dateHeure)}{" "}
+                    {timeRange && `à ${timeRange}`}
+                  </span>
                 </div>
 
                 {appointment.numeroTelephone && (
@@ -136,10 +157,12 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
                   </span>
                 </div>
 
-                {appointment.repetition.__kind__ !== 'aucune' && (
+                {appointment.repetition.__kind__ !== "aucune" && (
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Répétition:</span>
-                    <Badge variant="outline">{getRepetitionLabel(appointment.repetition)}</Badge>
+                    <Badge variant="outline">
+                      {getRepetitionLabel(appointment.repetition)}
+                    </Badge>
                   </div>
                 )}
 
@@ -168,7 +191,8 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
   };
 
   // Use backend-calculated unpaidCount if provided, otherwise fallback to client-side calculation
-  const displayUnpaidCount = unpaidCount !== undefined ? unpaidCount : unpaidAppointments.length;
+  const displayUnpaidCount =
+    unpaidCount !== undefined ? unpaidCount : unpaidAppointments.length;
 
   return (
     <>
@@ -193,7 +217,9 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
             <TabsContent value="all" className="space-y-4 mt-4">
               {sortedAppointments.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">Aucun rendez-vous pour le moment</p>
+                  <p className="text-muted-foreground">
+                    Aucun rendez-vous pour le moment
+                  </p>
                 </div>
               ) : (
                 sortedAppointments.map(renderAppointmentCard)
@@ -203,7 +229,9 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
             <TabsContent value="paid" className="space-y-4 mt-4">
               {paidAppointments.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">Aucun rendez-vous payé</p>
+                  <p className="text-muted-foreground">
+                    Aucun rendez-vous payé
+                  </p>
                 </div>
               ) : (
                 paidAppointments.map(renderAppointmentCard)
@@ -213,7 +241,9 @@ export default function AppointmentList({ appointments, unpaidCount }: Appointme
             <TabsContent value="unpaid" className="space-y-4 mt-4">
               {unpaidAppointments.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">Aucun rendez-vous non payé</p>
+                  <p className="text-muted-foreground">
+                    Aucun rendez-vous non payé
+                  </p>
                 </div>
               ) : (
                 unpaidAppointments.map(renderAppointmentCard)

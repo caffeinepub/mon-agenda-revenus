@@ -1,20 +1,26 @@
-import { useEffect, useState } from 'react';
-import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from './hooks/useQueries';
-import { ThemeProvider } from 'next-themes';
-import { RouterProvider, createRouter, createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import LoginPage from './pages/LoginPage';
-import ProfileSetupModal from './components/ProfileSetupModal';
-import Dashboard from './pages/Dashboard';
-import RapportPDFPage from './pages/RapportPDFPage';
-import ClientDatabasePage from './pages/ClientDatabasePage';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from "@/components/ui/sonner";
+import {
+  Outlet,
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
+import { ThemeProvider } from "next-themes";
+import { useEffect, useState } from "react";
+import Footer from "./components/Footer";
+import Header from "./components/Header";
+import ProfileSetupModal from "./components/ProfileSetupModal";
+import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import { useGetCallerUserProfile } from "./hooks/useQueries";
+import ClientDatabasePage from "./pages/ClientDatabasePage";
+import Dashboard from "./pages/Dashboard";
+import LoginPage from "./pages/LoginPage";
+import RapportPDFPage from "./pages/RapportPDFPage";
 
 function Layout() {
   const { data: userProfile } = useGetCallerUserProfile();
-  
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header userName={userProfile?.name} />
@@ -32,34 +38,47 @@ const rootRoute = createRootRoute({
 
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: Dashboard,
 });
 
 const rapportPDFRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/rapport-pdf',
+  path: "/rapport-pdf",
   component: RapportPDFPage,
 });
 
 const clientDatabaseRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/client-database',
+  path: "/client-database",
   component: ClientDatabasePage,
 });
 
-const routeTree = rootRoute.addChildren([dashboardRoute, rapportPDFRoute, clientDatabaseRoute]);
+const routeTree = rootRoute.addChildren([
+  dashboardRoute,
+  rapportPDFRoute,
+  clientDatabaseRoute,
+]);
 
 const router = createRouter({ routeTree });
 
 function AuthenticatedApp() {
   const { identity } = useInternetIdentity();
   const isAuthenticated = !!identity;
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched,
+  } = useGetCallerUserProfile();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && !profileLoading && isFetched && userProfile === null) {
+    if (
+      isAuthenticated &&
+      !profileLoading &&
+      isFetched &&
+      userProfile === null
+    ) {
       setShowProfileSetup(true);
     } else {
       setShowProfileSetup(false);
@@ -86,7 +105,7 @@ export default function App() {
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="text-center">
-            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
+            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
             <p className="text-muted-foreground">Chargement...</p>
           </div>
         </div>

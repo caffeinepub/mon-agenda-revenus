@@ -1,17 +1,28 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import { useInternetIdentity } from './useInternetIdentity';
-import type { RendezVous, UserProfile, TypeRepetition, DomaineListingMensuel, TotauxListingMensuel, StatistiquesFinancieres, RapportPDFRequest, RapportPDFData, ClientRecord, ClientReference } from '../backend';
-import { DemandeEdition } from '../backend';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type {
+  ClientRecord,
+  ClientReference,
+  DomaineListingMensuel,
+  RapportPDFData,
+  RapportPDFRequest,
+  RendezVous,
+  StatistiquesFinancieres,
+  TotauxListingMensuel,
+  TypeRepetition,
+  UserProfile,
+} from "../backend";
+import type { DemandeEdition } from "../backend";
+import { useActor } from "./useActor";
+import { useInternetIdentity } from "./useInternetIdentity";
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
 
   const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile'],
+    queryKey: ["currentUserProfile"],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.getCallerUserProfile();
     },
     enabled: !!actor && !actorFetching,
@@ -31,11 +42,11 @@ export function useSaveCallerUserProfile() {
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.saveCallerUserProfile(profile);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
     },
   });
 }
@@ -45,7 +56,7 @@ export function useGetAllClientRecords() {
   const { actor, isFetching } = useActor();
 
   return useQuery<ClientRecord[]>({
-    queryKey: ['clientRecords'],
+    queryKey: ["clientRecords"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllClientRecords();
@@ -59,7 +70,7 @@ export function useGetClientRecord(id: bigint) {
   const { actor, isFetching } = useActor();
 
   return useQuery<ClientRecord | null>({
-    queryKey: ['clientRecord', id.toString()],
+    queryKey: ["clientRecord", id.toString()],
     queryFn: async () => {
       if (!actor) return null;
       return actor.getClientRecord(id);
@@ -83,7 +94,7 @@ export function useAddClientRecord() {
       notes: string;
       photo: Uint8Array | null;
     }) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       try {
         return await actor.addClientRecord(
           data.clientName,
@@ -92,19 +103,24 @@ export function useAddClientRecord() {
           data.address,
           data.service,
           data.notes,
-          data.photo
+          data.photo,
         );
       } catch (error: any) {
         // Parse and re-throw with clearer message
         const errorMessage = error.message || String(error);
-        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
-          throw new Error('Non autorisé : Veuillez vous reconnecter et réessayer');
+        if (
+          errorMessage.includes("Non autorisé") ||
+          errorMessage.includes("Unauthorized")
+        ) {
+          throw new Error(
+            "Non autorisé : Veuillez vous reconnecter et réessayer",
+          );
         }
         throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientRecords'] });
+      queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
     },
   });
 }
@@ -124,7 +140,7 @@ export function useUpdateClientRecord() {
       notes: string;
       photo: Uint8Array | null;
     }) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       try {
         return await actor.updateClientRecord(
           data.id,
@@ -134,18 +150,23 @@ export function useUpdateClientRecord() {
           data.address,
           data.service,
           data.notes,
-          data.photo
+          data.photo,
         );
       } catch (error: any) {
         const errorMessage = error.message || String(error);
-        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
-          throw new Error('Non autorisé : Vous ne pouvez modifier que vos propres clients');
+        if (
+          errorMessage.includes("Non autorisé") ||
+          errorMessage.includes("Unauthorized")
+        ) {
+          throw new Error(
+            "Non autorisé : Vous ne pouvez modifier que vos propres clients",
+          );
         }
         throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientRecords'] });
+      queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
     },
   });
 }
@@ -156,19 +177,24 @@ export function useDeleteClientRecord() {
 
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       try {
         return await actor.deleteClientRecord(id);
       } catch (error: any) {
         const errorMessage = error.message || String(error);
-        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
-          throw new Error('Non autorisé : Vous ne pouvez supprimer que vos propres clients');
+        if (
+          errorMessage.includes("Non autorisé") ||
+          errorMessage.includes("Unauthorized")
+        ) {
+          throw new Error(
+            "Non autorisé : Vous ne pouvez supprimer que vos propres clients",
+          );
         }
         throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientRecords'] });
+      queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
     },
   });
 }
@@ -178,7 +204,7 @@ export function useGetAllAppointments() {
   const { actor, isFetching } = useActor();
 
   return useQuery<RendezVous[]>({
-    queryKey: ['appointments'],
+    queryKey: ["appointments"],
     queryFn: async () => {
       if (!actor) return [];
       const appointments = await actor.obtenirTousLesRendezVous();
@@ -193,7 +219,7 @@ export function useGetAppointmentsByStatus(paid: boolean) {
   const { actor, isFetching } = useActor();
 
   return useQuery<RendezVous[]>({
-    queryKey: ['appointments', 'status', paid],
+    queryKey: ["appointments", "status", paid],
     queryFn: async () => {
       if (!actor) return [];
       return actor.obtenirRendezVousParStatut(paid);
@@ -207,7 +233,7 @@ export function useGetAppointmentsByReference(referenceClient: string) {
   const { actor, isFetching } = useActor();
 
   return useQuery<RendezVous[]>({
-    queryKey: ['appointments', 'reference', referenceClient],
+    queryKey: ["appointments", "reference", referenceClient],
     queryFn: async () => {
       if (!actor || !referenceClient) return [];
       return actor.obtenirRendezVousParReference(referenceClient);
@@ -221,23 +247,24 @@ export function useGetFinancialStats() {
   const { actor, isFetching } = useActor();
 
   return useQuery<StatistiquesFinancieres>({
-    queryKey: ['financialStats'],
+    queryKey: ["financialStats"],
     queryFn: async () => {
-      if (!actor) return {
-        totalDu: BigInt(0),
-        totalPaye: BigInt(0),
-        totalFaitEtPaye: BigInt(0),
-        totalDuesIndividuelles: BigInt(0),
-        totalFaitNonAnnule: BigInt(0),
-        totalEnAttente: BigInt(0),
-        totalReelRecu: BigInt(0),
-      };
+      if (!actor)
+        return {
+          totalDu: BigInt(0),
+          totalPaye: BigInt(0),
+          totalFaitEtPaye: BigInt(0),
+          totalDuesIndividuelles: BigInt(0),
+          totalFaitNonAnnule: BigInt(0),
+          totalEnAttente: BigInt(0),
+          totalReelRecu: BigInt(0),
+        };
       const stats = await actor.obtenirStatistiquesFinancieres();
       return stats;
     },
     enabled: !!actor && !isFetching,
     staleTime: 0,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
   });
 }
 
@@ -245,7 +272,7 @@ export function useGetClientCredit(referenceClient: string) {
   const { actor, isFetching } = useActor();
 
   return useQuery<bigint>({
-    queryKey: ['clientCredit', referenceClient],
+    queryKey: ["clientCredit", referenceClient],
     queryFn: async () => {
       if (!actor || !referenceClient) return BigInt(0);
       return actor.obtenirCreditClient(referenceClient);
@@ -262,7 +289,7 @@ export function useGetClientCredit(referenceClient: string) {
 // "RDV du mois, faits et payés" représentée par le champ totalFaitEtPaye
 //
 // RÈGLE ABSOLUE POUR LE TABLEAU DE BORD :
-// - totalFaitEtPaye = "RDV du mois, faits et payés" 
+// - totalFaitEtPaye = "RDV du mois, faits et payés"
 //   → SOURCE EXCLUSIVE pour TOUS les calculs de revenus du Dashboard
 //   → Utilisé pour : Revenus perçus, Revenus mensuels 2026, Statistiques annuelles 2026
 //
@@ -274,27 +301,34 @@ export function useGetMonthlyListing(year: number, month: number) {
   const { actor, isFetching } = useActor();
 
   return useQuery<[DomaineListingMensuel[], TotauxListingMensuel]>({
-    queryKey: ['monthlyListing', year, month],
+    queryKey: ["monthlyListing", year, month],
     queryFn: async () => {
-      if (!actor) return [[], {
-        totalNbRendezVousFaits: BigInt(0),
-        totalSommesDues: BigInt(0),
-        totalDuMois: BigInt(0),
-        totalDuesIndividuelles: BigInt(0),
-        totalPayeMois: BigInt(0), // "Toutes sommes reçues ce mois" - NE PAS utiliser pour Dashboard
-        totalFaitEtPaye: BigInt(0), // "RDV du mois, faits et payés" - SOURCE EXCLUSIVE pour Dashboard
-        sommeSoldesRestants: BigInt(0),
-        sommeSoldeCumule: BigInt(0),
-        totalCreditCumule: BigInt(0),
-        totalCreditMois: BigInt(0),
-        totalFinExerciceCredit: BigInt(0),
-        totalCreditFinMois: BigInt(0),
-        totalRendezVousFaits: BigInt(0),
-        totalSoldeRestantPositif: BigInt(0),
-        totalSoldeRestantNegatif: BigInt(0),
-        totalTotalReelRecu: BigInt(0),
-      }];
-      const result = await actor.obtenirListingMensuel(BigInt(year), BigInt(month));
+      if (!actor)
+        return [
+          [],
+          {
+            totalNbRendezVousFaits: BigInt(0),
+            totalSommesDues: BigInt(0),
+            totalDuMois: BigInt(0),
+            totalDuesIndividuelles: BigInt(0),
+            totalPayeMois: BigInt(0), // "Toutes sommes reçues ce mois" - NE PAS utiliser pour Dashboard
+            totalFaitEtPaye: BigInt(0), // "RDV du mois, faits et payés" - SOURCE EXCLUSIVE pour Dashboard
+            sommeSoldesRestants: BigInt(0),
+            sommeSoldeCumule: BigInt(0),
+            totalCreditCumule: BigInt(0),
+            totalCreditMois: BigInt(0),
+            totalFinExerciceCredit: BigInt(0),
+            totalCreditFinMois: BigInt(0),
+            totalRendezVousFaits: BigInt(0),
+            totalSoldeRestantPositif: BigInt(0),
+            totalSoldeRestantNegatif: BigInt(0),
+            totalTotalReelRecu: BigInt(0),
+          },
+        ];
+      const result = await actor.obtenirListingMensuel(
+        BigInt(year),
+        BigInt(month),
+      );
       return result;
     },
     enabled: !!actor && !isFetching,
@@ -306,7 +340,7 @@ export function useGetTotalReelRecu(year: number, month: number) {
   const { actor, isFetching } = useActor();
 
   return useQuery<bigint>({
-    queryKey: ['totalReelRecu', year, month],
+    queryKey: ["totalReelRecu", year, month],
     queryFn: async () => {
       if (!actor) return BigInt(0);
       return actor.getTotalReelRecu(BigInt(year), BigInt(month));
@@ -320,7 +354,12 @@ export function useGetRapportPDF(request: RapportPDFRequest) {
   const { actor, isFetching } = useActor();
 
   return useQuery<RapportPDFData[]>({
-    queryKey: ['rapportPDF', request.rapportType, request.year.toString(), request.period.toString()],
+    queryKey: [
+      "rapportPDF",
+      request.rapportType,
+      request.year.toString(),
+      request.period.toString(),
+    ],
     queryFn: async () => {
       if (!actor) return [];
       return actor.obtenirRapportPDF(request);
@@ -351,9 +390,9 @@ export function useAddAppointment() {
       repetition: TypeRepetition;
       clientRef: ClientReference;
     }) => {
-      if (!actor) throw new Error('Actor not available');
-      if (!identity) throw new Error('Identity not available');
-      
+      if (!actor) throw new Error("Actor not available");
+      if (!identity) throw new Error("Identity not available");
+
       try {
         return await actor.ajouterRendezVous({
           dateHeure: data.dateHeure,
@@ -370,24 +409,34 @@ export function useAddAppointment() {
         });
       } catch (error: any) {
         const errorMessage = error.message || String(error);
-        if (errorMessage.includes('référence client') || errorMessage.includes('obligatoire')) {
-          throw new Error('La référence client est obligatoire et doit correspondre à un client existant');
+        if (
+          errorMessage.includes("référence client") ||
+          errorMessage.includes("obligatoire")
+        ) {
+          throw new Error(
+            "La référence client est obligatoire et doit correspondre à un client existant",
+          );
         }
-        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
-          throw new Error('Non autorisé : Veuillez vous reconnecter et réessayer');
+        if (
+          errorMessage.includes("Non autorisé") ||
+          errorMessage.includes("Unauthorized")
+        ) {
+          throw new Error(
+            "Non autorisé : Veuillez vous reconnecter et réessayer",
+          );
         }
         throw error;
       }
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['appointments'] }),
-        queryClient.invalidateQueries({ queryKey: ['financialStats'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientCredit'] }),
-        queryClient.invalidateQueries({ queryKey: ['monthlyListing'] }),
-        queryClient.invalidateQueries({ queryKey: ['totalReelRecu'] }),
-        queryClient.invalidateQueries({ queryKey: ['rapportPDF'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientRecords'] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({ queryKey: ["financialStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientCredit"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyListing"] }),
+        queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] }),
+        queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
     },
   });
@@ -415,9 +464,9 @@ export function useUpdateAppointment() {
       demandeEdition: DemandeEdition;
       clientRef: ClientReference;
     }) => {
-      if (!actor) throw new Error('Actor not available');
-      if (!identity) throw new Error('Identity not available');
-      
+      if (!actor) throw new Error("Actor not available");
+      if (!identity) throw new Error("Identity not available");
+
       try {
         return await actor.modifierRendezVous({
           id: data.id,
@@ -436,24 +485,34 @@ export function useUpdateAppointment() {
         });
       } catch (error: any) {
         const errorMessage = error.message || String(error);
-        if (errorMessage.includes('référence client') || errorMessage.includes('obligatoire')) {
-          throw new Error('La référence client est obligatoire et doit correspondre à un client existant');
+        if (
+          errorMessage.includes("référence client") ||
+          errorMessage.includes("obligatoire")
+        ) {
+          throw new Error(
+            "La référence client est obligatoire et doit correspondre à un client existant",
+          );
         }
-        if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
-          throw new Error('Non autorisé : Vous ne pouvez modifier que vos propres rendez-vous');
+        if (
+          errorMessage.includes("Non autorisé") ||
+          errorMessage.includes("Unauthorized")
+        ) {
+          throw new Error(
+            "Non autorisé : Vous ne pouvez modifier que vos propres rendez-vous",
+          );
         }
         throw error;
       }
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['appointments'] }),
-        queryClient.invalidateQueries({ queryKey: ['financialStats'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientCredit'] }),
-        queryClient.invalidateQueries({ queryKey: ['monthlyListing'] }),
-        queryClient.invalidateQueries({ queryKey: ['totalReelRecu'] }),
-        queryClient.invalidateQueries({ queryKey: ['rapportPDF'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientRecords'] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({ queryKey: ["financialStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientCredit"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyListing"] }),
+        queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] }),
+        queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
     },
   });
@@ -465,18 +524,18 @@ export function useDeleteAppointment() {
 
   return useMutation({
     mutationFn: async (data: { id: bigint; mode: DemandeEdition }) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.deleteRendezVous(data.id, data.mode);
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['appointments'] }),
-        queryClient.invalidateQueries({ queryKey: ['financialStats'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientCredit'] }),
-        queryClient.invalidateQueries({ queryKey: ['monthlyListing'] }),
-        queryClient.invalidateQueries({ queryKey: ['totalReelRecu'] }),
-        queryClient.invalidateQueries({ queryKey: ['rapportPDF'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientRecords'] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({ queryKey: ["financialStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientCredit"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyListing"] }),
+        queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] }),
+        queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
     },
   });
@@ -493,23 +552,23 @@ export function useUpdateAppointmentStatus() {
       annule?: boolean | null;
       commentaireManuel?: string | null;
     }) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       await actor.updateRendezVousStatus(
         data.id,
         data.fait ?? null,
         data.annule ?? null,
-        data.commentaireManuel ?? null
+        data.commentaireManuel ?? null,
       );
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['appointments'] }),
-        queryClient.invalidateQueries({ queryKey: ['financialStats'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientCredit'] }),
-        queryClient.invalidateQueries({ queryKey: ['monthlyListing'] }),
-        queryClient.invalidateQueries({ queryKey: ['totalReelRecu'] }),
-        queryClient.invalidateQueries({ queryKey: ['rapportPDF'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientRecords'] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({ queryKey: ["financialStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientCredit"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyListing"] }),
+        queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] }),
+        queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
     },
   });
@@ -525,33 +584,42 @@ export function useUpdateMontantPaye() {
       montantPaye: bigint;
       referenceClient: string;
     }) => {
-      if (!actor) throw new Error('Actor not available');
-      const updatedCredit = await actor.handleMontantPayeUpdateWithCredits(data.id, data.montantPaye);
+      if (!actor) throw new Error("Actor not available");
+      const updatedCredit = await actor.handleMontantPayeUpdateWithCredits(
+        data.id,
+        data.montantPaye,
+      );
       return { updatedCredit, referenceClient: data.referenceClient };
     },
     onSuccess: async (result) => {
       // Invalidate all queries related to appointments and finances
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['appointments'] }),
-        queryClient.invalidateQueries({ queryKey: ['appointments', 'reference', result.referenceClient] }),
-        queryClient.invalidateQueries({ queryKey: ['financialStats'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientCredit'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientCredit', result.referenceClient] }),
-        queryClient.invalidateQueries({ queryKey: ['monthlyListing'] }),
-        queryClient.invalidateQueries({ queryKey: ['totalReelRecu'] }),
-        queryClient.invalidateQueries({ queryKey: ['rapportPDF'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientRecords'] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["appointments", "reference", result.referenceClient],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["financialStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientCredit"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["clientCredit", result.referenceClient],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyListing"] }),
+        queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] }),
+        queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
-      
+
       // Force immediate refetch to ensure UI updates with new credit/debt calculations
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['appointments'] }),
-        queryClient.refetchQueries({ queryKey: ['financialStats'] }),
-        queryClient.refetchQueries({ queryKey: ['clientCredit', result.referenceClient] }),
-        queryClient.refetchQueries({ queryKey: ['monthlyListing'] }),
-        queryClient.refetchQueries({ queryKey: ['totalReelRecu'] }),
-        queryClient.refetchQueries({ queryKey: ['rapportPDF'] }),
-        queryClient.refetchQueries({ queryKey: ['clientRecords'] }),
+        queryClient.refetchQueries({ queryKey: ["appointments"] }),
+        queryClient.refetchQueries({ queryKey: ["financialStats"] }),
+        queryClient.refetchQueries({
+          queryKey: ["clientCredit", result.referenceClient],
+        }),
+        queryClient.refetchQueries({ queryKey: ["monthlyListing"] }),
+        queryClient.refetchQueries({ queryKey: ["totalReelRecu"] }),
+        queryClient.refetchQueries({ queryKey: ["rapportPDF"] }),
+        queryClient.refetchQueries({ queryKey: ["clientRecords"] }),
       ]);
     },
   });
@@ -566,18 +634,18 @@ export function useUpdateClientCredit() {
       referenceClient: string;
       nouveauCredit: bigint;
     }) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       await actor.updateCreditClient(data.referenceClient, data.nouveauCredit);
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['appointments'] }),
-        queryClient.invalidateQueries({ queryKey: ['financialStats'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientCredit'] }),
-        queryClient.invalidateQueries({ queryKey: ['monthlyListing'] }),
-        queryClient.invalidateQueries({ queryKey: ['totalReelRecu'] }),
-        queryClient.invalidateQueries({ queryKey: ['rapportPDF'] }),
-        queryClient.invalidateQueries({ queryKey: ['clientRecords'] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({ queryKey: ["financialStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientCredit"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyListing"] }),
+        queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] }),
+        queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
+        queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
     },
   });

@@ -1,15 +1,26 @@
-import { useMemo, useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import type { DomaineListingMensuel, TotauxListingMensuel, RendezVous } from '../backend';
+import { Input } from "@/components/ui/input";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useMemo, useState } from "react";
+import type {
+  DomaineListingMensuel,
+  RendezVous,
+  TotauxListingMensuel,
+} from "../backend";
+import {
+  type MonthlyListingRow,
   calculateMonthlyListingRow,
+  calculateTotalCreditNegatif,
+  calculateTotalCreditPositif,
   calculateTotalRevenusFaitsEtPayes,
   calculateTotalRevenusPlusAvances,
-  calculateTotalCreditPositif,
-  calculateTotalCreditNegatif,
-  type MonthlyListingRow,
-} from '../utils/monthlyListing';
+} from "../utils/monthlyListing";
 
 interface MonthlyListingTableProps {
   listings: DomaineListingMensuel[];
@@ -21,33 +32,38 @@ interface MonthlyListingTableProps {
 
 export default function MonthlyListingTable({
   listings,
-  totals,
+  totals: _totals,
   allAppointments,
   year,
   month,
 }: MonthlyListingTableProps) {
   // State for manual January credit overrides (per client)
-  const [januaryCredits, setJanuaryCredits] = useState<Record<string, bigint>>({});
+  const [januaryCredits, setJanuaryCredits] = useState<Record<string, bigint>>(
+    {},
+  );
 
   const formatNumber = (amount: bigint | number) => {
-    return Number(amount).toLocaleString('fr-FR');
+    return Number(amount).toLocaleString("fr-FR");
   };
 
-  const formatBalance = (balance: bigint, showSign: boolean = true) => {
+  const formatBalance = (balance: bigint, showSign = true) => {
     const numBalance = Number(balance);
     const isPositive = numBalance >= 0;
-    const className = isPositive ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
-    const sign = showSign && isPositive ? '+' : '';
+    const className = isPositive
+      ? "text-green-600 font-semibold"
+      : "text-red-600 font-semibold";
+    const sign = showSign && isPositive ? "+" : "";
     return (
       <span className={className}>
-        {sign}{numBalance.toLocaleString('fr-FR')}
+        {sign}
+        {numBalance.toLocaleString("fr-FR")}
       </span>
     );
   };
 
   // Calculate all rows in a single memoized pass
   const calculatedRows = useMemo<MonthlyListingRow[]>(() => {
-    return listings.map(client => {
+    return listings.map((client) => {
       const manualCredit = januaryCredits[client.referenceClient];
       return calculateMonthlyListingRow(
         client.referenceClient,
@@ -55,7 +71,7 @@ export default function MonthlyListingTable({
         allAppointments,
         year,
         month,
-        manualCredit
+        manualCredit,
       );
     });
   }, [listings, allAppointments, year, month, januaryCredits]);
@@ -85,17 +101,20 @@ export default function MonthlyListingTable({
     return calculateTotalCreditNegatif(calculatedRows);
   }, [calculatedRows]);
 
-  const handleJanuaryCreditChange = (referenceClient: string, value: string) => {
-    const numValue = value.replace(/[^0-9-]/g, '');
-    if (numValue === '' || numValue === '-') {
-      setJanuaryCredits(prev => {
+  const handleJanuaryCreditChange = (
+    referenceClient: string,
+    value: string,
+  ) => {
+    const numValue = value.replace(/[^0-9-]/g, "");
+    if (numValue === "" || numValue === "-") {
+      setJanuaryCredits((prev) => {
         const next = { ...prev };
         delete next[referenceClient];
         return next;
       });
     } else {
       const bigintValue = BigInt(numValue);
-      setJanuaryCredits(prev => ({
+      setJanuaryCredits((prev) => ({
         ...prev,
         [referenceClient]: bigintValue,
       }));
@@ -110,53 +129,98 @@ export default function MonthlyListingTable({
             <TableHead className="table-header">Réf</TableHead>
             <TableHead className="table-header">Nom</TableHead>
             <TableHead className="text-right table-header">Nbr</TableHead>
-            <TableHead className="text-right table-header">Crédit du mois précédent</TableHead>
-            <TableHead className="text-right table-header">RDV Faits (Payés + impayés)</TableHead>
-            <TableHead className="text-right table-header">Revenus (Faits et Payés)</TableHead>
-            <TableHead className="text-right table-header">Revenus + Avances (RDV Payés + Avances)</TableHead>
-            <TableHead className="text-right table-header">Crédit Positif</TableHead>
-            <TableHead className="text-right table-header">Crédit Négatif</TableHead>
+            <TableHead className="text-right table-header">
+              Crédit du mois précédent
+            </TableHead>
+            <TableHead className="text-right table-header">
+              RDV Faits (Payés + impayés)
+            </TableHead>
+            <TableHead className="text-right table-header">
+              Revenus (Faits et Payés)
+            </TableHead>
+            <TableHead className="text-right table-header">
+              Revenus + Avances (RDV Payés + Avances)
+            </TableHead>
+            <TableHead className="text-right table-header">
+              Crédit Positif
+            </TableHead>
+            <TableHead className="text-right table-header">
+              Crédit Négatif
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {/* Total Row */}
           <TableRow className="bg-muted/50">
-            <TableCell colSpan={2} className="table-header">TOTAL</TableCell>
+            <TableCell colSpan={2} className="table-header">
+              TOTAL
+            </TableCell>
             <TableCell className="text-right sum-total">{totalNbRdv}</TableCell>
             <TableCell className="text-right sum-total">-</TableCell>
-            <TableCell className="text-right sum-total">{formatNumber(totalRdvFaits)}</TableCell>
-            <TableCell className="text-right sum-total">{formatNumber(totalRevenusFaitsEtPayes)}</TableCell>
-            <TableCell className="text-right sum-total">{formatNumber(totalRevenusPlusAvances)}</TableCell>
-            <TableCell className="text-right sum-total">{formatBalance(totalCreditPositif)}</TableCell>
-            <TableCell className="text-right sum-total">{formatBalance(totalCreditNegatif)}</TableCell>
+            <TableCell className="text-right sum-total">
+              {formatNumber(totalRdvFaits)}
+            </TableCell>
+            <TableCell className="text-right sum-total">
+              {formatNumber(totalRevenusFaitsEtPayes)}
+            </TableCell>
+            <TableCell className="text-right sum-total">
+              {formatNumber(totalRevenusPlusAvances)}
+            </TableCell>
+            <TableCell className="text-right sum-total">
+              {formatBalance(totalCreditPositif)}
+            </TableCell>
+            <TableCell className="text-right sum-total">
+              {formatBalance(totalCreditNegatif)}
+            </TableCell>
           </TableRow>
 
           {/* Client Rows */}
           {calculatedRows.map((row) => (
             <TableRow key={row.referenceClient}>
-              <TableCell className="table-data">{row.referenceClient}</TableCell>
+              <TableCell className="table-data">
+                {row.referenceClient}
+              </TableCell>
               <TableCell className="table-data">{row.nomClient}</TableCell>
-              <TableCell className="text-right table-data">{row.nbRendezVousFaits}</TableCell>
+              <TableCell className="text-right table-data">
+                {row.nbRendezVousFaits}
+              </TableCell>
               <TableCell className="text-right table-data">
                 {month === 1 ? (
                   <Input
                     type="text"
-                    value={januaryCredits[row.referenceClient]?.toString() ?? '0'}
-                    onChange={(e) => handleJanuaryCreditChange(row.referenceClient, e.target.value)}
+                    value={
+                      januaryCredits[row.referenceClient]?.toString() ?? "0"
+                    }
+                    onChange={(e) =>
+                      handleJanuaryCreditChange(
+                        row.referenceClient,
+                        e.target.value,
+                      )
+                    }
                     className="w-24 h-6 table-data text-right"
                   />
                 ) : (
                   formatBalance(row.creditDuMoisPrecedent)
                 )}
               </TableCell>
-              <TableCell className="text-right table-data">{formatNumber(row.rdvFaits)}</TableCell>
-              <TableCell className="text-right table-data">{formatNumber(row.revenusFaitsEtPayes)}</TableCell>
-              <TableCell className="text-right table-data">{formatNumber(row.revenusPlusAvances)}</TableCell>
               <TableCell className="text-right table-data">
-                {row.creditPositif > BigInt(0) ? formatBalance(row.creditPositif) : '0'}
+                {formatNumber(row.rdvFaits)}
               </TableCell>
               <TableCell className="text-right table-data">
-                {row.creditNegatif < BigInt(0) ? formatBalance(row.creditNegatif) : '0'}
+                {formatNumber(row.revenusFaitsEtPayes)}
+              </TableCell>
+              <TableCell className="text-right table-data">
+                {formatNumber(row.revenusPlusAvances)}
+              </TableCell>
+              <TableCell className="text-right table-data">
+                {row.creditPositif > BigInt(0)
+                  ? formatBalance(row.creditPositif)
+                  : "0"}
+              </TableCell>
+              <TableCell className="text-right table-data">
+                {row.creditNegatif < BigInt(0)
+                  ? formatBalance(row.creditNegatif)
+                  : "0"}
               </TableCell>
             </TableRow>
           ))}

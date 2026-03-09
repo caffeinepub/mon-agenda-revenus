@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, DollarSign, TrendingUp } from "lucide-react";
 
 interface FinancialOverviewProps {
   totalDue: bigint;
@@ -7,20 +7,28 @@ interface FinancialOverviewProps {
   totalRdvFaitsMoisCourant: bigint;
 }
 
-export default function FinancialOverview({ totalDue, totalPaid, totalRdvFaitsMoisCourant }: FinancialOverviewProps) {
+export default function FinancialOverview({
+  totalDue,
+  totalPaid,
+  totalRdvFaitsMoisCourant,
+}: FinancialOverviewProps) {
   const formatNumber = (amount: bigint) => {
-    return Number(amount).toLocaleString('fr-FR');
+    return Number(amount).toLocaleString("fr-FR");
   };
 
   return (
     <div className="mb-8 grid gap-4 md:grid-cols-3">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="frame-title">Revenus du Mois en Cours (Faits et Payés)</CardTitle>
+          <CardTitle className="frame-title">
+            Revenus du Mois en Cours (Faits et Payés)
+          </CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="sum-total text-green-600">{formatNumber(totalPaid)}</div>
+          <div className="sum-total text-green-600">
+            {formatNumber(totalPaid)}
+          </div>
           <p className="table-data text-muted-foreground mt-1">
             Montants perçus pour les rendez-vous effectués
           </p>
@@ -29,11 +37,15 @@ export default function FinancialOverview({ totalDue, totalPaid, totalRdvFaitsMo
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="frame-title">Dus (RDV Faits ; Mois Courant)</CardTitle>
+          <CardTitle className="frame-title">
+            Dus (RDV Faits ; Mois Courant)
+          </CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="sum-total text-orange-600">{formatNumber(totalDue)}</div>
+          <div className="sum-total text-orange-600">
+            {formatNumber(totalDue)}
+          </div>
           <p className="table-data text-muted-foreground mt-1">
             Montants restant à percevoir
           </p>
@@ -42,11 +54,15 @@ export default function FinancialOverview({ totalDue, totalPaid, totalRdvFaitsMo
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="frame-title">RDV faits (Payés et Impayés ; Mois Courant)</CardTitle>
+          <CardTitle className="frame-title">
+            RDV faits (Payés et Impayés ; Mois Courant)
+          </CardTitle>
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="sum-total text-blue-600">{formatNumber(totalRdvFaitsMoisCourant)}</div>
+          <div className="sum-total text-blue-600">
+            {formatNumber(totalRdvFaitsMoisCourant)}
+          </div>
           <p className="table-data text-muted-foreground mt-1">
             Total des montants dus pour les rendez-vous effectués
           </p>

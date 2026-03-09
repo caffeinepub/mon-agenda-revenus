@@ -1,26 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useAddAppointment, useUpdateAppointment, useGetAllClientRecords } from '../hooks/useQueries';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
   CommandEmpty,
@@ -28,16 +7,46 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { toast } from 'sonner';
-import { DemandeEdition, type RendezVous, type TypeRepetition, type JoursSemaine } from '../backend';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import type {
+  DemandeEdition,
+  JoursSemaine,
+  RendezVous,
+  TypeRepetition,
+} from "../backend";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import {
+  useAddAppointment,
+  useGetAllClientRecords,
+  useUpdateAppointment,
+} from "../hooks/useQueries";
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -46,7 +55,7 @@ interface AppointmentDialogProps {
   editMode?: DemandeEdition;
 }
 
-type RepetitionType = 'aucune' | 'hebdomadaire' | 'mensuelle' | 'annuelle';
+type RepetitionType = "aucune" | "hebdomadaire" | "mensuelle" | "annuelle";
 
 export default function AppointmentDialog({
   open,
@@ -56,17 +65,17 @@ export default function AppointmentDialog({
 }: AppointmentDialogProps) {
   const { identity } = useInternetIdentity();
   const [formData, setFormData] = useState({
-    date: '',
-    heureDebut: '',
-    heureFin: '',
-    nomClient: '',
-    referenceClient: '',
-    numeroTelephone: '',
-    adresse: '',
-    service: '',
-    notes: '',
-    montantDu: '',
-    repetitionType: 'aucune' as RepetitionType,
+    date: "",
+    heureDebut: "",
+    heureFin: "",
+    nomClient: "",
+    referenceClient: "",
+    numeroTelephone: "",
+    adresse: "",
+    service: "",
+    notes: "",
+    montantDu: "",
+    repetitionType: "aucune" as RepetitionType,
   });
 
   const [joursSemaine, setJoursSemaine] = useState<JoursSemaine>({
@@ -89,9 +98,9 @@ export default function AppointmentDialog({
   useEffect(() => {
     if (appointment) {
       const date = new Date(Number(appointment.dateHeure) / 1000000);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = date.toISOString().split("T")[0];
 
-      let repetitionType: RepetitionType = 'aucune';
+      let repetitionType: RepetitionType = "aucune";
       let jours: JoursSemaine = {
         lundi: false,
         mardi: false,
@@ -102,13 +111,13 @@ export default function AppointmentDialog({
         dimanche: false,
       };
 
-      if (appointment.repetition.__kind__ === 'hebdomadaire') {
-        repetitionType = 'hebdomadaire';
+      if (appointment.repetition.__kind__ === "hebdomadaire") {
+        repetitionType = "hebdomadaire";
         jours = appointment.repetition.hebdomadaire;
-      } else if (appointment.repetition.__kind__ === 'mensuelle') {
-        repetitionType = 'mensuelle';
-      } else if (appointment.repetition.__kind__ === 'annuelle') {
-        repetitionType = 'annuelle';
+      } else if (appointment.repetition.__kind__ === "mensuelle") {
+        repetitionType = "mensuelle";
+      } else if (appointment.repetition.__kind__ === "annuelle") {
+        repetitionType = "annuelle";
       }
 
       setFormData({
@@ -128,24 +137,24 @@ export default function AppointmentDialog({
 
       // Find matching client
       const matchingClient = clientRecords.find(
-        (c) => c.referenceClient === appointment.referenceClient
+        (c) => c.referenceClient === appointment.referenceClient,
       );
       if (matchingClient) {
         setSelectedClientId(matchingClient.id.toString());
       }
     } else {
       setFormData({
-        date: '',
-        heureDebut: '',
-        heureFin: '',
-        nomClient: '',
-        referenceClient: '',
-        numeroTelephone: '',
-        adresse: '',
-        service: '',
-        notes: '',
-        montantDu: '',
-        repetitionType: 'aucune',
+        date: "",
+        heureDebut: "",
+        heureFin: "",
+        nomClient: "",
+        referenceClient: "",
+        numeroTelephone: "",
+        adresse: "",
+        service: "",
+        notes: "",
+        montantDu: "",
+        repetitionType: "aucune",
       });
       setJoursSemaine({
         lundi: false,
@@ -181,51 +190,53 @@ export default function AppointmentDialog({
 
     // In create mode, require client selection
     if (!appointment && !selectedClientId) {
-      toast.error('Veuillez sélectionner un client existant dans la Base Client');
+      toast.error(
+        "Veuillez sélectionner un client existant dans la Base Client",
+      );
       return;
     }
 
     // Validate required fields
     if (!formData.referenceClient) {
-      toast.error('La référence client est obligatoire');
+      toast.error("La référence client est obligatoire");
       return;
     }
 
     if (!formData.nomClient) {
-      toast.error('Le nom du client est obligatoire');
+      toast.error("Le nom du client est obligatoire");
       return;
     }
 
     // Verify that the reference client exists in the client database
     const clientExists = clientRecords.some(
-      (c) => c.referenceClient === formData.referenceClient
+      (c) => c.referenceClient === formData.referenceClient,
     );
 
     if (!clientExists) {
       toast.error(
-        'La référence client doit correspondre à un client existant dans la Base Client. Veuillez sélectionner un client ou créer un nouveau client dans la Base Client.'
+        "La référence client doit correspondre à un client existant dans la Base Client. Veuillez sélectionner un client ou créer un nouveau client dans la Base Client.",
       );
       return;
     }
 
     if (!identity) {
-      toast.error('Veuillez vous connecter pour créer un rendez-vous');
+      toast.error("Veuillez vous connecter pour créer un rendez-vous");
       return;
     }
 
     try {
-      const dateTime = new Date(formData.date + 'T' + formData.heureDebut);
+      const dateTime = new Date(`${formData.date}T${formData.heureDebut}`);
       const dateHeure = BigInt(dateTime.getTime() * 1000000);
 
       let repetition: TypeRepetition;
-      if (formData.repetitionType === 'hebdomadaire') {
-        repetition = { __kind__: 'hebdomadaire', hebdomadaire: joursSemaine };
-      } else if (formData.repetitionType === 'mensuelle') {
-        repetition = { __kind__: 'mensuelle', mensuelle: null };
-      } else if (formData.repetitionType === 'annuelle') {
-        repetition = { __kind__: 'annuelle', annuelle: null };
+      if (formData.repetitionType === "hebdomadaire") {
+        repetition = { __kind__: "hebdomadaire", hebdomadaire: joursSemaine };
+      } else if (formData.repetitionType === "mensuelle") {
+        repetition = { __kind__: "mensuelle", mensuelle: null };
+      } else if (formData.repetitionType === "annuelle") {
+        repetition = { __kind__: "annuelle", annuelle: null };
       } else {
-        repetition = { __kind__: 'aucune', aucune: null };
+        repetition = { __kind__: "aucune", aucune: null };
       }
 
       const clientRef = {
@@ -250,7 +261,7 @@ export default function AppointmentDialog({
           demandeEdition: editMode,
           clientRef,
         });
-        toast.success('Rendez-vous modifié avec succès');
+        toast.success("Rendez-vous modifié avec succès");
       } else {
         await addAppointment.mutateAsync({
           dateHeure,
@@ -266,19 +277,27 @@ export default function AppointmentDialog({
           repetition,
           clientRef,
         });
-        toast.success('Rendez-vous ajouté avec succès');
+        toast.success("Rendez-vous ajouté avec succès");
       }
       onClose();
     } catch (error: any) {
-      console.error('Error saving appointment:', error);
+      console.error("Error saving appointment:", error);
       const errorMessage = error.message || String(error);
-      
-      if (errorMessage.includes('référence client') || errorMessage.includes('client reference')) {
-        toast.error('La référence client doit correspondre à un client existant dans la Base Client');
-      } else if (errorMessage.includes('Non autorisé') || errorMessage.includes('Unauthorized')) {
-        toast.error('Non autorisé : Veuillez vous reconnecter et réessayer');
+
+      if (
+        errorMessage.includes("référence client") ||
+        errorMessage.includes("client reference")
+      ) {
+        toast.error(
+          "La référence client doit correspondre à un client existant dans la Base Client",
+        );
+      } else if (
+        errorMessage.includes("Non autorisé") ||
+        errorMessage.includes("Unauthorized")
+      ) {
+        toast.error("Non autorisé : Veuillez vous reconnecter et réessayer");
       } else {
-        toast.error(errorMessage || 'Erreur lors de l\'enregistrement');
+        toast.error(errorMessage || "Erreur lors de l'enregistrement");
       }
     }
   };
@@ -290,12 +309,12 @@ export default function AppointmentDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {appointment ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+            {appointment ? "Modifier le rendez-vous" : "Nouveau rendez-vous"}
           </DialogTitle>
           <DialogDescription>
             {appointment
-              ? 'Modifiez les informations du rendez-vous'
-              : 'Créez un nouveau rendez-vous'}
+              ? "Modifiez les informations du rendez-vous"
+              : "Créez un nouveau rendez-vous"}
           </DialogDescription>
         </DialogHeader>
 
@@ -307,8 +326,8 @@ export default function AppointmentDialog({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  role="combobox"
                   aria-expanded={clientSelectOpen}
+                  aria-haspopup="listbox"
                   className="w-full justify-between"
                   type="button"
                   disabled={isLoading}
@@ -316,13 +335,13 @@ export default function AppointmentDialog({
                   {selectedClientId
                     ? (() => {
                         const client = clientRecords.find(
-                          (c) => c.id.toString() === selectedClientId
+                          (c) => c.id.toString() === selectedClientId,
                         );
                         return client
                           ? `${client.clientName} (${client.referenceClient})`
-                          : 'Sélectionner un client...';
+                          : "Sélectionner un client...";
                       })()
-                    : 'Sélectionner un client...'}
+                    : "Sélectionner un client..."}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -336,14 +355,16 @@ export default function AppointmentDialog({
                         <CommandItem
                           key={client.id.toString()}
                           value={`${client.clientName} ${client.referenceClient}`}
-                          onSelect={() => handleClientSelect(client.id.toString())}
+                          onSelect={() =>
+                            handleClientSelect(client.id.toString())
+                          }
                         >
                           <Check
                             className={cn(
-                              'mr-2 h-4 w-4',
+                              "mr-2 h-4 w-4",
                               selectedClientId === client.id.toString()
-                                ? 'opacity-100'
-                                : 'opacity-0'
+                                ? "opacity-100"
+                                : "opacity-0",
                             )}
                           />
                           {client.clientName} ({client.referenceClient})
@@ -355,7 +376,8 @@ export default function AppointmentDialog({
               </PopoverContent>
             </Popover>
             <p className="text-xs text-muted-foreground">
-              Sélectionnez un client existant. La référence client est obligatoire.
+              Sélectionnez un client existant. La référence client est
+              obligatoire.
             </p>
           </div>
 
@@ -367,7 +389,9 @@ export default function AppointmentDialog({
                 id="date"
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
                 required
                 disabled={isLoading}
               />
@@ -391,7 +415,9 @@ export default function AppointmentDialog({
                 id="heureFin"
                 type="time"
                 value={formData.heureFin}
-                onChange={(e) => setFormData({ ...formData, heureFin: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, heureFin: e.target.value })
+                }
                 required
                 disabled={isLoading}
               />
@@ -441,7 +467,9 @@ export default function AppointmentDialog({
               <Input
                 id="adresse"
                 value={formData.adresse}
-                onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, adresse: e.target.value })
+                }
                 disabled={isLoading || !!selectedClientId}
               />
             </div>
@@ -452,7 +480,9 @@ export default function AppointmentDialog({
             <Input
               id="service"
               value={formData.service}
-              onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, service: e.target.value })
+              }
               disabled={isLoading || !!selectedClientId}
             />
           </div>
@@ -462,7 +492,9 @@ export default function AppointmentDialog({
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               disabled={isLoading}
               rows={3}
             />
@@ -475,7 +507,9 @@ export default function AppointmentDialog({
               type="number"
               min="0"
               value={formData.montantDu}
-              onChange={(e) => setFormData({ ...formData, montantDu: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, montantDu: e.target.value })
+              }
               disabled={isLoading}
             />
           </div>
@@ -502,7 +536,7 @@ export default function AppointmentDialog({
             </Select>
           </div>
 
-          {formData.repetitionType === 'hebdomadaire' && (
+          {formData.repetitionType === "hebdomadaire" && (
             <div className="space-y-2">
               <Label>Jours de la semaine</Label>
               <div className="grid grid-cols-4 gap-2">
@@ -526,11 +560,20 @@ export default function AppointmentDialog({
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
               Annuler
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Enregistrement...' : appointment ? 'Modifier' : 'Créer'}
+              {isLoading
+                ? "Enregistrement..."
+                : appointment
+                  ? "Modifier"
+                  : "Créer"}
             </Button>
           </DialogFooter>
         </form>

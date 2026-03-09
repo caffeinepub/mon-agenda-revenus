@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Upload, X } from 'lucide-react';
-import { cropImageTo35x45, photoToUrl } from '../utils/imageCrop';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { cropImageTo35x45, photoToUrl } from "../utils/imageCrop";
 
 interface ClientPhotoFieldProps {
   value: Uint8Array | null;
@@ -11,9 +11,13 @@ interface ClientPhotoFieldProps {
   disabled?: boolean;
 }
 
-export default function ClientPhotoField({ value, onChange, disabled }: ClientPhotoFieldProps) {
+export default function ClientPhotoField({
+  value,
+  onChange,
+  disabled,
+}: ClientPhotoFieldProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    value ? photoToUrl(value) : null
+    value ? photoToUrl(value) : null,
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,14 +27,14 @@ export default function ClientPhotoField({ value, onChange, disabled }: ClientPh
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Veuillez sélectionner une image');
+    if (!file.type.startsWith("image/")) {
+      toast.error("Veuillez sélectionner une image");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('L\'image est trop grande (max 5MB)');
+      toast.error("L'image est trop grande (max 5MB)");
       return;
     }
 
@@ -39,23 +43,23 @@ export default function ClientPhotoField({ value, onChange, disabled }: ClientPh
     try {
       // Crop and process the image
       const croppedPhoto = await cropImageTo35x45(file);
-      
+
       // Create preview URL
       const url = photoToUrl(croppedPhoto);
       setPreviewUrl(url);
-      
+
       // Update parent component
       onChange(croppedPhoto);
-      
-      toast.success('Photo ajoutée avec succès');
+
+      toast.success("Photo ajoutée avec succès");
     } catch (error) {
-      console.error('Error processing image:', error);
-      toast.error('Erreur lors du traitement de l\'image');
+      console.error("Error processing image:", error);
+      toast.error("Erreur lors du traitement de l'image");
     } finally {
       setIsProcessing(false);
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -64,21 +68,21 @@ export default function ClientPhotoField({ value, onChange, disabled }: ClientPh
     setPreviewUrl(null);
     onChange(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   return (
     <div className="space-y-2">
       <Label>Photo (35mm × 45mm)</Label>
-      
+
       {previewUrl ? (
         <div className="relative inline-block">
           <img
             src={previewUrl}
-            alt="Photo du client"
+            alt="Portrait du client"
             className="w-[140px] h-[180px] object-cover rounded-lg border-2 border-border"
-            style={{ aspectRatio: '35/45' }}
+            style={{ aspectRatio: "35/45" }}
           />
           {!disabled && (
             <Button
@@ -111,7 +115,7 @@ export default function ClientPhotoField({ value, onChange, disabled }: ClientPh
             className="gap-2"
           >
             <Upload className="h-4 w-4" />
-            {isProcessing ? 'Traitement...' : 'Choisir une photo'}
+            {isProcessing ? "Traitement..." : "Choisir une photo"}
           </Button>
           <p className="text-xs text-muted-foreground">
             Format portrait 35×45mm (recadrage automatique)

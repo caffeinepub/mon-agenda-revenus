@@ -7,16 +7,20 @@
  */
 function escapeCsvField(value: string | number | null | undefined): string {
   if (value === null || value === undefined) {
-    return '';
+    return "";
   }
-  
+
   const stringValue = String(value);
-  
+
   // If the value contains comma, quote, or newline, wrap it in quotes and escape internal quotes
-  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+  if (
+    stringValue.includes(",") ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }
-  
+
   return stringValue;
 }
 
@@ -25,17 +29,17 @@ function escapeCsvField(value: string | number | null | undefined): string {
  */
 export function arrayToCsv<T extends Record<string, any>>(
   data: T[],
-  headers: { key: keyof T; label: string }[]
+  headers: { key: keyof T; label: string }[],
 ): string {
   // Create header row
-  const headerRow = headers.map(h => escapeCsvField(h.label)).join(',');
-  
+  const headerRow = headers.map((h) => escapeCsvField(h.label)).join(",");
+
   // Create data rows
-  const dataRows = data.map(row => {
-    return headers.map(h => escapeCsvField(row[h.key])).join(',');
+  const dataRows = data.map((row) => {
+    return headers.map((h) => escapeCsvField(row[h.key])).join(",");
   });
-  
-  return [headerRow, ...dataRows].join('\n');
+
+  return [headerRow, ...dataRows].join("\n");
 }
 
 /**
@@ -43,18 +47,20 @@ export function arrayToCsv<T extends Record<string, any>>(
  */
 export function downloadCsv(csvContent: string, filename: string): void {
   // Add BOM for proper UTF-8 encoding in Excel
-  const BOM = '\uFEFF';
-  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
+
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
-  link.style.display = 'none';
-  
+  link.style.display = "none";
+
   document.body.appendChild(link);
   link.click();
-  
+
   // Cleanup
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
