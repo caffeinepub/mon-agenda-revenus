@@ -131,70 +131,57 @@ export default function ComptaMoisCalendarTable({
     return (
       appointments.find((apt) => {
         const aptDate = new Date(Number(apt.dateHeure) / 1000000);
-        if (aptDate.toDateString() !== date.toDateString()) {
-          return false;
-        }
+        if (!isSameDay(aptDate, date)) return false;
         return apt.heureDebut === timeSlot;
-      }) || null
+      }) ?? null
     );
   };
 
-  const _getAppointmentForDay = (date: Date): RendezVous[] => {
-    return appointments.filter((apt) => {
-      const aptDate = new Date(Number(apt.dateHeure) / 1000000);
-      return aptDate.toDateString() === date.toDateString();
-    });
-  };
-
-  const formatMonthYear = () => {
-    return currentMonth.toLocaleDateString("fr-FR", {
-      month: "long",
-      year: "numeric",
-    });
-  };
-
   const getDisplayedMontantPaye = (appointment: RendezVous): string => {
-    if (editingMontantPaye?.id === appointment.id) {
-      return editingMontantPaye.value;
-    }
-    const localUpdate = localMontantPayeUpdates.get(appointment.id.toString());
-    if (localUpdate !== undefined) {
-      return Number(localUpdate).toString();
-    }
-    return Number(appointment.montantPaye).toString();
+    const val =
+      localMontantPayeUpdates.get(appointment.id.toString()) ??
+      appointment.montantPaye;
+    return Number(val).toString();
   };
 
   const getDisplayedCommentaire = (appointment: RendezVous): string => {
-    if (editingCommentaire?.id === appointment.id) {
-      return editingCommentaire.value;
-    }
-    const localUpdate = localCommentaireUpdates.get(appointment.id.toString());
-    if (localUpdate !== undefined) {
-      return localUpdate;
-    }
-    return appointment.commentaireManuel || "";
+    return (
+      localCommentaireUpdates.get(appointment.id.toString()) ??
+      appointment.commentaireManuel ??
+      ""
+    );
   };
 
-  // Navigation handlers — call parent callback instead of local state
   const goToPreviousMonth = () => {
-    if (month === 1) {
-      onMonthChange(year - 1, 12);
-    } else {
-      onMonthChange(year, month - 1);
+    let newMonth = month - 1;
+    let newYear = year;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
     }
+    onMonthChange(newYear, newMonth);
   };
 
   const goToNextMonth = () => {
-    if (month === 12) {
-      onMonthChange(year + 1, 1);
-    } else {
-      onMonthChange(year, month + 1);
+    let newMonth = month + 1;
+    let newYear = year;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
     }
+    onMonthChange(newYear, newMonth);
   };
 
   const goToCurrentMonth = () => {
     const now = new Date();
     onMonthChange(now.getFullYear(), now.getMonth() + 1);
+  };
+
+  const formatMonthYear = (): string => {
+    return currentMonth.toLocaleDateString("fr-FR", {
+      month: "long",
+      year: "numeric",
+    });
   };
 
   const handleToggleFait = async (
@@ -220,13 +207,26 @@ export default function ComptaMoisCalendarTable({
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     e.stopPropagation();
+    const newAnnule = !appointment.annule;
     try {
       await updateStatusMutation.mutateAsync({
         id: appointment.id,
-        annule: !appointment.annule,
+        annule: newAnnule,
         fait: appointment.fait ? false : null,
       });
+      // Point 5: When annulé is checked, reset montantPaye to 0
+      if (newAnnule) {
+        const newLocalUpdates = new Map(localMontantPayeUpdates);
+        newLocalUpdates.set(appointment.id.toString(), BigInt(0));
+        setLocalMontantPayeUpdates(newLocalUpdates);
+        await updateMontantPayeMutation.mutateAsync({
+          id: appointment.id,
+          montantPaye: BigInt(0),
+          referenceClient: appointment.referenceClient,
+        });
+      }
       toast.success("Statut mis à jour");
+      await refetchAppointments();
     } catch (error) {
       toast.error("Erreur lors de la mise à jour");
       console.error(error);
@@ -238,6 +238,8 @@ export default function ComptaMoisCalendarTable({
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
+    // Point 5: If annulé, do not allow editing
+    if (appointment.annule) return;
     const currentValue =
       localMontantPayeUpdates.get(appointment.id.toString()) ??
       appointment.montantPaye;
@@ -359,8 +361,13 @@ export default function ComptaMoisCalendarTable({
     setShowActionDialog(true);
   };
 
+  // Point 4: Only close the action dialog, do NOT clear selectedAppointment
+  // (it will be cleared via onFullyDone after sub-dialogs close)
   const handleCloseActionDialog = () => {
     setShowActionDialog(false);
+  };
+
+  const handleFullyDone = () => {
     setSelectedAppointment(null);
   };
 
@@ -489,6 +496,9 @@ export default function ComptaMoisCalendarTable({
                         bgColor = "bg-green-100";
                       }
 
+                      // Point 5: annulé blocks payé
+                      const isAnnule = appointment.annule;
+
                       return (
                         <td
                           key={cellKey}
@@ -563,13 +573,23 @@ export default function ComptaMoisCalendarTable({
                               ) : (
                                 <button
                                   type="button"
-                                  className="table-data cursor-pointer hover:underline bg-white border border-gray-300 rounded px-2 py-0.5 min-w-[4rem] text-left"
+                                  className={`table-data bg-white border border-gray-300 rounded px-2 py-0.5 min-w-[4rem] text-left ${
+                                    isAnnule
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : "cursor-pointer hover:underline"
+                                  }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleMontantPayeClick(appointment, e);
+                                    if (!isAnnule) {
+                                      handleMontantPayeClick(appointment, e);
+                                    }
                                   }}
+                                  disabled={isAnnule}
+                                  aria-disabled={isAnnule}
                                 >
-                                  {getDisplayedMontantPaye(appointment)}
+                                  {isAnnule
+                                    ? "0"
+                                    : getDisplayedMontantPaye(appointment)}
                                 </button>
                               )}
                             </div>
@@ -639,14 +659,13 @@ export default function ComptaMoisCalendarTable({
         </table>
       </div>
 
-      {/* Appointment Action Dialog */}
-      {selectedAppointment && (
-        <AppointmentActionDialog
-          appointment={selectedAppointment}
-          open={showActionDialog}
-          onClose={handleCloseActionDialog}
-        />
-      )}
+      {/* Appointment Action Dialog - Point 4: always rendered, cleared via onFullyDone */}
+      <AppointmentActionDialog
+        appointment={selectedAppointment}
+        open={showActionDialog}
+        onClose={handleCloseActionDialog}
+        onFullyDone={handleFullyDone}
+      />
     </div>
   );
 }

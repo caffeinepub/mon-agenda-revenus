@@ -52,6 +52,47 @@ import {
 import { arrayToCsv, downloadCsv } from "../utils/csvExport";
 import { photoToUrl } from "../utils/imageCrop";
 
+// ── localStorage helpers for extra client fields ──────────────────────────
+const AGENDA_CLIENT_EXTRA_FIELDS_KEY = "agenda_client_extra_fields";
+
+interface ClientExtraFields {
+  courriel1: string;
+  courriel2: string;
+  dateNaissance: string;
+  nomSecondContact: string;
+  telephoneSecondContact: string;
+}
+
+const emptyExtraFields = (): ClientExtraFields => ({
+  courriel1: "",
+  courriel2: "",
+  dateNaissance: "",
+  nomSecondContact: "",
+  telephoneSecondContact: "",
+});
+
+function loadExtraFields(ref: string): ClientExtraFields {
+  try {
+    const raw = localStorage.getItem(AGENDA_CLIENT_EXTRA_FIELDS_KEY);
+    if (!raw) return emptyExtraFields();
+    const all = JSON.parse(raw) as Record<string, ClientExtraFields>;
+    return all[ref] ?? emptyExtraFields();
+  } catch {
+    return emptyExtraFields();
+  }
+}
+
+function saveExtraFields(ref: string, fields: ClientExtraFields): void {
+  try {
+    const raw = localStorage.getItem(AGENDA_CLIENT_EXTRA_FIELDS_KEY);
+    const all: Record<string, ClientExtraFields> = raw ? JSON.parse(raw) : {};
+    all[ref] = fields;
+    localStorage.setItem(AGENDA_CLIENT_EXTRA_FIELDS_KEY, JSON.stringify(all));
+  } catch {
+    // ignore
+  }
+}
+
 // ── Mode du panneau gauche ──────────────────────────────────────────
 type PanelMode = "form" | "search" | "fiche";
 
@@ -79,6 +120,9 @@ export default function ClientDatabasePage() {
   });
 
   const [editingClientId, setEditingClientId] = useState<bigint | null>(null);
+  const [extraFields, setExtraFields] = useState<ClientExtraFields>(
+    emptyExtraFields(),
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<bigint | null>(null);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
@@ -99,6 +143,7 @@ export default function ClientDatabasePage() {
   const ficheStats = useMemo(() => {
     if (!ficheClient) return null;
     const currentYear = new Date().getFullYear();
+    const now = BigInt(Date.now()) * BigInt(1_000_000);
     const startOfYear =
       BigInt(new Date(currentYear, 0, 1).getTime()) * BigInt(1_000_000);
     const endOfYear =
@@ -111,18 +156,24 @@ export default function ClientDatabasePage() {
         apt.dateHeure < endOfYear,
     );
 
-    // Nb de RDV = uniquement ceux cochés "Fait"
-    const totalRdv = clientApts.filter((a) => a.fait).length;
-    const totalPaye = clientApts.reduce((s, a) => s + Number(a.montantPaye), 0);
-    const totalDuFaits = clientApts
+    // Point 1: Only show present and past appointments (not future)
+    const pastPresentApts = clientApts.filter((apt) => apt.dateHeure <= now);
+
+    // Nb de RDV = uniquement ceux cochés "Fait" (parmi présent/passé)
+    const totalRdv = pastPresentApts.filter((a) => a.fait).length;
+    const totalPaye = pastPresentApts.reduce(
+      (s, a) => s + Number(a.montantPaye),
+      0,
+    );
+    const totalDuFaits = pastPresentApts
       .filter((a) => a.fait)
       .reduce((s, a) => s + Number(a.montantDu), 0);
     const totalImpaye = Math.max(0, totalDuFaits - totalPaye);
     // Crédit = total Payé - somme des Dû des lignes cochées "Fait"
     const totalCredit = totalPaye - totalDuFaits;
 
-    // Liste des RDV triés par date
-    const rdvList = [...clientApts].sort(
+    // Liste des RDV triés par date (présent/passé seulement)
+    const rdvList = [...pastPresentApts].sort(
       (a, b) => Number(a.dateHeure) - Number(b.dateHeure),
     );
 
@@ -146,6 +197,7 @@ export default function ClientDatabasePage() {
       notes: "",
       photo: null,
     });
+    setExtraFields(emptyExtraFields());
     setEditingClientId(null);
   };
 
@@ -159,6 +211,7 @@ export default function ClientDatabasePage() {
       notes: client.notes,
       photo: client.photo ? new Uint8Array(client.photo) : null,
     });
+    setExtraFields(loadExtraFields(client.referenceClient));
     setEditingClientId(client.id);
     setPanelMode("form");
   };
@@ -193,6 +246,7 @@ export default function ClientDatabasePage() {
           notes: formData.notes,
           photo: formData.photo,
         });
+        saveExtraFields(formData.referenceClient, extraFields);
         toast.success("Client modifié avec succès");
       } else {
         await addClient.mutateAsync({
@@ -204,6 +258,7 @@ export default function ClientDatabasePage() {
           notes: formData.notes,
           photo: formData.photo,
         });
+        saveExtraFields(formData.referenceClient, extraFields);
         toast.success("Client ajouté avec succès");
       }
       resetForm();
@@ -675,6 +730,87 @@ export default function ClientDatabasePage() {
             </div>
           )}
 
+          {/* Extra fields from localStorage */}
+          {(() => {
+            const extras = loadExtraFields(ficheClient.referenceClient);
+            return (
+              <>
+                {extras.courriel1 && (
+                  <div>
+                    <p
+                      className="table-header font-bold"
+                      style={{
+                        fontFamily: "Verdana, sans-serif",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Courriel 1
+                    </p>
+                    <p className="table-data">{extras.courriel1}</p>
+                  </div>
+                )}
+                {extras.courriel2 && (
+                  <div>
+                    <p
+                      className="table-header font-bold"
+                      style={{
+                        fontFamily: "Verdana, sans-serif",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Courriel 2
+                    </p>
+                    <p className="table-data">{extras.courriel2}</p>
+                  </div>
+                )}
+                {extras.dateNaissance && (
+                  <div>
+                    <p
+                      className="table-header font-bold"
+                      style={{
+                        fontFamily: "Verdana, sans-serif",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Date de naissance
+                    </p>
+                    <p className="table-data">{extras.dateNaissance}</p>
+                  </div>
+                )}
+                {extras.nomSecondContact && (
+                  <div>
+                    <p
+                      className="table-header font-bold"
+                      style={{
+                        fontFamily: "Verdana, sans-serif",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Nom Second contact
+                    </p>
+                    <p className="table-data">{extras.nomSecondContact}</p>
+                  </div>
+                )}
+                {extras.telephoneSecondContact && (
+                  <div>
+                    <p
+                      className="table-header font-bold"
+                      style={{
+                        fontFamily: "Verdana, sans-serif",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Téléphone second contact
+                    </p>
+                    <p className="table-data">
+                      {extras.telephoneSecondContact}
+                    </p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+
           {/* Résumé RDV */}
           <div
             className="rounded border mt-2"
@@ -769,6 +905,16 @@ export default function ClientDatabasePage() {
                       <th
                         style={{
                           padding: "3px 4px",
+                          textAlign: "left",
+                          fontWeight: "bold",
+                          fontSize: "10px",
+                        }}
+                      >
+                        Info
+                      </th>
+                      <th
+                        style={{
+                          padding: "3px 4px",
                           textAlign: "center",
                           fontWeight: "bold",
                           fontSize: "10px",
@@ -811,6 +957,15 @@ export default function ClientDatabasePage() {
                         }}
                       >
                         {ficheStats.totalPaye.toLocaleString("fr-FR")}
+                      </td>
+                      <td
+                        style={{
+                          padding: "2px 4px",
+                          textAlign: "left",
+                          fontSize: "9px",
+                        }}
+                      >
+                        —
                       </td>
                       <td
                         style={{
@@ -862,6 +1017,19 @@ export default function ClientDatabasePage() {
                             style={{ padding: "2px 4px", textAlign: "right" }}
                           >
                             {Number(apt.montantPaye).toLocaleString("fr-FR")}
+                          </td>
+                          <td
+                            style={{
+                              padding: "2px 4px",
+                              textAlign: "left",
+                              maxWidth: "80px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={apt.commentaireManuel ?? ""}
+                          >
+                            {apt.commentaireManuel || ""}
                           </td>
                           <td
                             style={{
@@ -1134,6 +1302,91 @@ export default function ClientDatabasePage() {
               rows={3}
               className="table-data"
               data-ocid="client.form_notes.textarea"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="courriel1" className="table-header">
+              Courriel 1
+            </Label>
+            <Input
+              id="courriel1"
+              value={extraFields.courriel1}
+              onChange={(e) =>
+                setExtraFields({ ...extraFields, courriel1: e.target.value })
+              }
+              className="table-data"
+              data-ocid="client.form_courriel1.input"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="courriel2" className="table-header">
+              Courriel 2
+            </Label>
+            <Input
+              id="courriel2"
+              value={extraFields.courriel2}
+              onChange={(e) =>
+                setExtraFields({ ...extraFields, courriel2: e.target.value })
+              }
+              className="table-data"
+              data-ocid="client.form_courriel2.input"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="dateNaissance" className="table-header">
+              Date de naissance
+            </Label>
+            <Input
+              id="dateNaissance"
+              value={extraFields.dateNaissance}
+              onChange={(e) =>
+                setExtraFields({
+                  ...extraFields,
+                  dateNaissance: e.target.value,
+                })
+              }
+              className="table-data"
+              placeholder="JJ/MM/AAAA"
+              data-ocid="client.form_datenaissance.input"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="nomSecondContact" className="table-header">
+              Nom Second contact
+            </Label>
+            <Input
+              id="nomSecondContact"
+              value={extraFields.nomSecondContact}
+              onChange={(e) =>
+                setExtraFields({
+                  ...extraFields,
+                  nomSecondContact: e.target.value,
+                })
+              }
+              className="table-data"
+              data-ocid="client.form_nom_second_contact.input"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="telephoneSecondContact" className="table-header">
+              Téléphone second contact
+            </Label>
+            <Input
+              id="telephoneSecondContact"
+              value={extraFields.telephoneSecondContact}
+              onChange={(e) =>
+                setExtraFields({
+                  ...extraFields,
+                  telephoneSecondContact: e.target.value,
+                })
+              }
+              className="table-data"
+              data-ocid="client.form_tel_second_contact.input"
             />
           </div>
 

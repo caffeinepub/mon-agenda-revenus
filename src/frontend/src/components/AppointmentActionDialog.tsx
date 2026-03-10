@@ -15,12 +15,14 @@ import AppointmentDialog from "./AppointmentDialog";
 interface AppointmentActionDialogProps {
   open: boolean;
   onClose: () => void;
+  onFullyDone?: () => void;
   appointment: RendezVous | null;
 }
 
 export default function AppointmentActionDialog({
   open,
   onClose,
+  onFullyDone,
   appointment,
 }: AppointmentActionDialogProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -41,10 +43,12 @@ export default function AppointmentActionDialog({
   const handleCloseEditDialog = () => {
     setShowEditDialog(false);
     setEditMode(null);
+    onFullyDone?.();
   };
 
   const handleCloseDeleteDialog = () => {
     setShowDeleteDialog(false);
+    onFullyDone?.();
   };
 
   return (
@@ -67,6 +71,7 @@ export default function AppointmentActionDialog({
                   variant="outline"
                   className="w-full justify-start gap-3 h-auto py-3"
                   onClick={() => handleEditChoice(DemandeEdition.unique)}
+                  data-ocid="appointment.action.edit_single.button"
                 >
                   <User className="h-5 w-5 text-blue-600" />
                   <div className="text-left">
@@ -84,6 +89,7 @@ export default function AppointmentActionDialog({
                   onClick={() =>
                     handleEditChoice(DemandeEdition.futursDuClient)
                   }
+                  data-ocid="appointment.action.edit_future.button"
                 >
                   <Users className="h-5 w-5 text-blue-600" />
                   <div className="text-left">
@@ -107,6 +113,7 @@ export default function AppointmentActionDialog({
                 variant="outline"
                 className="w-full justify-start gap-3 h-auto py-3 border-destructive/50 hover:bg-destructive/10"
                 onClick={handleDeleteChoice}
+                data-ocid="appointment.action.delete.button"
               >
                 <Trash2 className="h-5 w-5 text-destructive" />
                 <div className="text-left">
