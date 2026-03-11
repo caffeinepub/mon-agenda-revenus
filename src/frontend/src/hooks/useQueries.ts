@@ -372,7 +372,6 @@ export function useGetRapportPDF(request: RapportPDFRequest) {
 // Appointment Mutations
 export function useAddAppointment() {
   const { actor } = useActor();
-  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -391,7 +390,6 @@ export function useAddAppointment() {
       clientRef: ClientReference;
     }) => {
       if (!actor) throw new Error("Actor not available");
-      if (!identity) throw new Error("Identity not available");
 
       try {
         return await actor.ajouterRendezVous({
@@ -444,7 +442,6 @@ export function useAddAppointment() {
 
 export function useUpdateAppointment() {
   const { actor } = useActor();
-  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -465,7 +462,6 @@ export function useUpdateAppointment() {
       clientRef: ClientReference;
     }) => {
       if (!actor) throw new Error("Actor not available");
-      if (!identity) throw new Error("Identity not available");
 
       try {
         return await actor.modifierRendezVous({

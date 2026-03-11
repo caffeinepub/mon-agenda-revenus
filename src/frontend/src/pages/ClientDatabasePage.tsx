@@ -97,7 +97,6 @@ function saveExtraFields(ref: string, fields: ClientExtraFields): void {
 type PanelMode = "form" | "search" | "fiche";
 
 export default function ClientDatabasePage() {
-  const { identity } = useInternetIdentity();
   const { data: clients = [], isLoading: clientsLoading } =
     useGetAllClientRecords();
   const { data: appointments = [] } = useGetAllAppointments();
@@ -226,11 +225,6 @@ export default function ClientDatabasePage() {
 
     if (!formData.clientName || !formData.referenceClient) {
       toast.error("Veuillez remplir le nom et la référence client");
-      return;
-    }
-
-    if (!identity) {
-      toast.error("Veuillez vous connecter pour enregistrer un client");
       return;
     }
 
@@ -472,6 +466,7 @@ export default function ClientDatabasePage() {
             <td>${dateStr}</td>
             <td style="text-align:right">${Number(apt.montantDu).toLocaleString("fr-FR")}</td>
             <td style="text-align:right">${Number(apt.montantPaye).toLocaleString("fr-FR")}</td>
+            <td style="text-align:left">${apt.commentaireManuel || ""}</td>
             <td style="text-align:center;color:${faitColor};font-style:${apt.annule ? "italic" : "normal"}">${faitLabel}</td>
             <td style="text-align:right;color:${creditColor}">${ligneCredit.toLocaleString("fr-FR")}</td>
           </tr>`;
@@ -535,6 +530,7 @@ export default function ClientDatabasePage() {
         <th style="text-align:left">Date</th>
         <th style="text-align:right">Dû</th>
         <th style="text-align:right">Payé</th>
+        <th style="text-align:left">Info</th>
         <th style="text-align:center">Fait</th>
         <th style="text-align:right">Crédit</th>
       </tr>
@@ -544,6 +540,7 @@ export default function ClientDatabasePage() {
         <td>Total</td>
         <td style="text-align:right">${ficheStats.totalDu.toLocaleString("fr-FR")}</td>
         <td style="text-align:right">${ficheStats.totalPaye.toLocaleString("fr-FR")}</td>
+        <td style="text-align:left">—</td>
         <td style="text-align:center">—</td>
         <td style="text-align:right;color:${totalCreditColor}">${ficheStats.totalCredit.toLocaleString("fr-FR")}</td>
       </tr>

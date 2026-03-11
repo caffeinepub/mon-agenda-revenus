@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Principal } from "@dfinity/principal";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -95,6 +96,7 @@ export default function AppointmentDialog({
   const addAppointment = useAddAppointment();
   const updateAppointment = useUpdateAppointment();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally omit clientRecords to avoid re-init on data load
   useEffect(() => {
     if (appointment) {
       const date = new Date(Number(appointment.dateHeure) / 1000000);
@@ -167,7 +169,7 @@ export default function AppointmentDialog({
       });
       setSelectedClientId(null);
     }
-  }, [appointment, clientRecords]);
+  }, [appointment]);
 
   const handleClientSelect = (clientId: string) => {
     const client = clientRecords.find((c) => c.id.toString() === clientId);
@@ -219,11 +221,6 @@ export default function AppointmentDialog({
       return;
     }
 
-    if (!identity) {
-      toast.error("Veuillez vous connecter pour créer un rendez-vous");
-      return;
-    }
-
     try {
       const dateTime = new Date(`${formData.date}T${formData.heureDebut}`);
       const dateHeure = BigInt(dateTime.getTime() * 1000000);
@@ -240,7 +237,7 @@ export default function AppointmentDialog({
       }
 
       const clientRef = {
-        owner: identity.getPrincipal(),
+        owner: identity ? identity.getPrincipal() : Principal.anonymous(),
         referenceClient: formData.referenceClient,
       };
 

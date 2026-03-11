@@ -15,10 +15,12 @@ import {
   LayoutDashboard,
   LogOut,
   Plus,
+  ShieldCheck,
   User,
   Users,
 } from "lucide-react";
 import { useState } from "react";
+import { useLocalAuth } from "../context/LocalAuthContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import AppointmentDialog from "./AppointmentDialog";
 
@@ -26,19 +28,34 @@ interface HeaderProps {
   userName?: string;
 }
 
-export default function Header({ userName }: HeaderProps) {
-  const { clear, identity } = useInternetIdentity();
+export default function Header({ userName: _userName }: HeaderProps) {
+  const { clear } = useInternetIdentity();
+  const { session, logout } = useLocalAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const routerState = useRouterState();
-  const isAuthenticated = !!identity;
   const currentPath = routerState.location.pathname;
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
 
+  const isAdmin = session?.role === "admin";
+  const isReader = session?.role === "reader";
+
   const handleLogout = async () => {
-    await clear();
+    logout();
+    try {
+      await clear();
+    } catch {
+      /* ignore */
+    }
     queryClient.clear();
   };
+
+  const roleLabel =
+    session?.role === "admin"
+      ? "Administrateur"
+      : session?.role === "advanced"
+        ? "Utilisateur Avancé"
+        : "Lecteur";
 
   return (
     <>
@@ -58,7 +75,7 @@ export default function Header({ userName }: HeaderProps) {
             </div>
           </div>
 
-          {isAuthenticated && (
+          {session && (
             <div className="flex items-center gap-2">
               <nav className="hidden md:flex items-center gap-2">
                 <Button
@@ -66,6 +83,7 @@ export default function Header({ userName }: HeaderProps) {
                   size="sm"
                   className="gap-2"
                   onClick={() => navigate({ to: "/" })}
+                  data-ocid="nav.dashboard.link"
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Tableau de bord
@@ -75,6 +93,7 @@ export default function Header({ userName }: HeaderProps) {
                   size="sm"
                   className="gap-2"
                   onClick={() => navigate({ to: "/rapport-pdf" })}
+                  data-ocid="nav.rapport.link"
                 >
                   <FileBarChart className="h-4 w-4" />
                   Rapport PDF
@@ -86,33 +105,72 @@ export default function Header({ userName }: HeaderProps) {
                   size="sm"
                   className="gap-2"
                   onClick={() => navigate({ to: "/client-database" })}
+                  data-ocid="nav.clients.link"
                 >
                   <Users className="h-4 w-4" />
                   Base Client
                 </Button>
+                {isAdmin && (
+                  <Button
+                    variant={currentPath === "/users" ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => navigate({ to: "/users" })}
+                    data-ocid="nav.users.link"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Utilisateurs
+                  </Button>
+                )}
               </nav>
 
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-2"
-                onClick={() => setIsNewAppointmentOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nouveau Rendez-vous</span>
-              </Button>
+              {/* New appointment - hidden for reader */}
+              {!isReader && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsNewAppointmentOpen(true)}
+                  data-ocid="header.new_appointment.button"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Nouveau Rendez-vous</span>
+                </Button>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2"
+                    data-ocid="header.account.button"
+                  >
                     <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">
-                      {userName || "Mon compte"}
-                    </span>
+                    <span className="hidden sm:inline">{session.username}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                  <DropdownMenuLabel>
+                    <div
+                      style={{
+                        fontFamily: "Verdana, sans-serif",
+                        fontSize: 11,
+                      }}
+                    >
+                      {session.username}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: "#888",
+                        fontFamily: "Verdana, sans-serif",
+                        fontWeight: "normal",
+                      }}
+                    >
+                      {roleLabel}
+                    </div>
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="md:hidden">
                     <DropdownMenuItem onClick={() => navigate({ to: "/" })}>
@@ -131,11 +189,20 @@ export default function Header({ userName }: HeaderProps) {
                       <Users className="mr-2 h-4 w-4" />
                       Base Client
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem
+                        onClick={() => navigate({ to: "/users" })}
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        Utilisateurs
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                   </div>
                   <DropdownMenuItem
                     onClick={handleLogout}
                     className="text-destructive"
+                    data-ocid="header.logout.button"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Déconnexion

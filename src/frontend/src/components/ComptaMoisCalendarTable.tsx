@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { RendezVous } from "../backend";
+import { useLocalAuth } from "../context/LocalAuthContext";
 import {
   useGetAllAppointments,
   useUpdateAppointmentStatus,
@@ -50,6 +51,8 @@ export default function ComptaMoisCalendarTable({
   onMonthChange,
   initialMonth: _initialMonth,
 }: ComptaMoisCalendarTableProps) {
+  const { session } = useLocalAuth();
+  const isReader = session?.role === "reader";
   const {
     data: appointments = [],
     isLoading,
@@ -357,6 +360,7 @@ export default function ComptaMoisCalendarTable({
   };
 
   const handleAppointmentClick = (appointment: RendezVous) => {
+    if (isReader) return; // Reader cannot edit appointments
     setSelectedAppointment(appointment);
     setShowActionDialog(true);
   };
@@ -535,9 +539,12 @@ export default function ComptaMoisCalendarTable({
                                 type="checkbox"
                                 checked={appointment.fait}
                                 onChange={(e) =>
-                                  handleToggleFait(appointment, e)
+                                  isReader
+                                    ? undefined
+                                    : handleToggleFait(appointment, e)
                                 }
                                 onClick={(e) => e.stopPropagation()}
+                                disabled={isReader}
                                 className="w-4 h-4"
                               />
                               <span className="table-data">Fait</span>
@@ -547,9 +554,12 @@ export default function ComptaMoisCalendarTable({
                                 type="checkbox"
                                 checked={appointment.annule}
                                 onChange={(e) =>
-                                  handleToggleAnnule(appointment, e)
+                                  isReader
+                                    ? undefined
+                                    : handleToggleAnnule(appointment, e)
                                 }
                                 onClick={(e) => e.stopPropagation()}
+                                disabled={isReader}
                                 className="w-3 h-3"
                               />
                               <span className="table-data">Annulé</span>
@@ -584,8 +594,8 @@ export default function ComptaMoisCalendarTable({
                                       handleMontantPayeClick(appointment, e);
                                     }
                                   }}
-                                  disabled={isAnnule}
-                                  aria-disabled={isAnnule}
+                                  disabled={isAnnule || isReader}
+                                  aria-disabled={isAnnule || isReader}
                                 >
                                   {isAnnule
                                     ? "0"
@@ -609,10 +619,11 @@ export default function ComptaMoisCalendarTable({
                               ) : (
                                 <button
                                   type="button"
-                                  className="table-data cursor-pointer hover:underline bg-transparent border-0 p-0 m-0"
+                                  className={`table-data bg-transparent border-0 p-0 m-0 ${isReader ? "cursor-default" : "cursor-pointer hover:underline"}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleCommentaireClick(appointment, e);
+                                    if (!isReader)
+                                      handleCommentaireClick(appointment, e);
                                   }}
                                 >
                                   {getDisplayedCommentaire(appointment) || "—"}
