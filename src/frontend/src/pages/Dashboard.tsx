@@ -147,7 +147,6 @@ export default function Dashboard() {
         : BigInt(0);
 
     // Calcul du nombre moyen de RDV par mois (mois terminés uniquement)
-    // On compte les RDV mois par mois puis on fait la moyenne
     let totalRdvCompleted = 0;
     for (let m = 1; m <= completedMonthsCount; m++) {
       const monthStart =
@@ -179,14 +178,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="frame-title text-3xl mb-6">Tableau de bord</h1>
+      <main className="container mx-auto px-2 py-4 md:px-4 md:py-8">
+        <h1 className="frame-title text-2xl md:text-3xl mb-4 md:mb-6">
+          Tableau de bord
+        </h1>
 
-        {/* ── TOP SECTION: 3-column grid ── */}
-        <div className="grid grid-cols-[1fr_2fr_1fr] gap-4 mb-6 items-start">
-          {/* ── LEFT COLUMN: A / B / C — Synthèse de l'année ── */}
+        {/* ── TOP SECTION: 3-column grid — 1 column on mobile ── */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] gap-4 mb-6 items-start dashboard-grid">
+          {/* ── LEFT COLUMN: A / B / C merged — Synthèse de l'année ── */}
           <div className="flex flex-col gap-4">
-            {/* Section label — increased 3 font-size steps, bold */}
             <p
               className="text-center font-bold text-xl"
               style={{ fontFamily: "Verdana, sans-serif" }}
@@ -194,61 +194,99 @@ export default function Dashboard() {
               Synthèse de l'année
             </p>
 
-            {/* Card A — Revenu moyen */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="frame-title">
-                  Revenu moyen {selectedYear}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <p className="table-data text-muted-foreground">
-                  Basé sur {annualStats.completedMonthsCount} mois terminé
-                  {annualStats.completedMonthsCount > 1 ? "s" : ""}
-                </p>
-                <p className="sum-total text-2xl font-bold mt-1">
-                  {formatNum(annualStats.averageRevenue)}
-                </p>
-              </CardContent>
-            </Card>
+            <Card>
+              <CardContent className="px-4 py-2">
+                {/* Row A — Revenu moyen */}
+                <div className="py-1">
+                  <p
+                    className="frame-title font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Revenu moyen {selectedYear}
+                  </p>
+                  <p
+                    className="table-data text-muted-foreground"
+                    style={{ fontSize: "9px" }}
+                  >
+                    Basé sur {annualStats.completedMonthsCount} mois terminé
+                    {annualStats.completedMonthsCount > 1 ? "s" : ""}
+                  </p>
+                  <p
+                    className="sum-total font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {formatNum(annualStats.averageRevenue)}
+                  </p>
+                </div>
 
-            {/* Card B — Nombre de RDV moyen par mois */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="frame-title">
-                  Nombre de RDV moyen par mois {selectedYear}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <p className="table-data text-muted-foreground">
-                  Basé sur {annualStats.completedMonthsCount} mois terminé
-                  {annualStats.completedMonthsCount > 1 ? "s" : ""}
-                </p>
-                <p className="sum-total text-2xl font-bold mt-1">
-                  {annualStats.averageRdvPerMonth}
-                </p>
-              </CardContent>
-            </Card>
+                {/* Row B — Nombre de RDV moyen par mois */}
+                <div className="border-t py-1">
+                  <p
+                    className="frame-title font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Nombre de RDV moyen par mois {selectedYear}
+                  </p>
+                  <p
+                    className="table-data text-muted-foreground"
+                    style={{ fontSize: "9px" }}
+                  >
+                    Basé sur {annualStats.completedMonthsCount} mois terminé
+                    {annualStats.completedMonthsCount > 1 ? "s" : ""}
+                  </p>
+                  <p
+                    className="sum-total font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {annualStats.averageRdvPerMonth}
+                  </p>
+                </div>
 
-            {/* Card C — Statistiques annuelles */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="frame-title">
-                  Statistiques annuelles {selectedYear}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <p className="table-data text-muted-foreground">Total reçu</p>
-                <p className="sum-total text-2xl font-bold mt-1">
-                  {formatNum(annualStats.totalRevenue)}
-                </p>
+                {/* Row C — Statistiques annuelles */}
+                <div className="border-t py-1">
+                  <p
+                    className="frame-title font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Statistiques annuelles {selectedYear}
+                  </p>
+                  <p
+                    className="table-data text-muted-foreground"
+                    style={{ fontSize: "9px" }}
+                  >
+                    Total reçu
+                  </p>
+                  <p
+                    className="sum-total font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {formatNum(annualStats.totalRevenue)}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
 
           {/* ── CENTER COLUMN: D — Résumé Mensuels ── */}
           <div className="flex flex-col gap-4">
-            {/* Section label — increased 3 font-size steps, bold */}
             <p
               className="text-center font-bold text-xl"
               style={{ fontFamily: "Verdana, sans-serif" }}
@@ -261,9 +299,8 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* ── RIGHT COLUMN: E / F / G — Mois courant ── */}
+          {/* ── RIGHT COLUMN: E / F / G merged — Mois courant ── */}
           <div className="flex flex-col gap-4">
-            {/* Section label — increased 3 font-size steps, bold */}
             <p
               className="text-center font-bold text-xl"
               style={{ fontFamily: "Verdana, sans-serif" }}
@@ -271,54 +308,91 @@ export default function Dashboard() {
               Mois de : {currentMonthLabel}
             </p>
 
-            {/* Card E — Dus (RDV Faits ; Mois Courant) */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="frame-title">
-                  Dus (RDV Faits ; Mois Courant)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <p className="sum-total text-2xl font-bold text-orange-600 mt-1">
-                  {formatNum(financialOverviewData.totalDue)}
-                </p>
-                <p className="table-data text-muted-foreground mt-1">
-                  Montants restant à percevoir
-                </p>
-              </CardContent>
-            </Card>
+            <Card>
+              <CardContent className="px-4 py-2">
+                {/* Row E — Dus (RDV Faits ; Mois Courant) */}
+                <div className="py-1">
+                  <p
+                    className="frame-title font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Dus (RDV Faits ; Mois Courant)
+                  </p>
+                  <p
+                    className="sum-total font-bold text-orange-600"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {formatNum(financialOverviewData.totalDue)}
+                  </p>
+                  <p
+                    className="table-data text-muted-foreground"
+                    style={{ fontSize: "9px" }}
+                  >
+                    Montants restant à percevoir
+                  </p>
+                </div>
 
-            {/* Card F — RDV faits (Payés et Impayés ; Mois Courant) */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="frame-title">
-                  RDV faits (Payés et Impayés ; Mois Courant)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <p className="sum-total text-2xl font-bold text-blue-600 mt-1">
-                  {formatNum(financialOverviewData.totalRdvFaitsMoisCourant)}
-                </p>
-                <p className="table-data text-muted-foreground mt-1">
-                  Total des montants dus pour les rendez-vous effectués
-                </p>
-              </CardContent>
-            </Card>
+                {/* Row F — RDV faits (Payés et Impayés ; Mois Courant) */}
+                <div className="border-t py-1">
+                  <p
+                    className="frame-title font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "11px",
+                    }}
+                  >
+                    RDV faits (Payés et Impayés ; Mois Courant)
+                  </p>
+                  <p
+                    className="sum-total font-bold text-blue-600"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {formatNum(financialOverviewData.totalRdvFaitsMoisCourant)}
+                  </p>
+                  <p
+                    className="table-data text-muted-foreground"
+                    style={{ fontSize: "9px" }}
+                  >
+                    Total des montants dus pour les rendez-vous effectués
+                  </p>
+                </div>
 
-            {/* Card G — Revenus du Mois en Cours (Faits et Payés) */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="frame-title">
-                  Revenus du Mois en Cours (Faits et Payés)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <p className="sum-total text-2xl font-bold text-green-600 mt-1">
-                  {formatNum(financialOverviewData.totalPaid)}
-                </p>
-                <p className="table-data text-muted-foreground mt-1">
-                  Montants perçus pour les rendez-vous effectués
-                </p>
+                {/* Row G — Revenus du Mois en Cours (Faits et Payés) */}
+                <div className="border-t py-1">
+                  <p
+                    className="frame-title font-bold"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Revenus du Mois en Cours (Faits et Payés)
+                  </p>
+                  <p
+                    className="sum-total font-bold text-green-600"
+                    style={{
+                      fontFamily: "Verdana,sans-serif",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {formatNum(financialOverviewData.totalPaid)}
+                  </p>
+                  <p
+                    className="table-data text-muted-foreground"
+                    style={{ fontSize: "9px" }}
+                  >
+                    Montants perçus pour les rendez-vous effectués
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -329,28 +403,32 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="frame-title">Listing Mensuel</CardTitle>
           </CardHeader>
-          <CardContent>
-            <MonthlyListingTable
-              listings={listings}
-              totals={totals}
-              allAppointments={allAppointments}
-              year={selectedYear}
-              month={selectedMonth}
-            />
+          <CardContent className="p-0 md:p-6">
+            <div className="table-scroll-wrapper">
+              <MonthlyListingTable
+                listings={listings}
+                totals={totals}
+                allAppointments={allAppointments}
+                year={selectedYear}
+                month={selectedMonth}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        {/* ── FRAME I — Calendrier mensuel (untouched) ── */}
+        {/* ── FRAME I — Calendrier mensuel ── */}
         <Card>
           <CardHeader>
             <CardTitle className="frame-title">Calendrier mensuel</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ComptaMoisCalendarTable
-              year={selectedYear}
-              month={selectedMonth}
-              onMonthChange={handleMonthChange}
-            />
+          <CardContent className="p-0 md:p-6">
+            <div className="table-scroll-wrapper">
+              <ComptaMoisCalendarTable
+                year={selectedYear}
+                month={selectedMonth}
+                onMonthChange={handleMonthChange}
+              />
+            </div>
           </CardContent>
         </Card>
       </main>

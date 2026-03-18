@@ -198,20 +198,6 @@ export default function LocalLoginPage() {
             {loading ? "Connexion en cours..." : "Se connecter"}
           </Button>
         </form>
-
-        {/* Info about default account */}
-        <p
-          style={{
-            fontSize: 10,
-            color: "#999",
-            marginTop: 16,
-            textAlign: "center",
-            fontFamily: "Verdana, sans-serif",
-          }}
-        >
-          Premier accès : identifiant et mot de passe{" "}
-          <em>Administrateur_root</em>
-        </p>
       </div>
     </div>
   );

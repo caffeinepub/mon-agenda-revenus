@@ -230,3 +230,78 @@
     border-right: 3px solid oklch(var(--today-blue-header) / 1) !important;
   }
 }
+
+/* =============================================================================
+   ADAPTATION RESPONSIVE POUR SMARTPHONES (max-width: 768px)
+   ============================================================================= */
+@media (max-width: 768px) {
+  /* Container principal : padding réduit */
+  .container {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* Tous les tableaux larges : défilement horizontal */
+  .responsive-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Taille de police réduite sur mobile pour les tableaux */
+  .table-data {
+    font-size: 9px;
+  }
+  .table-header {
+    font-size: 10px;
+  }
+  .frame-title {
+    font-size: 12px;
+  }
+
+  /* Grille 3 colonnes du Tableau de bord : en colonne sur mobile */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Calendrier mensuel sur mobile : défilement horizontal */
+  .compta-mois-table {
+    font-size: 8px !important;
+  }
+  .compta-mois-time-row {
+    height: 16px !important;
+  }
+  .compta-mois-hour-cell {
+    height: 16px !important;
+    font-size: 8px !important;
+    padding: 0 2px !important;
+  }
+  .compta-mois-day-cell {
+    height: 16px !important;
+    font-size: 8px !important;
+    padding: 0 !important;
+  }
+  .compta-mois-day-header {
+    font-size: 8px !important;
+    padding: 2px 2px !important;
+  }
+  .compta-mois-hour-header {
+    width: 28px !important;
+    min-width: 28px !important;
+    font-size: 8px !important;
+  }
+
+  /* Header : titre raccourci sur mobile */
+  header h1 {
+    font-size: 16px !important;
+  }
+  header p {
+    display: none;
+  }
+}
+
+/* Classe utilitaire pour les wrappers de tableaux scrollables */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}

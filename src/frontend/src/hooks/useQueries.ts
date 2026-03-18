@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   ClientRecord,
-  ClientReference,
+  DemandeEdition,
   DomaineListingMensuel,
   RapportPDFData,
   RapportPDFRequest,
@@ -11,77 +11,70 @@ import type {
   TypeRepetition,
   UserProfile,
 } from "../backend";
-import type { DemandeEdition } from "../backend";
-import { useActor } from "./useActor";
-import { useInternetIdentity } from "./useInternetIdentity";
+import type { DemandeEdition as _DemandeEditionType } from "../backend";
+import { syncToBackendBackground } from "../utils/backendSync";
+import {
+  addAppointment,
+  addClientRecord,
+  computeClientCredit,
+  computeFinancialStats,
+  computeMonthlyTotals,
+  computeRapportPDF,
+  computeTotalReelRecu,
+  deleteAppointment,
+  deleteClientRecord,
+  getMonthlyClientList,
+  loadAppointments,
+  loadClients,
+  updateAppointment,
+  updateAppointmentStatus,
+  updateClientRecord,
+  updateMontantPaye,
+} from "../utils/localDataStore";
 
-// User Profile Queries
+// ClientReference kept for compatibility
+import type { ClientReference } from "../backend";
+
+// ── User Profile (stub - no ICP auth needed for app data) ───────────────
 export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  const query = useQuery<UserProfile | null>({
+  return useQuery<UserProfile | null>({
     queryKey: ["currentUserProfile"],
-    queryFn: async () => {
-      if (!actor) throw new Error("Actor not available");
-      return actor.getCallerUserProfile();
-    },
-    enabled: !!actor && !actorFetching,
-    retry: false,
+    queryFn: async () => null,
+    staleTime: Number.POSITIVE_INFINITY,
   });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
 }
 
 export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error("Actor not available");
-      return actor.saveCallerUserProfile(profile);
-    },
+    mutationFn: async (_profile: UserProfile) => {},
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
     },
   });
 }
 
-// Client Record Queries
+// ── Client Record Queries ──────────────────────────────────────────────────
 export function useGetAllClientRecords() {
-  const { actor, isFetching } = useActor();
-
   return useQuery<ClientRecord[]>({
     queryKey: ["clientRecords"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllClientRecords();
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: () => loadClients(),
     staleTime: 0,
   });
 }
 
 export function useGetClientRecord(id: bigint) {
-  const { actor, isFetching } = useActor();
-
   return useQuery<ClientRecord | null>({
     queryKey: ["clientRecord", id.toString()],
-    queryFn: async () => {
-      if (!actor) return null;
-      return actor.getClientRecord(id);
+    queryFn: () => {
+      const clients = loadClients();
+      return clients.find((c) => c.id === id) ?? null;
     },
-    enabled: !!actor && !isFetching && !!id,
     staleTime: 0,
   });
 }
 
 export function useAddClientRecord() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -94,39 +87,16 @@ export function useAddClientRecord() {
       notes: string;
       photo: Uint8Array | null;
     }) => {
-      if (!actor) throw new Error("Actor not available");
-      try {
-        return await actor.addClientRecord(
-          data.clientName,
-          data.referenceClient,
-          data.phoneNumber,
-          data.address,
-          data.service,
-          data.notes,
-          data.photo,
-        );
-      } catch (error: any) {
-        // Parse and re-throw with clearer message
-        const errorMessage = error.message || String(error);
-        if (
-          errorMessage.includes("Non autorisé") ||
-          errorMessage.includes("Unauthorized")
-        ) {
-          throw new Error(
-            "Non autorisé : Veuillez vous reconnecter et réessayer",
-          );
-        }
-        throw error;
-      }
+      return addClientRecord(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
+      syncToBackendBackground();
     },
   });
 }
 
 export function useUpdateClientRecord() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -140,219 +110,107 @@ export function useUpdateClientRecord() {
       notes: string;
       photo: Uint8Array | null;
     }) => {
-      if (!actor) throw new Error("Actor not available");
-      try {
-        return await actor.updateClientRecord(
-          data.id,
-          data.clientName,
-          data.referenceClient,
-          data.phoneNumber,
-          data.address,
-          data.service,
-          data.notes,
-          data.photo,
-        );
-      } catch (error: any) {
-        const errorMessage = error.message || String(error);
-        if (
-          errorMessage.includes("Non autorisé") ||
-          errorMessage.includes("Unauthorized")
-        ) {
-          throw new Error(
-            "Non autorisé : Vous ne pouvez modifier que vos propres clients",
-          );
-        }
-        throw error;
-      }
+      updateClientRecord(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
+      syncToBackendBackground();
     },
   });
 }
 
 export function useDeleteClientRecord() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("Actor not available");
-      try {
-        return await actor.deleteClientRecord(id);
-      } catch (error: any) {
-        const errorMessage = error.message || String(error);
-        if (
-          errorMessage.includes("Non autorisé") ||
-          errorMessage.includes("Unauthorized")
-        ) {
-          throw new Error(
-            "Non autorisé : Vous ne pouvez supprimer que vos propres clients",
-          );
-        }
-        throw error;
-      }
+      deleteClientRecord(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
+      syncToBackendBackground();
     },
   });
 }
 
-// Appointment Queries
+// ── Appointment Queries ───────────────────────────────────────────────────────
 export function useGetAllAppointments() {
-  const { actor, isFetching } = useActor();
-
   return useQuery<RendezVous[]>({
     queryKey: ["appointments"],
-    queryFn: async () => {
-      if (!actor) return [];
-      const appointments = await actor.obtenirTousLesRendezVous();
-      return appointments;
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: () => loadAppointments(),
     staleTime: 0,
   });
 }
 
 export function useGetAppointmentsByStatus(paid: boolean) {
-  const { actor, isFetching } = useActor();
-
   return useQuery<RendezVous[]>({
     queryKey: ["appointments", "status", paid],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.obtenirRendezVousParStatut(paid);
+    queryFn: () => {
+      const apts = loadAppointments();
+      return apts.filter((a) => a.montantPaye > BigInt(0) === paid);
     },
-    enabled: !!actor && !isFetching,
     staleTime: 0,
   });
 }
 
 export function useGetAppointmentsByReference(referenceClient: string) {
-  const { actor, isFetching } = useActor();
-
   return useQuery<RendezVous[]>({
     queryKey: ["appointments", "reference", referenceClient],
-    queryFn: async () => {
-      if (!actor || !referenceClient) return [];
-      return actor.obtenirRendezVousParReference(referenceClient);
+    queryFn: () => {
+      const apts = loadAppointments();
+      return apts.filter((a) => a.referenceClient === referenceClient);
     },
-    enabled: !!actor && !isFetching && !!referenceClient,
+    enabled: !!referenceClient,
     staleTime: 0,
   });
 }
 
 export function useGetFinancialStats() {
-  const { actor, isFetching } = useActor();
-
   return useQuery<StatistiquesFinancieres>({
     queryKey: ["financialStats"],
-    queryFn: async () => {
-      if (!actor)
-        return {
-          totalDu: BigInt(0),
-          totalPaye: BigInt(0),
-          totalFaitEtPaye: BigInt(0),
-          totalDuesIndividuelles: BigInt(0),
-          totalFaitNonAnnule: BigInt(0),
-          totalEnAttente: BigInt(0),
-          totalReelRecu: BigInt(0),
-        };
-      const stats = await actor.obtenirStatistiquesFinancieres();
-      return stats;
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: () => computeFinancialStats(loadAppointments()),
     staleTime: 0,
     refetchOnMount: "always",
   });
 }
 
 export function useGetClientCredit(referenceClient: string) {
-  const { actor, isFetching } = useActor();
-
   return useQuery<bigint>({
     queryKey: ["clientCredit", referenceClient],
-    queryFn: async () => {
-      if (!actor || !referenceClient) return BigInt(0);
-      return actor.obtenirCreditClient(referenceClient);
+    queryFn: () => {
+      if (!referenceClient) return BigInt(0);
+      return computeClientCredit(loadAppointments(), referenceClient);
     },
-    enabled: !!actor && !isFetching && !!referenceClient,
+    enabled: !!referenceClient,
     staleTime: 0,
   });
 }
 
-// ============================================================================
-// CORRECTION CRITIQUE FINALE ABSOLUE - useGetMonthlyListing
-// ============================================================================
-// Ce hook récupère les données du Listing Mensuel incluant la colonne
-// "RDV du mois, faits et payés" représentée par le champ totalFaitEtPaye
-//
-// RÈGLE ABSOLUE POUR LE TABLEAU DE BORD :
-// - totalFaitEtPaye = "RDV du mois, faits et payés"
-//   → SOURCE EXCLUSIVE pour TOUS les calculs de revenus du Dashboard
-//   → Utilisé pour : Revenus perçus, Revenus mensuels 2026, Statistiques annuelles 2026
-//
-// - totalPayeMois = "Toutes sommes reçues ce mois"
-//   → NE DOIT PAS être utilisé pour les calculs du Dashboard
-//   → Utilisé uniquement dans la page Listing Mensuel
-// ============================================================================
 export function useGetMonthlyListing(year: number, month: number) {
-  const { actor, isFetching } = useActor();
-
   return useQuery<[DomaineListingMensuel[], TotauxListingMensuel]>({
     queryKey: ["monthlyListing", year, month],
-    queryFn: async () => {
-      if (!actor)
-        return [
-          [],
-          {
-            totalNbRendezVousFaits: BigInt(0),
-            totalSommesDues: BigInt(0),
-            totalDuMois: BigInt(0),
-            totalDuesIndividuelles: BigInt(0),
-            totalPayeMois: BigInt(0), // "Toutes sommes reçues ce mois" - NE PAS utiliser pour Dashboard
-            totalFaitEtPaye: BigInt(0), // "RDV du mois, faits et payés" - SOURCE EXCLUSIVE pour Dashboard
-            sommeSoldesRestants: BigInt(0),
-            sommeSoldeCumule: BigInt(0),
-            totalCreditCumule: BigInt(0),
-            totalCreditMois: BigInt(0),
-            totalFinExerciceCredit: BigInt(0),
-            totalCreditFinMois: BigInt(0),
-            totalRendezVousFaits: BigInt(0),
-            totalSoldeRestantPositif: BigInt(0),
-            totalSoldeRestantNegatif: BigInt(0),
-            totalTotalReelRecu: BigInt(0),
-          },
-        ];
-      const result = await actor.obtenirListingMensuel(
-        BigInt(year),
-        BigInt(month),
-      );
-      return result;
+    queryFn: () => {
+      const appointments = loadAppointments();
+      const listings = getMonthlyClientList(appointments, year, month);
+      const totals = computeMonthlyTotals(appointments, year, month);
+      return [listings, totals] as [
+        DomaineListingMensuel[],
+        TotauxListingMensuel,
+      ];
     },
-    enabled: !!actor && !isFetching,
     staleTime: 0,
   });
 }
 
 export function useGetTotalReelRecu(year: number, month: number) {
-  const { actor, isFetching } = useActor();
-
   return useQuery<bigint>({
     queryKey: ["totalReelRecu", year, month],
-    queryFn: async () => {
-      if (!actor) return BigInt(0);
-      return actor.getTotalReelRecu(BigInt(year), BigInt(month));
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: () => computeTotalReelRecu(loadAppointments(), year, month),
     staleTime: 0,
   });
 }
 
 export function useGetRapportPDF(request: RapportPDFRequest) {
-  const { actor, isFetching } = useActor();
-
   return useQuery<RapportPDFData[]>({
     queryKey: [
       "rapportPDF",
@@ -360,18 +218,40 @@ export function useGetRapportPDF(request: RapportPDFRequest) {
       request.year.toString(),
       request.period.toString(),
     ],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.obtenirRapportPDF(request);
+    queryFn: () => {
+      const appointments = loadAppointments();
+      const year = Number(request.year);
+      const period = Number(request.period);
+
+      let startMs: number;
+      let endMs: number;
+
+      // RapportType: mensuel=0, annuel=1, plage=2 (from enum values)
+      const rapportType = request.rapportType;
+      const typeName =
+        typeof rapportType === "string" ? rapportType : String(rapportType);
+
+      if (typeName === "mensuel" || typeName === "0") {
+        const month = period;
+        startMs = new Date(year, month - 1, 1).getTime();
+        endMs = new Date(year, month, 0, 23, 59, 59, 999).getTime();
+      } else if (typeName === "annuel" || typeName === "1") {
+        startMs = new Date(year, 0, 1).getTime();
+        endMs = new Date(year, 11, 31, 23, 59, 59, 999).getTime();
+      } else {
+        // plage - period encodes start/end somehow, default to full year
+        startMs = new Date(year, 0, 1).getTime();
+        endMs = new Date(year, 11, 31, 23, 59, 59, 999).getTime();
+      }
+
+      return computeRapportPDF(appointments, startMs, endMs);
     },
-    enabled: !!actor && !isFetching,
     staleTime: 0,
   });
 }
 
-// Appointment Mutations
+// ── Appointment Mutations ─────────────────────────────────────────────────────
 export function useAddAppointment() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -389,42 +269,7 @@ export function useAddAppointment() {
       repetition: TypeRepetition;
       clientRef: ClientReference;
     }) => {
-      if (!actor) throw new Error("Actor not available");
-
-      try {
-        return await actor.ajouterRendezVous({
-          dateHeure: data.dateHeure,
-          heureDebut: data.heureDebut,
-          heureFin: data.heureFin,
-          nomClient: data.nomClient,
-          clientRef: data.clientRef,
-          numeroTelephone: data.numeroTelephone,
-          adresse: data.adresse,
-          service: data.service,
-          notes: data.notes,
-          montantDu: data.montantDu,
-          repetition: data.repetition,
-        });
-      } catch (error: any) {
-        const errorMessage = error.message || String(error);
-        if (
-          errorMessage.includes("référence client") ||
-          errorMessage.includes("obligatoire")
-        ) {
-          throw new Error(
-            "La référence client est obligatoire et doit correspondre à un client existant",
-          );
-        }
-        if (
-          errorMessage.includes("Non autorisé") ||
-          errorMessage.includes("Unauthorized")
-        ) {
-          throw new Error(
-            "Non autorisé : Veuillez vous reconnecter et réessayer",
-          );
-        }
-        throw error;
-      }
+      return addAppointment(data);
     },
     onSuccess: async () => {
       await Promise.all([
@@ -436,12 +281,12 @@ export function useAddAppointment() {
         queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
         queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
+      syncToBackendBackground();
     },
   });
 }
 
 export function useUpdateAppointment() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -461,44 +306,7 @@ export function useUpdateAppointment() {
       demandeEdition: DemandeEdition;
       clientRef: ClientReference;
     }) => {
-      if (!actor) throw new Error("Actor not available");
-
-      try {
-        return await actor.modifierRendezVous({
-          id: data.id,
-          dateHeure: data.dateHeure,
-          heureDebut: data.heureDebut,
-          heureFin: data.heureFin,
-          nomClient: data.nomClient,
-          clientRef: data.clientRef,
-          numeroTelephone: data.numeroTelephone,
-          adresse: data.adresse,
-          service: data.service,
-          notes: data.notes,
-          montantDu: data.montantDu,
-          repetition: data.repetition,
-          demandeEdition: data.demandeEdition,
-        });
-      } catch (error: any) {
-        const errorMessage = error.message || String(error);
-        if (
-          errorMessage.includes("référence client") ||
-          errorMessage.includes("obligatoire")
-        ) {
-          throw new Error(
-            "La référence client est obligatoire et doit correspondre à un client existant",
-          );
-        }
-        if (
-          errorMessage.includes("Non autorisé") ||
-          errorMessage.includes("Unauthorized")
-        ) {
-          throw new Error(
-            "Non autorisé : Vous ne pouvez modifier que vos propres rendez-vous",
-          );
-        }
-        throw error;
-      }
+      updateAppointment(data);
     },
     onSuccess: async () => {
       await Promise.all([
@@ -510,18 +318,27 @@ export function useUpdateAppointment() {
         queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
         queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
+      syncToBackendBackground();
     },
   });
 }
 
 export function useDeleteAppointment() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { id: bigint; mode: DemandeEdition }) => {
-      if (!actor) throw new Error("Actor not available");
-      return actor.deleteRendezVous(data.id, data.mode);
+    mutationFn: async (data: {
+      id: bigint;
+      mode: DemandeEdition;
+      referenceClient?: string;
+      dateHeure?: bigint;
+    }) => {
+      deleteAppointment(
+        data.id,
+        data.mode,
+        data.referenceClient,
+        data.dateHeure,
+      );
     },
     onSuccess: async () => {
       await Promise.all([
@@ -533,12 +350,12 @@ export function useDeleteAppointment() {
         queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
         queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
+      syncToBackendBackground();
     },
   });
 }
 
 export function useUpdateAppointmentStatus() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -548,8 +365,7 @@ export function useUpdateAppointmentStatus() {
       annule?: boolean | null;
       commentaireManuel?: string | null;
     }) => {
-      if (!actor) throw new Error("Actor not available");
-      await actor.updateRendezVousStatus(
+      updateAppointmentStatus(
         data.id,
         data.fait ?? null,
         data.annule ?? null,
@@ -566,12 +382,12 @@ export function useUpdateAppointmentStatus() {
         queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
         queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
+      syncToBackendBackground();
     },
   });
 }
 
 export function useUpdateMontantPaye() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -580,15 +396,14 @@ export function useUpdateMontantPaye() {
       montantPaye: bigint;
       referenceClient: string;
     }) => {
-      if (!actor) throw new Error("Actor not available");
-      const updatedCredit = await actor.handleMontantPayeUpdateWithCredits(
-        data.id,
-        data.montantPaye,
+      updateMontantPaye(data.id, data.montantPaye);
+      const credit = computeClientCredit(
+        loadAppointments(),
+        data.referenceClient,
       );
-      return { updatedCredit, referenceClient: data.referenceClient };
+      return { updatedCredit: credit, referenceClient: data.referenceClient };
     },
     onSuccess: async (result) => {
-      // Invalidate all queries related to appointments and finances
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["appointments"] }),
         queryClient.invalidateQueries({
@@ -605,7 +420,6 @@ export function useUpdateMontantPaye() {
         queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
 
-      // Force immediate refetch to ensure UI updates with new credit/debt calculations
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ["appointments"] }),
         queryClient.refetchQueries({ queryKey: ["financialStats"] }),
@@ -617,21 +431,20 @@ export function useUpdateMontantPaye() {
         queryClient.refetchQueries({ queryKey: ["rapportPDF"] }),
         queryClient.refetchQueries({ queryKey: ["clientRecords"] }),
       ]);
+      syncToBackendBackground();
     },
   });
 }
 
 export function useUpdateClientCredit() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: {
+    mutationFn: async (_data: {
       referenceClient: string;
       nouveauCredit: bigint;
     }) => {
-      if (!actor) throw new Error("Actor not available");
-      await actor.updateCreditClient(data.referenceClient, data.nouveauCredit);
+      // Credit is now computed automatically from appointments, no-op
     },
     onSuccess: async () => {
       await Promise.all([
@@ -639,10 +452,10 @@ export function useUpdateClientCredit() {
         queryClient.invalidateQueries({ queryKey: ["financialStats"] }),
         queryClient.invalidateQueries({ queryKey: ["clientCredit"] }),
         queryClient.invalidateQueries({ queryKey: ["monthlyListing"] }),
-        queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] }),
-        queryClient.invalidateQueries({ queryKey: ["rapportPDF"] }),
-        queryClient.invalidateQueries({ queryKey: ["clientRecords"] }),
       ]);
     },
   });
 }
+
+// Re-export types for backward compatibility
+export type { ClientReference };

@@ -114,9 +114,7 @@ export default function UserManagementPage() {
     setResetLoading(true);
     try {
       await clearAllData();
-      toast.success(
-        "Toutes les données (rendez-vous et clients) ont été effacées.",
-      );
+      toast.success("Toutes les données (rendez-vous et clients) ont été effacées.");
       setShowResetDialog(false);
       setTimeout(() => window.location.reload(), 1200);
     } catch {
@@ -257,8 +255,7 @@ export default function UserManagementPage() {
           Gestion des Utilisateurs
         </span>
         <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
-          Connecté : {session?.username} (
-          {session?.role ? ROLE_LABELS[session.role] : ""})
+          Connecté : {session?.username} ({session?.role ? ROLE_LABELS[session.role] : ""})
         </span>
       </div>
 
@@ -307,51 +304,13 @@ export default function UserManagementPage() {
           marginBottom: 16,
         }}
       >
-        <table
-          style={{ width: "100%", borderCollapse: "collapse", minWidth: 400 }}
-        >
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 400 }}>
           <thead>
             <tr style={{ background: "#2c3e50", color: "#fff" }}>
-              <th
-                style={{
-                  padding: "8px 12px",
-                  textAlign: "left",
-                  fontSize: 10,
-                  fontFamily: "Verdana, sans-serif",
-                }}
-              >
-                Identifiant
-              </th>
-              <th
-                style={{
-                  padding: "8px 12px",
-                  textAlign: "left",
-                  fontSize: 10,
-                  fontFamily: "Verdana, sans-serif",
-                }}
-              >
-                Rôle
-              </th>
-              <th
-                style={{
-                  padding: "8px 12px",
-                  textAlign: "left",
-                  fontSize: 10,
-                  fontFamily: "Verdana, sans-serif",
-                }}
-              >
-                Créé le
-              </th>
-              <th
-                style={{
-                  padding: "8px 12px",
-                  textAlign: "center",
-                  fontSize: 10,
-                  fontFamily: "Verdana, sans-serif",
-                }}
-              >
-                Actions
-              </th>
+              <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontFamily: "Verdana, sans-serif" }}>Identifiant</th>
+              <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontFamily: "Verdana, sans-serif" }}>Rôle</th>
+              <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontFamily: "Verdana, sans-serif" }}>Créé le</th>
+              <th style={{ padding: "8px 12px", textAlign: "center", fontSize: 10, fontFamily: "Verdana, sans-serif" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -359,28 +318,13 @@ export default function UserManagementPage() {
               <>
                 <tr
                   key={user.username}
-                  style={{
-                    background: idx % 2 === 0 ? "#fff" : "#f7f9fb",
-                    borderBottom: "1px solid #eee",
-                  }}
+                  style={{ background: idx % 2 === 0 ? "#fff" : "#f7f9fb", borderBottom: "1px solid #eee" }}
                   data-ocid={`users.user.item.${idx + 1}`}
                 >
-                  <td
-                    style={{
-                      padding: "8px 12px",
-                      fontSize: 11,
-                      fontFamily: "Verdana, sans-serif",
-                      fontWeight:
-                        user.username === session?.username ? "bold" : "normal",
-                    }}
-                  >
+                  <td style={{ padding: "8px 12px", fontSize: 11, fontFamily: "Verdana, sans-serif", fontWeight: user.username === session?.username ? "bold" : "normal" }}>
                     {user.username}
                     {user.username === session?.username && (
-                      <span
-                        style={{ marginLeft: 6, fontSize: 9, color: "#666" }}
-                      >
-                        (vous)
-                      </span>
+                      <span style={{ marginLeft: 6, fontSize: 9, color: "#666" }}>(vous)</span>
                     )}
                   </td>
                   <td style={{ padding: "8px 12px" }}>
@@ -400,35 +344,17 @@ export default function UserManagementPage() {
                       {ROLE_LABELS[user.role]}
                     </span>
                   </td>
-                  <td
-                    style={{
-                      padding: "8px 12px",
-                      fontSize: 10,
-                      color: "#666",
-                      fontFamily: "Verdana, sans-serif",
-                    }}
-                  >
+                  <td style={{ padding: "8px 12px", fontSize: 10, color: "#666", fontFamily: "Verdana, sans-serif" }}>
                     {new Date(user.createdAt).toLocaleDateString("fr-FR")}
                   </td>
                   <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 6,
-                        justifyContent: "center",
-                      }}
-                    >
+                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => startEdit(user.username)}
                         data-ocid={`users.edit_button.${idx + 1}`}
-                        style={{
-                          height: 28,
-                          fontSize: 10,
-                          fontFamily: "Verdana, sans-serif",
-                          padding: "0 10px",
-                        }}
+                        style={{ height: 28, fontSize: 10, fontFamily: "Verdana, sans-serif", padding: "0 10px" }}
                       >
                         <Edit size={12} className="mr-1" /> Modifier
                       </Button>
@@ -438,12 +364,7 @@ export default function UserManagementPage() {
                         onClick={() => setDeleteUsername(user.username)}
                         disabled={user.username === session?.username}
                         data-ocid={`users.delete_button.${idx + 1}`}
-                        style={{
-                          height: 28,
-                          fontSize: 10,
-                          fontFamily: "Verdana, sans-serif",
-                          padding: "0 10px",
-                        }}
+                        style={{ height: 28, fontSize: 10, fontFamily: "Verdana, sans-serif", padding: "0 10px" }}
                       >
                         <Trash2 size={12} className="mr-1" /> Supprimer
                       </Button>
@@ -451,29 +372,12 @@ export default function UserManagementPage() {
                   </td>
                 </tr>
                 {editingUsername === user.username && (
-                  <tr
-                    key={`edit-${user.username}`}
-                    style={{ background: "#eaf4fb" }}
-                  >
+                  <tr key={`edit-${user.username}`} style={{ background: "#eaf4fb" }}>
                     <td colSpan={4} style={{ padding: "12px 16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 12,
-                          alignItems: "flex-end",
-                          flexWrap: "wrap",
-                        }}
-                      >
+                      <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
                         <div>
-                          <Label
-                            style={{
-                              fontSize: 10,
-                              fontWeight: "bold",
-                              fontFamily: "Verdana, sans-serif",
-                            }}
-                          >
-                            Nouveau mot de passe (laisser vide pour ne pas
-                            changer)
+                          <Label style={{ fontSize: 10, fontWeight: "bold", fontFamily: "Verdana, sans-serif" }}>
+                            Nouveau mot de passe (laisser vide pour ne pas changer)
                           </Label>
                           <Input
                             type="password"
@@ -481,41 +385,16 @@ export default function UserManagementPage() {
                             onChange={(e) => setEditPassword(e.target.value)}
                             placeholder="Nouveau mot de passe"
                             data-ocid="users.edit_password.input"
-                            style={{
-                              width: 220,
-                              height: 32,
-                              fontSize: 11,
-                              marginTop: 4,
-                              fontFamily: "Verdana, sans-serif",
-                            }}
+                            style={{ width: 220, height: 32, fontSize: 11, marginTop: 4, fontFamily: "Verdana, sans-serif" }}
                           />
                         </div>
                         <div>
-                          <Label
-                            style={{
-                              fontSize: 10,
-                              fontWeight: "bold",
-                              fontFamily: "Verdana, sans-serif",
-                            }}
-                          >
-                            Rôle
-                          </Label>
+                          <Label style={{ fontSize: 10, fontWeight: "bold", fontFamily: "Verdana, sans-serif" }}>Rôle</Label>
                           <select
                             value={editRole}
-                            onChange={(e) =>
-                              setEditRole(e.target.value as UserRole)
-                            }
+                            onChange={(e) => setEditRole(e.target.value as UserRole)}
                             data-ocid="users.edit_role.select"
-                            style={{
-                              display: "block",
-                              marginTop: 4,
-                              height: 32,
-                              fontSize: 11,
-                              border: "1px solid #ccc",
-                              borderRadius: 4,
-                              padding: "0 8px",
-                              fontFamily: "Verdana, sans-serif",
-                            }}
+                            style={{ display: "block", marginTop: 4, height: 32, fontSize: 11, border: "1px solid #ccc", borderRadius: 4, padding: "0 8px", fontFamily: "Verdana, sans-serif" }}
                           >
                             <option value="admin">Administrateur</option>
                             <option value="advanced">Utilisateur Avancé</option>
@@ -523,15 +402,7 @@ export default function UserManagementPage() {
                           </select>
                         </div>
                         {editError && (
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: "#c0392b",
-                              fontFamily: "Verdana, sans-serif",
-                            }}
-                          >
-                            {editError}
-                          </div>
+                          <div style={{ fontSize: 10, color: "#c0392b", fontFamily: "Verdana, sans-serif" }}>{editError}</div>
                         )}
                         <div style={{ display: "flex", gap: 6 }}>
                           <Button
@@ -539,13 +410,7 @@ export default function UserManagementPage() {
                             onClick={handleEditSave}
                             disabled={editLoading}
                             data-ocid="users.edit_save.button"
-                            style={{
-                              height: 32,
-                              fontSize: 10,
-                              background: "#1a5276",
-                              color: "#fff",
-                              fontFamily: "Verdana, sans-serif",
-                            }}
+                            style={{ height: 32, fontSize: 10, background: "#1a5276", color: "#fff", fontFamily: "Verdana, sans-serif" }}
                           >
                             <Save size={12} className="mr-1" /> Enregistrer
                           </Button>
@@ -554,11 +419,7 @@ export default function UserManagementPage() {
                             variant="outline"
                             onClick={() => setEditingUsername(null)}
                             data-ocid="users.edit_cancel.button"
-                            style={{
-                              height: 32,
-                              fontSize: 10,
-                              fontFamily: "Verdana, sans-serif",
-                            }}
+                            style={{ height: 32, fontSize: 10, fontFamily: "Verdana, sans-serif" }}
                           >
                             <X size={12} className="mr-1" /> Annuler
                           </Button>
@@ -571,16 +432,7 @@ export default function UserManagementPage() {
             ))}
             {users.length === 0 && (
               <tr>
-                <td
-                  colSpan={4}
-                  style={{
-                    textAlign: "center",
-                    padding: 20,
-                    color: "#999",
-                    fontSize: 11,
-                    fontFamily: "Verdana, sans-serif",
-                  }}
-                >
+                <td colSpan={4} style={{ textAlign: "center", padding: 20, color: "#999", fontSize: 11, fontFamily: "Verdana, sans-serif" }}>
                   Aucun utilisateur
                 </td>
               </tr>
@@ -594,118 +446,47 @@ export default function UserManagementPage() {
         <Button
           onClick={() => setShowAddForm(true)}
           data-ocid="users.add_user.button"
-          style={{
-            background: "#1a5276",
-            color: "#fff",
-            fontSize: 11,
-            fontFamily: "Verdana, sans-serif",
-            height: 36,
-          }}
+          style={{ background: "#1a5276", color: "#fff", fontSize: 11, fontFamily: "Verdana, sans-serif", height: 36 }}
         >
           <Plus size={14} className="mr-1" /> Ajouter un utilisateur
         </Button>
       ) : (
         <form
           onSubmit={handleAdd}
-          style={{
-            background: "#f0f7ff",
-            border: "1px solid #b3d1f0",
-            borderRadius: 8,
-            padding: "16px 20px",
-          }}
+          style={{ background: "#f0f7ff", border: "1px solid #b3d1f0", borderRadius: 8, padding: "16px 20px" }}
         >
-          <div
-            style={{
-              fontWeight: "bold",
-              fontSize: 12,
-              color: "#1a3a5c",
-              marginBottom: 12,
-              fontFamily: "Verdana, sans-serif",
-            }}
-          >
+          <div style={{ fontWeight: "bold", fontSize: 12, color: "#1a3a5c", marginBottom: 12, fontFamily: "Verdana, sans-serif" }}>
             Nouvel utilisateur
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              flexWrap: "wrap",
-              alignItems: "flex-end",
-            }}
-          >
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div>
-              <Label
-                style={{
-                  fontSize: 10,
-                  fontWeight: "bold",
-                  fontFamily: "Verdana, sans-serif",
-                }}
-              >
-                Identifiant *
-              </Label>
+              <Label style={{ fontSize: 10, fontWeight: "bold", fontFamily: "Verdana, sans-serif" }}>Identifiant *</Label>
               <Input
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 placeholder="Identifiant"
                 data-ocid="users.add_username.input"
-                style={{
-                  width: 180,
-                  height: 32,
-                  fontSize: 11,
-                  marginTop: 4,
-                  fontFamily: "Verdana, sans-serif",
-                }}
+                style={{ width: 180, height: 32, fontSize: 11, marginTop: 4, fontFamily: "Verdana, sans-serif" }}
               />
             </div>
             <div>
-              <Label
-                style={{
-                  fontSize: 10,
-                  fontWeight: "bold",
-                  fontFamily: "Verdana, sans-serif",
-                }}
-              >
-                Mot de passe *
-              </Label>
+              <Label style={{ fontSize: 10, fontWeight: "bold", fontFamily: "Verdana, sans-serif" }}>Mot de passe *</Label>
               <Input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Mot de passe"
                 data-ocid="users.add_password.input"
-                style={{
-                  width: 180,
-                  height: 32,
-                  fontSize: 11,
-                  marginTop: 4,
-                  fontFamily: "Verdana, sans-serif",
-                }}
+                style={{ width: 180, height: 32, fontSize: 11, marginTop: 4, fontFamily: "Verdana, sans-serif" }}
               />
             </div>
             <div>
-              <Label
-                style={{
-                  fontSize: 10,
-                  fontWeight: "bold",
-                  fontFamily: "Verdana, sans-serif",
-                }}
-              >
-                Rôle
-              </Label>
+              <Label style={{ fontSize: 10, fontWeight: "bold", fontFamily: "Verdana, sans-serif" }}>Rôle</Label>
               <select
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value as UserRole)}
                 data-ocid="users.add_role.select"
-                style={{
-                  display: "block",
-                  marginTop: 4,
-                  height: 32,
-                  fontSize: 11,
-                  border: "1px solid #ccc",
-                  borderRadius: 4,
-                  padding: "0 8px",
-                  fontFamily: "Verdana, sans-serif",
-                }}
+                style={{ display: "block", marginTop: 4, height: 32, fontSize: 11, border: "1px solid #ccc", borderRadius: 4, padding: "0 8px", fontFamily: "Verdana, sans-serif" }}
               >
                 <option value="admin">Administrateur</option>
                 <option value="advanced">Utilisateur Avancé</option>
@@ -713,45 +494,23 @@ export default function UserManagementPage() {
               </select>
             </div>
             {addError && (
-              <div
-                style={{
-                  fontSize: 10,
-                  color: "#c0392b",
-                  fontFamily: "Verdana, sans-serif",
-                  width: "100%",
-                }}
-              >
-                {addError}
-              </div>
+              <div style={{ fontSize: 10, color: "#c0392b", fontFamily: "Verdana, sans-serif", width: "100%" }}>{addError}</div>
             )}
             <div style={{ display: "flex", gap: 8 }}>
               <Button
                 type="submit"
                 disabled={addLoading}
                 data-ocid="users.add_submit.button"
-                style={{
-                  height: 32,
-                  fontSize: 10,
-                  background: "#1a5276",
-                  color: "#fff",
-                  fontFamily: "Verdana, sans-serif",
-                }}
+                style={{ height: 32, fontSize: 10, background: "#1a5276", color: "#fff", fontFamily: "Verdana, sans-serif" }}
               >
                 <UserCheck size={12} className="mr-1" /> Ajouter
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  setShowAddForm(false);
-                  setAddError("");
-                }}
+                onClick={() => { setShowAddForm(false); setAddError(""); }}
                 data-ocid="users.add_cancel.button"
-                style={{
-                  height: 32,
-                  fontSize: 10,
-                  fontFamily: "Verdana, sans-serif",
-                }}
+                style={{ height: 32, fontSize: 10, fontFamily: "Verdana, sans-serif" }}
               >
                 <UserX size={12} className="mr-1" /> Annuler
               </Button>
@@ -765,22 +524,14 @@ export default function UserManagementPage() {
       {/* ═══════════════════════════════════════════════════════ */}
       <div
         style={{
-          marginTop: 24,
+          marginTop: 32,
           padding: "16px 20px",
           background: "#fff8e1",
           border: "1px solid #f9a825",
           borderRadius: 8,
         }}
       >
-        <div
-          style={{
-            fontWeight: "bold",
-            fontSize: 12,
-            color: "#7b4f00",
-            marginBottom: 10,
-            fontFamily: "Verdana, sans-serif",
-          }}
-        >
+        <div style={{ fontWeight: "bold", fontSize: 12, color: "#7b4f00", marginBottom: 10, fontFamily: "Verdana, sans-serif" }}>
           Configuration d'accès
         </div>
         <div className="flex items-center gap-2">
@@ -801,16 +552,9 @@ export default function UserManagementPage() {
           />
           <label
             htmlFor="bypass-admin-check"
-            style={{
-              fontSize: 11,
-              color: "#555",
-              cursor: "pointer",
-              fontFamily: "Verdana, sans-serif",
-              userSelect: "none",
-            }}
+            style={{ fontSize: 11, color: "#555", cursor: "pointer", fontFamily: "Verdana, sans-serif", userSelect: "none" }}
           >
-            Accéder sans mot de passe (l'application s'ouvrira automatiquement
-            sans demander de connexion)
+            Accéder sans mot de passe (l'application s'ouvrira automatiquement sans demander de connexion)
           </label>
         </div>
       </div>
@@ -827,52 +571,18 @@ export default function UserManagementPage() {
           borderRadius: 8,
         }}
       >
-        <div
-          style={{
-            fontWeight: "bold",
-            fontSize: 12,
-            color: "#1b5e20",
-            marginBottom: 12,
-            fontFamily: "Verdana, sans-serif",
-          }}
-        >
+        <div style={{ fontWeight: "bold", fontSize: 12, color: "#1b5e20", marginBottom: 12, fontFamily: "Verdana, sans-serif" }}>
           Sauvegarde et restauration des données
         </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: "#555",
-            marginBottom: 14,
-            fontFamily: "Verdana, sans-serif",
-            lineHeight: 1.6,
-          }}
-        >
-          Exportez toutes vos données dans un fichier JSON pour les sauvegarder
-          ou les transférer. Importez un fichier JSON pour restaurer vos
-          données. Le bouton Réinitialiser efface définitivement tous les
-          rendez-vous et clients.
+        <div style={{ fontSize: 10, color: "#555", marginBottom: 14, fontFamily: "Verdana, sans-serif", lineHeight: 1.6 }}>
+          Exportez toutes vos données dans un fichier JSON pour les sauvegarder ou les transférer.
+          Importez un fichier JSON pour restaurer vos données sur un nouvel ordinateur.
         </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Button
             onClick={handleExport}
             data-ocid="users.export_data.button"
-            style={{
-              height: 36,
-              fontSize: 11,
-              background: "#2e7d32",
-              color: "#fff",
-              fontFamily: "Verdana, sans-serif",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            style={{ height: 36, fontSize: 11, background: "#2e7d32", color: "#fff", fontFamily: "Verdana, sans-serif", display: "flex", alignItems: "center", gap: 6 }}
           >
             <Download size={14} /> Exporter JSON
           </Button>
@@ -880,39 +590,9 @@ export default function UserManagementPage() {
             onClick={() => fileInputRef.current?.click()}
             disabled={importLoading}
             data-ocid="users.import_data.button"
-            style={{
-              height: 36,
-              fontSize: 11,
-              background: "#1565c0",
-              color: "#fff",
-              fontFamily: "Verdana, sans-serif",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            style={{ height: 36, fontSize: 11, background: "#1565c0", color: "#fff", fontFamily: "Verdana, sans-serif", display: "flex", alignItems: "center", gap: 6 }}
           >
-            <Upload size={14} />{" "}
-            {importLoading ? "Importation..." : "Importer JSON"}
-          </Button>
-          <Button
-            onClick={() => {
-              setExportedBeforeReset(false);
-              setShowResetDialog(true);
-            }}
-            data-ocid="users.reset_data.button"
-            style={{
-              height: 36,
-              fontSize: 11,
-              background: "#b71c1c",
-              color: "#fff",
-              fontFamily: "Verdana, sans-serif",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontWeight: "bold",
-            }}
-          >
-            <Trash size={14} /> Réinitialiser
+            <Upload size={14} /> {importLoading ? "Importation..." : "Importer JSON"}
           </Button>
           <input
             ref={fileInputRef}
@@ -925,6 +605,45 @@ export default function UserManagementPage() {
         </div>
       </div>
 
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* ZONE DE DANGER - Réinitialiser toutes les données */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          marginTop: 16,
+          padding: "20px 20px",
+          background: "#fdecea",
+          border: "2px solid #e74c3c",
+          borderRadius: 8,
+        }}
+        data-ocid="users.danger_zone.section"
+      >
+        <div style={{ fontWeight: "bold", fontSize: 13, color: "#922b21", marginBottom: 8, fontFamily: "Verdana, sans-serif" }}>
+          ⚠️ Zone de danger
+        </div>
+        <div style={{ fontSize: 10, color: "#666", marginBottom: 16, fontFamily: "Verdana, sans-serif", lineHeight: 1.6 }}>
+          Efface définitivement tous les rendez-vous et tous les clients.
+          Cette action est irréversible. Une sauvegarde sera proposée avant l'effacement.
+        </div>
+        <Button
+          onClick={() => { setExportedBeforeReset(false); setShowResetDialog(true); }}
+          data-ocid="users.reset_data.button"
+          style={{
+            height: 40,
+            fontSize: 12,
+            background: "#922b21",
+            color: "#fff",
+            fontFamily: "Verdana, sans-serif",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontWeight: "bold",
+          }}
+        >
+          <Trash size={16} /> Réinitialiser / Effacer toutes les données
+        </Button>
+      </div>
+
       {/* Delete user dialog */}
       <AlertDialog
         open={!!deleteUsername}
@@ -932,33 +651,21 @@ export default function UserManagementPage() {
       >
         <AlertDialogContent data-ocid="users.delete.dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle
-              style={{ fontFamily: "Verdana, sans-serif", fontSize: 14 }}
-            >
+            <AlertDialogTitle style={{ fontFamily: "Verdana, sans-serif", fontSize: 14 }}>
               Supprimer l'utilisateur
             </AlertDialogTitle>
-            <AlertDialogDescription
-              style={{ fontFamily: "Verdana, sans-serif", fontSize: 12 }}
-            >
-              Voulez-vous vraiment supprimer l'utilisateur{" "}
-              <strong>{deleteUsername}</strong> ? Cette action est irréversible.
+            <AlertDialogDescription style={{ fontFamily: "Verdana, sans-serif", fontSize: 12 }}>
+              Voulez-vous vraiment supprimer l'utilisateur <strong>{deleteUsername}</strong> ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              data-ocid="users.delete.cancel_button"
-              style={{ fontFamily: "Verdana, sans-serif", fontSize: 11 }}
-            >
+            <AlertDialogCancel data-ocid="users.delete.cancel_button" style={{ fontFamily: "Verdana, sans-serif", fontSize: 11 }}>
               Annuler
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               data-ocid="users.delete.confirm_button"
-              style={{
-                background: "#c0392b",
-                fontFamily: "Verdana, sans-serif",
-                fontSize: 11,
-              }}
+              style={{ background: "#c0392b", fontFamily: "Verdana, sans-serif", fontSize: 11 }}
             >
               Supprimer
             </AlertDialogAction>
@@ -969,70 +676,28 @@ export default function UserManagementPage() {
       {/* Reset data dialog */}
       <AlertDialog
         open={showResetDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowResetDialog(false);
-            setExportedBeforeReset(false);
-          }
-        }}
+        onOpenChange={(open) => { if (!open) { setShowResetDialog(false); setExportedBeforeReset(false); } }}
       >
-        <AlertDialogContent
-          data-ocid="users.reset.dialog"
-          style={{ maxWidth: 520 }}
-        >
+        <AlertDialogContent data-ocid="users.reset.dialog" style={{ maxWidth: 520 }}>
           <AlertDialogHeader>
-            <AlertDialogTitle
-              style={{
-                fontFamily: "Verdana, sans-serif",
-                fontSize: 14,
-                color: "#922b21",
-              }}
-            >
+            <AlertDialogTitle style={{ fontFamily: "Verdana, sans-serif", fontSize: 14, color: "#922b21" }}>
               ⚠️ Réinitialiser / Effacer toutes les données
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div style={{ fontFamily: "Verdana, sans-serif", fontSize: 11 }}>
                 <p style={{ marginBottom: 12 }}>
-                  Cette action effacera <strong>définitivement</strong> tous les
-                  rendez-vous et tous les clients. Les comptes utilisateurs ne
-                  seront pas supprimés.
+                  Cette action effacera <strong>définitivement</strong> tous les rendez-vous et tous les clients.
+                  Les utilisateurs ne seront pas supprimés.
                 </p>
-                <p
-                  style={{
-                    marginBottom: 14,
-                    color: "#7d6608",
-                    background: "#fef9e7",
-                    border: "1px solid #f9e79f",
-                    borderRadius: 4,
-                    padding: "8px 10px",
-                    fontSize: 10,
-                  }}
-                >
-                  Il est fortement recommandé de télécharger une sauvegarde
-                  avant de continuer.
+                <p style={{ marginBottom: 14, color: "#7d6608", background: "#fef9e7", border: "1px solid #f9e79f", borderRadius: 4, padding: "8px 10px", fontSize: 10 }}>
+                  Il est fortement recommandé de télécharger une sauvegarde avant de continuer.
                 </p>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    marginBottom: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                   <Button
                     size="sm"
                     onClick={handleExportBeforeReset}
                     data-ocid="users.reset_export_json.button"
-                    style={{
-                      height: 32,
-                      fontSize: 10,
-                      background: "#2e7d32",
-                      color: "#fff",
-                      fontFamily: "Verdana, sans-serif",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
+                    style={{ height: 32, fontSize: 10, background: "#2e7d32", color: "#fff", fontFamily: "Verdana, sans-serif", display: "flex", alignItems: "center", gap: 6 }}
                   >
                     <Download size={13} /> Exporter JSON (sauvegarde)
                   </Button>
@@ -1040,30 +705,14 @@ export default function UserManagementPage() {
                     size="sm"
                     onClick={handleExportCsvBeforeReset}
                     data-ocid="users.reset_export_csv.button"
-                    style={{
-                      height: 32,
-                      fontSize: 10,
-                      background: "#1565c0",
-                      color: "#fff",
-                      fontFamily: "Verdana, sans-serif",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
+                    style={{ height: 32, fontSize: 10, background: "#1565c0", color: "#fff", fontFamily: "Verdana, sans-serif", display: "flex", alignItems: "center", gap: 6 }}
                   >
                     <Download size={13} /> Exporter CSV (sauvegarde)
                   </Button>
                 </div>
                 {exportedBeforeReset && (
-                  <p
-                    style={{
-                      fontSize: 10,
-                      color: "#1e8449",
-                      fontFamily: "Verdana, sans-serif",
-                    }}
-                  >
-                    ✓ Sauvegarde téléchargée. Vous pouvez maintenant effacer les
-                    données.
+                  <p style={{ fontSize: 10, color: "#1e8449", fontFamily: "Verdana, sans-serif" }}>
+                    ✓ Sauvegarde téléchargée. Vous pouvez maintenant effacer les données.
                   </p>
                 )}
               </div>
@@ -1073,10 +722,7 @@ export default function UserManagementPage() {
             <AlertDialogCancel
               data-ocid="users.reset.cancel_button"
               style={{ fontFamily: "Verdana, sans-serif", fontSize: 11 }}
-              onClick={() => {
-                setShowResetDialog(false);
-                setExportedBeforeReset(false);
-              }}
+              onClick={() => { setShowResetDialog(false); setExportedBeforeReset(false); }}
             >
               Annuler
             </AlertDialogCancel>
@@ -1084,11 +730,7 @@ export default function UserManagementPage() {
               onClick={handleResetConfirm}
               disabled={resetLoading}
               data-ocid="users.reset.confirm_button"
-              style={{
-                background: "#922b21",
-                fontFamily: "Verdana, sans-serif",
-                fontSize: 11,
-              }}
+              style={{ background: "#922b21", fontFamily: "Verdana, sans-serif", fontSize: 11 }}
             >
               {resetLoading ? "Effacement..." : "Effacer définitivement"}
             </AlertDialogAction>

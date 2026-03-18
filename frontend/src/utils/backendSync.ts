@@ -1,0 +1,309 @@
+/**
+ * Backend Sync Utility
+ * Synchronises localStorage data with the shared Motoko backend canister.
+ * This enables data sharing across multiple computers.
+ */
+import type { backendInterface } from "../backend";
+
+const APPOINTMENTS_KEY = "agenda_appointments_v2";
+const CLIENTS_KEY = "agenda_client_records_v2";
+const NEXT_ID_KEY = "agenda_next_id";
+const USERS_KEY = "agenda_local_users";
+const BYPASS_KEY = "agenda_bypass_login";
+
+// ── Module-level actor reference for background sync ─────────────────────────
+let _currentActor: backendInterface | null = null;
+
+export function setCurrentActor(actor: backendInterface | null) {
+  _currentActor = actor;
+}
+
+// ── Load data from backend canister into localStorage ─────────────────────────
+export async function syncFromBackend(actor: backendInterface): Promise<void> {
+  try {
+    const jsonStr = await actor.getSharedData();
+    if (!jsonStr || jsonStr === "{}") return;
+    const data = JSON.parse(jsonStr);
+    if (data.appointments !== undefined) {
+      localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(data.appointments));
+    }
+    if (data.clients !== undefined) {
+      localStorage.setItem(CLIENTS_KEY, JSON.stringify(data.clients));
+    }
+    if (data.nextId !== undefined) {
+      localStorage.setItem(NEXT_ID_KEY, String(data.nextId));
+    }
+  } catch (e) {
+    console.warn("syncFromBackend failed:", e);
+  }
+}
+
+// ── Save localStorage data to backend canister ────────────────────────────────
+export async function syncToBackend(actor: backendInterface): Promise<void> {
+  try {
+    const appointmentsRaw = localStorage.getItem(APPOINTMENTS_KEY) || "[]";
+    const clientsRaw = localStorage.getItem(CLIENTS_KEY) || "[]";
+    const nextId = localStorage.getItem(NEXT_ID_KEY) || "1";
+
+    const appointments = JSON.parse(appointmentsRaw);
+    const clients = JSON.parse(clientsRaw);
+
+    const data = { appointments, clients, nextId };
+    await actor.setSharedData(JSON.stringify(data));
+  } catch (e) {
+    console.warn("syncToBackend failed:", e);
+  }
+}
+
+// ── Fire-and-forget sync (used after mutations) ───────────────────────────────
+export function syncToBackendBackground(): void {
+  if (_currentActor) {
+    syncToBackend(_currentActor).catch(() => {});
+  }
+}
+
+// ── Clear all data (appointments + clients) in backend and localStorage ───────
+export async function clearAllData(): Promise<void> {
+  // Clear localStorage
+  localStorage.removeItem(APPOINTMENTS_KEY);
+  localStorage.removeItem(CLIENTS_KEY);
+  localStorage.removeItem(NEXT_ID_KEY);
+
+  // Clear backend
+  if (_currentActor) {
+    try {
+      await _currentActor.setSharedData(
+        JSON.stringify({ appointments: [], clients: [], nextId: "1" }),
+      );
+    } catch (e) {
+      console.warn("clearAllData backend failed:", e);
+    }
+  }
+}
+
+// ── Export all data as JSON (for download) ────────────────────────────────────
+export function getExportJson(): string {
+  const appointmentsRaw = localStorage.getItem(APPOINTMENTS_KEY) || "[]";
+  const clientsRaw = localStorage.getItem(CLIENTS_KEY) || "[]";
+  const nextId = localStorage.getItem(NEXT_ID_KEY) || "1";
+  const usersRaw = localStorage.getItem(USERS_KEY) || "[]";
+  const bypass = localStorage.getItem(BYPASS_KEY) || "false";
+
+  let appointments: unknown[] = [];
+  let clients: unknown[] = [];
+  let users: unknown[] = [];
+  try {
+    appointments = JSON.parse(appointmentsRaw);
+  } catch {
+    appointments = [];
+  }
+  try {
+    clients = JSON.parse(clientsRaw);
+  } catch {
+    clients = [];
+  }
+  try {
+    users = JSON.parse(usersRaw);
+  } catch {
+    users = [];
+  }
+
+  return JSON.stringify(
+    {
+      appointments,
+      clients,
+      nextId,
+      users,
+      bypass,
+      exportedAt: new Date().toISOString(),
+      version: "167",
+    },
+    null,
+    2,
+  );
+}
+
+// ── Export appointments and clients as CSV ────────────────────────────────────
+export function downloadExportCsv(): void {
+  const date = new Date().toISOString().slice(0, 10);
+  const BOM = "\uFEFF";
+
+  // ── Appointments CSV ──
+  let appointments: unknown[] = [];
+  try {
+    appointments = JSON.parse(
+      localStorage.getItem(APPOINTMENTS_KEY) || "[]",
+    );
+  } catch {
+    appointments = [];
+  }
+
+  const apptHeaders = [
+    "ID",
+    "Date",
+    "Heure Début",
+    "Heure Fin",
+    "Client",
+    "Référence",
+    "Téléphone",
+    "Service",
+    "Notes",
+    "Montant Dû",
+    "Montant Payé",
+    "Fait",
+    "Annulé",
+    "Commentaire",
+  ];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const apptRows = (appointments as any[]).map((a) => {
+    // dateHeure can be a bigint-string like "__bigint__1234" or a number/string
+    let dateStr = "";
+    try {
+      let ns: bigint;
+      if (typeof a.dateHeure === "string" && a.dateHeure.startsWith("__bigint__")) {
+        ns = BigInt(a.dateHeure.slice(10));
+      } else {
+        ns = BigInt(String(a.dateHeure));
+      }
+      const ms = Number(ns / BigInt(1_000_000));
+      dateStr = new Date(ms).toLocaleDateString("fr-FR");
+    } catch {
+      dateStr = String(a.dateHeure ?? "");
+    }
+
+    const bigintToNum = (v: unknown): number => {
+      if (typeof v === "string" && v.startsWith("__bigint__"))
+        return Number(v.slice(10));
+      return Number(v ?? 0);
+    };
+
+    const esc = (v: unknown) => {
+      const s = String(v ?? "");
+      if (s.includes(",") || s.includes('"') || s.includes("\n"))
+        return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+
+    return [
+      esc(bigintToNum(a.id)),
+      esc(dateStr),
+      esc(a.heureDebut ?? ""),
+      esc(a.heureFin ?? ""),
+      esc(a.nomClient ?? ""),
+      esc(a.referenceClient ?? ""),
+      esc(a.numeroTelephone ?? ""),
+      esc(a.service ?? ""),
+      esc(a.notes ?? ""),
+      esc(bigintToNum(a.montantDu)),
+      esc(bigintToNum(a.montantPaye)),
+      esc(a.fait ? "Oui" : "Non"),
+      esc(a.annule ? "Oui" : "Non"),
+      esc(a.commentaireManuel ?? ""),
+    ].join(",");
+  });
+
+  const apptCsv = BOM + [apptHeaders.join(","), ...apptRows].join("\n");
+  const apptBlob = new Blob([apptCsv], { type: "text/csv;charset=utf-8;" });
+  const apptUrl = URL.createObjectURL(apptBlob);
+  const apptLink = document.createElement("a");
+  apptLink.href = apptUrl;
+  apptLink.download = `rendez-vous-${date}.csv`;
+  document.body.appendChild(apptLink);
+  apptLink.click();
+  document.body.removeChild(apptLink);
+  URL.revokeObjectURL(apptUrl);
+
+  // ── Clients CSV ──
+  let clients: unknown[] = [];
+  try {
+    clients = JSON.parse(localStorage.getItem(CLIENTS_KEY) || "[]");
+  } catch {
+    clients = [];
+  }
+
+  const clientHeaders = [
+    "ID",
+    "Nom",
+    "Référence",
+    "Téléphone",
+    "Adresse",
+    "Service",
+    "Notes",
+    "Courriel 1",
+    "Courriel 2",
+    "Date de naissance",
+    "Nom Second Contact",
+    "Tél Second Contact",
+  ];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const clientRows = (clients as any[]).map((c) => {
+    const esc = (v: unknown) => {
+      const s = String(v ?? "");
+      if (s.includes(",") || s.includes('"') || s.includes("\n"))
+        return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const bigintToNum = (v: unknown): number => {
+      if (typeof v === "string" && v.startsWith("__bigint__"))
+        return Number(v.slice(10));
+      return Number(v ?? 0);
+    };
+    return [
+      esc(bigintToNum(c.id)),
+      esc(c.clientName ?? ""),
+      esc(c.referenceClient ?? ""),
+      esc(c.phoneNumber ?? ""),
+      esc(c.address ?? ""),
+      esc(c.service ?? ""),
+      esc(c.notes ?? ""),
+      esc(c.courriel1 ?? ""),
+      esc(c.courriel2 ?? ""),
+      esc(c.dateNaissance ?? ""),
+      esc(c.nomSecondContact ?? ""),
+      esc(c.telSecondContact ?? ""),
+    ].join(",");
+  });
+
+  const clientCsv = BOM + [clientHeaders.join(","), ...clientRows].join("\n");
+  const clientBlob = new Blob([clientCsv], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const clientUrl = URL.createObjectURL(clientBlob);
+  const clientLink = document.createElement("a");
+  clientLink.href = clientUrl;
+  clientLink.download = `clients-${date}.csv`;
+  document.body.appendChild(clientLink);
+  clientLink.click();
+  document.body.removeChild(clientLink);
+  URL.revokeObjectURL(clientUrl);
+}
+
+// ── Restore data from imported JSON ──────────────────────────────────────────
+export function restoreFromJson(jsonStr: string): {
+  ok: boolean;
+  error?: string;
+} {
+  try {
+    const data = JSON.parse(jsonStr);
+    if (data.appointments !== undefined) {
+      localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(data.appointments));
+    }
+    if (data.clients !== undefined) {
+      localStorage.setItem(CLIENTS_KEY, JSON.stringify(data.clients));
+    }
+    if (data.nextId !== undefined) {
+      localStorage.setItem(NEXT_ID_KEY, String(data.nextId));
+    }
+    if (data.users !== undefined) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(data.users));
+    }
+    if (data.bypass !== undefined) {
+      localStorage.setItem(BYPASS_KEY, String(data.bypass));
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Fichier JSON invalide ou corrompu" };
+  }
+}

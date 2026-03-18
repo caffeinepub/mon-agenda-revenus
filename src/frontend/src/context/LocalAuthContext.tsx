@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────
 export type UserRole = "admin" | "advanced" | "reader";
 
 export interface LocalUser {
@@ -47,12 +47,12 @@ interface LocalAuthContextValue {
   removeUser: (username: string) => { ok: boolean; error?: string };
 }
 
-// ── Storage keys ──────────────────────────────────────────────────────────────
+// ── Storage keys ────────────────────────────────────────────────────────────────
 const USERS_KEY = "agenda_local_users";
 const SESSION_KEY = "agenda_local_session";
 const BYPASS_KEY = "agenda_local_bypass";
 
-// ── Hash helper ───────────────────────────────────────────────────────────────
+// ── Hash helper ───────────────────────────────────────────────────────────────────
 export async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest(
     "SHA-256",
@@ -63,11 +63,11 @@ export async function sha256(text: string): Promise<string> {
     .join("");
 }
 
-// ── Defaults ──────────────────────────────────────────────────────────────────
+// ── Defaults ────────────────────────────────────────────────────────────────────
 const DEFAULT_ADMIN_USERNAME = "Administrateur_root";
 const DEFAULT_ADMIN_PASSWORD = "Administrateur_root";
 
-// ── Storage helpers ───────────────────────────────────────────────────────────
+// ── Storage helpers ───────────────────────────────────────────────────────────────
 function loadUsers(): LocalUser[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
@@ -108,7 +108,7 @@ function saveBypass(val: boolean): void {
   localStorage.setItem(BYPASS_KEY, String(val));
 }
 
-// ── Context ───────────────────────────────────────────────────────────────────
+// ── Context ────────────────────────────────────────────────────────────────────
 const LocalAuthContext = createContext<LocalAuthContextValue | null>(null);
 
 export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
@@ -119,6 +119,7 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
+      // Ensure at least one admin user exists
       let storedUsers = loadUsers();
       if (storedUsers.length === 0) {
         const hash = await sha256(DEFAULT_ADMIN_PASSWORD);
@@ -138,22 +139,19 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
       setBypassState(storedBypass);
 
       if (storedBypass) {
-        const existingSession = loadSession();
-        if (existingSession) {
-          setSession(existingSession);
-        } else {
-          const adminUser = storedUsers.find((u) => u.role === "admin");
-          if (adminUser) {
-            const sess: LocalSession = {
-              username: adminUser.username,
-              role: adminUser.role,
-              loginTime: Date.now(),
-            };
-            setSession(sess);
-            saveSession(sess);
-          }
+        // Bypass mode: ALWAYS auto-login as first admin, no login required
+        const adminUser = storedUsers.find((u) => u.role === "admin");
+        if (adminUser) {
+          const sess: LocalSession = {
+            username: adminUser.username,
+            role: adminUser.role,
+            loginTime: Date.now(),
+          };
+          setSession(sess);
+          saveSession(sess);
         }
       } else {
+        // Normal mode: restore existing session if any
         const existingSession = loadSession();
         setSession(existingSession);
       }
@@ -187,14 +185,20 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    setSession(null);
-    saveSession(null);
+    // Only clear session if bypass is NOT enabled
+    // If bypass is enabled, user should stay logged in
+    const currentBypass = loadBypass();
+    if (!currentBypass) {
+      setSession(null);
+      saveSession(null);
+    }
   }, []);
 
   const setBypass = useCallback((enabled: boolean) => {
     saveBypass(enabled);
     setBypassState(enabled);
     if (enabled) {
+      // Immediately auto-login as admin when bypass is enabled
       const currentUsers = loadUsers();
       const adminUser = currentUsers.find((u) => u.role === "admin");
       if (adminUser) {
@@ -207,6 +211,7 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
         saveSession(sess);
       }
     }
+    // When disabling bypass, don't clear session - user stays logged in until logout
   }, []);
 
   const addUserAsync = useCallback(

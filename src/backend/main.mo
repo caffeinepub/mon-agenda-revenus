@@ -196,6 +196,7 @@ actor {
   var creditsClients = Map.empty<Text, Nat>();
   var accessControlState = AccessControl.initState();
   var systemInitialized = false;
+  stable var sharedJsonData : Text = "{\"appointments\":[],\"clients\":[],\"nextId\":\"1\"}";
 
   include MixinAuthorization(accessControlState);
 
@@ -1415,4 +1416,13 @@ actor {
 
     clientMap.values().toArray();
   };
+  // ── Shared data storage (no auth required - works with anonymous callers) ──
+  public query func getSharedData() : async Text {
+    sharedJsonData
+  };
+
+  public shared func setSharedData(data : Text) : async () {
+    sharedJsonData := data
+  };
+
 };

@@ -245,7 +245,9 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
-  'updateCreditClient' : IDL.Func([IDL.Text, IDL.Nat], [], []),
+  'getSharedData' : IDL.Func([], [IDL.Text], ['query']),
+    'setSharedData' : IDL.Func([IDL.Text], [], []),
+    'updateCreditClient' : IDL.Func([IDL.Text, IDL.Nat], [], []),
   'updateRendezVousStatus' : IDL.Func(
       [IDL.Nat, IDL.Opt(IDL.Bool), IDL.Opt(IDL.Bool), IDL.Opt(IDL.Text)],
       [],
@@ -493,6 +495,8 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'getSharedData' : IDL.Func([], [IDL.Text], ['query']),
+    'setSharedData' : IDL.Func([IDL.Text], [], []),
     'updateCreditClient' : IDL.Func([IDL.Text, IDL.Nat], [], []),
     'updateRendezVousStatus' : IDL.Func(
         [IDL.Nat, IDL.Opt(IDL.Bool), IDL.Opt(IDL.Bool), IDL.Opt(IDL.Text)],

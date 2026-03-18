@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   RouterProvider,
@@ -7,11 +8,12 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import ProfileSetupModal from "./components/ProfileSetupModal";
 import { LocalAuthProvider, useLocalAuth } from "./context/LocalAuthContext";
+import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
 import ClientDatabasePage from "./pages/ClientDatabasePage";
@@ -19,6 +21,7 @@ import Dashboard from "./pages/Dashboard";
 import LocalLoginPage from "./pages/LocalLoginPage";
 import RapportPDFPage from "./pages/RapportPDFPage";
 import UserManagementPage from "./pages/UserManagementPage";
+import { setCurrentActor, syncFromBackend } from "./utils/backendSync";
 
 function Layout() {
   const { data: userProfile } = useGetCallerUserProfile();
@@ -71,6 +74,41 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({ routeTree });
 
+// Component that handles backend actor initialization and data sync
+function BackendSyncProvider({ children }: { children: React.ReactNode }) {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const syncedRef = useRef(false);
+
+  useEffect(() => {
+    if (!actor) return;
+
+    // Register actor for background sync (used by syncToBackendBackground)
+    setCurrentActor(actor);
+
+    // On first load, sync FROM backend to get shared data on this computer
+    if (!syncedRef.current) {
+      syncedRef.current = true;
+      syncFromBackend(actor)
+        .then(() => {
+          // Invalidate all queries so UI refreshes with backend data
+          queryClient.invalidateQueries({ queryKey: ["appointments"] });
+          queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
+          queryClient.invalidateQueries({ queryKey: ["financialStats"] });
+          queryClient.invalidateQueries({ queryKey: ["monthlyListing"] });
+          queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] });
+          queryClient.invalidateQueries({ queryKey: ["rapportPDF"] });
+          queryClient.invalidateQueries({ queryKey: ["clientCredit"] });
+        })
+        .catch(() => {
+          // Silent fail - localStorage data still available
+        });
+    }
+  }, [actor, queryClient]);
+
+  return <>{children}</>;
+}
+
 function AuthenticatedApp() {
   const { identity } = useInternetIdentity();
   const isAuthenticated = !!identity;
@@ -95,13 +133,13 @@ function AuthenticatedApp() {
   }, [isAuthenticated, profileLoading, isFetched, userProfile]);
 
   return (
-    <>
+    <BackendSyncProvider>
       <RouterProvider router={router} />
       {showProfileSetup && (
         <ProfileSetupModal onComplete={() => setShowProfileSetup(false)} />
       )}
       <Toaster />
-    </>
+    </BackendSyncProvider>
   );
 }
 
@@ -138,7 +176,6 @@ function AppWithLocalAuth() {
   }
 
   // Locally authenticated - show the app
-  // ICP auth happens in background for backend calls
   return <AuthenticatedApp />;
 }
 

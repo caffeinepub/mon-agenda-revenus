@@ -195,6 +195,8 @@ export interface _SERVICE {
     undefined
   >,
   'updateCreditClient' : ActorMethod<[string, bigint], undefined>,
+  'getSharedData' : ActorMethod<[], string>,
+  'setSharedData' : ActorMethod<[string], undefined>,
   'updateRendezVousStatus' : ActorMethod<
     [bigint, [] | [boolean], [] | [boolean], [] | [string]],
     undefined

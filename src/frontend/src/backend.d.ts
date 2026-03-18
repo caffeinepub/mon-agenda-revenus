@@ -199,5 +199,7 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateClientRecord(id: bigint, clientName: string, referenceClient: string, phoneNumber: string, address: string, service: string, notes: string, photo: Uint8Array | null): Promise<void>;
     updateCreditClient(referenceClient: string, nouveauCredit: bigint): Promise<void>;
+    getSharedData(): Promise<string>;
+    setSharedData(data: string): Promise<void>;
     updateRendezVousStatus(id: bigint, fait: boolean | null, annule: boolean | null, commentaireManuel: string | null): Promise<void>;
 }

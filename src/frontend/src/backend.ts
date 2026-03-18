@@ -282,6 +282,8 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateClientRecord(id: bigint, clientName: string, referenceClient: string, phoneNumber: string, address: string, service: string, notes: string, photo: Uint8Array | null): Promise<void>;
     updateCreditClient(referenceClient: string, nouveauCredit: bigint): Promise<void>;
+    getSharedData(): Promise<string>;
+    setSharedData(data: string): Promise<void>;
     updateRendezVousStatus(id: bigint, fait: boolean | null, annule: boolean | null, commentaireManuel: string | null): Promise<void>;
 }
 import type { ClientRecord as _ClientRecord, ClientReference as _ClientReference, DemandeEdition as _DemandeEdition, JoursSemaine as _JoursSemaine, RapportPDFRequest as _RapportPDFRequest, RapportType as _RapportType, RendezVous as _RendezVous, RendezVousCreateArgs as _RendezVousCreateArgs, RendezVousUpdateArgs as _RendezVousUpdateArgs, Time as _Time, TypeRepetition as _TypeRepetition, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
@@ -685,6 +687,14 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getSharedData(): Promise<string> {
+        const result = await this.actor.getSharedData();
+        return result;
+    }
+    async setSharedData(arg0: string): Promise<void> {
+        await this.actor.setSharedData(arg0);
+    }
+
     async updateRendezVousStatus(arg0: bigint, arg1: boolean | null, arg2: boolean | null, arg3: string | null): Promise<void> {
         if (this.processError) {
             try {
