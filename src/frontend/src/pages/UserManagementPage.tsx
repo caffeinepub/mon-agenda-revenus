@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import {
   Download,
   Edit,
+  Eye,
+  EyeOff,
   Plus,
   Save,
   ShieldCheck,
@@ -155,6 +157,8 @@ export default function UserManagementPage() {
   const [newRole, setNewRole] = useState<UserRole>("reader");
   const [addError, setAddError] = useState("");
   const [addLoading, setAddLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   // Edit user
   const [editingUsername, setEditingUsername] = useState<string | null>(null);
@@ -475,20 +479,53 @@ export default function UserManagementPage() {
                             Nouveau mot de passe (laisser vide pour ne pas
                             changer)
                           </Label>
-                          <Input
-                            type="password"
-                            value={editPassword}
-                            onChange={(e) => setEditPassword(e.target.value)}
-                            placeholder="Nouveau mot de passe"
-                            data-ocid="users.edit_password.input"
+                          <div
                             style={{
-                              width: 220,
-                              height: 32,
-                              fontSize: 11,
-                              marginTop: 4,
-                              fontFamily: "Verdana, sans-serif",
+                              position: "relative",
+                              display: "inline-flex",
+                              alignItems: "center",
                             }}
-                          />
+                          >
+                            <Input
+                              type={showEditPassword ? "text" : "password"}
+                              value={editPassword}
+                              onChange={(e) => setEditPassword(e.target.value)}
+                              placeholder="Nouveau mot de passe"
+                              data-ocid="users.edit_password.input"
+                              style={{
+                                width: 220,
+                                height: 32,
+                                fontSize: 11,
+                                marginTop: 4,
+                                fontFamily: "Verdana, sans-serif",
+                                paddingRight: 32,
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShowEditPassword(!showEditPassword)
+                              }
+                              style={{
+                                position: "absolute",
+                                right: 6,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                marginTop: 2,
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: "#666",
+                              }}
+                              tabIndex={-1}
+                            >
+                              {showEditPassword ? (
+                                <EyeOff size={14} />
+                              ) : (
+                                <Eye size={14} />
+                              )}
+                            </button>
+                          </div>
                         </div>
                         <div>
                           <Label
@@ -667,20 +704,47 @@ export default function UserManagementPage() {
               >
                 Mot de passe *
               </Label>
-              <Input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Mot de passe"
-                data-ocid="users.add_password.input"
+              <div
                 style={{
-                  width: 180,
-                  height: 32,
-                  fontSize: 11,
-                  marginTop: 4,
-                  fontFamily: "Verdana, sans-serif",
+                  position: "relative",
+                  display: "inline-flex",
+                  alignItems: "center",
                 }}
-              />
+              >
+                <Input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mot de passe"
+                  data-ocid="users.add_password.input"
+                  style={{
+                    width: 180,
+                    height: 32,
+                    fontSize: 11,
+                    marginTop: 4,
+                    fontFamily: "Verdana, sans-serif",
+                    paddingRight: 32,
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  style={{
+                    position: "absolute",
+                    right: 6,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    marginTop: 2,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#666",
+                  }}
+                  tabIndex={-1}
+                >
+                  {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
             </div>
             <div>
               <Label

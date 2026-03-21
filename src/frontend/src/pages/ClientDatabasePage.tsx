@@ -447,6 +447,16 @@ export default function ClientDatabasePage() {
     }
     try {
       const currentYear = new Date().getFullYear();
+      const exportPaymentDates: Map<string, string> = (() => {
+        try {
+          const raw = localStorage.getItem("weekly_payment_dates");
+          return raw
+            ? new Map<string, string>(JSON.parse(raw))
+            : new Map<string, string>();
+        } catch {
+          return new Map<string, string>();
+        }
+      })();
       const rdvRows = ficheStats.rdvList
         .map((apt, idx) => {
           const d = new Date(Number(apt.dateHeure) / 1_000_000);
@@ -462,10 +472,12 @@ export default function ClientDatabasePage() {
           const bg = idx % 2 === 0 ? "#ffffff" : "#f2f2f2";
           const faitColor = apt.annule ? "#c0392b" : "inherit";
           const creditColor = ligneCredit >= 0 ? "#27ae60" : "#c0392b";
+          const payDate = exportPaymentDates.get(apt.id.toString()) ?? "";
           return `<tr style="background:${bg}">
             <td>${dateStr}</td>
             <td style="text-align:right">${Number(apt.montantDu).toLocaleString("fr-FR")}</td>
             <td style="text-align:right">${Number(apt.montantPaye).toLocaleString("fr-FR")}</td>
+            <td style="text-align:left">${payDate}</td>
             <td style="text-align:left">${apt.commentaireManuel || ""}</td>
             <td style="text-align:center;color:${faitColor};font-style:${apt.annule ? "italic" : "normal"}">${faitLabel}</td>
             <td style="text-align:right;color:${creditColor}">${ligneCredit.toLocaleString("fr-FR")}</td>
@@ -530,6 +542,7 @@ export default function ClientDatabasePage() {
         <th style="text-align:left">Date</th>
         <th style="text-align:right">Dû</th>
         <th style="text-align:right">Payé</th>
+        <th style="text-align:left">Date Pmt</th>
         <th style="text-align:left">Info</th>
         <th style="text-align:center">Fait</th>
         <th style="text-align:right">Crédit</th>
@@ -540,6 +553,7 @@ export default function ClientDatabasePage() {
         <td>Total</td>
         <td style="text-align:right">${ficheStats.totalDu.toLocaleString("fr-FR")}</td>
         <td style="text-align:right">${ficheStats.totalPaye.toLocaleString("fr-FR")}</td>
+        <td style="text-align:left">—</td>
         <td style="text-align:left">—</td>
         <td style="text-align:center">—</td>
         <td style="text-align:right;color:${totalCreditColor}">${ficheStats.totalCredit.toLocaleString("fr-FR")}</td>
@@ -609,6 +623,16 @@ export default function ClientDatabasePage() {
   const renderFichePanel = () => {
     if (!ficheClient || !ficheStats) return null;
     const currentYear = new Date().getFullYear();
+    const paymentDatesMap: Map<string, string> = (() => {
+      try {
+        const raw = localStorage.getItem("weekly_payment_dates");
+        return raw
+          ? new Map<string, string>(JSON.parse(raw))
+          : new Map<string, string>();
+      } catch {
+        return new Map<string, string>();
+      }
+    })();
     return (
       <Card className="lg:col-span-1">
         <CardHeader>
@@ -907,6 +931,16 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
+                        Date Pmt
+                      </th>
+                      <th
+                        style={{
+                          padding: "3px 4px",
+                          textAlign: "left",
+                          fontWeight: "bold",
+                          fontSize: "10px",
+                        }}
+                      >
                         Info
                       </th>
                       <th
@@ -954,6 +988,14 @@ export default function ClientDatabasePage() {
                         }}
                       >
                         {ficheStats.totalPaye.toLocaleString("fr-FR")}
+                      </td>
+                      <td
+                        style={{
+                          padding: "2px 4px",
+                          fontSize: "9px",
+                        }}
+                      >
+                        —
                       </td>
                       <td
                         style={{
@@ -1014,6 +1056,9 @@ export default function ClientDatabasePage() {
                             style={{ padding: "2px 4px", textAlign: "right" }}
                           >
                             {Number(apt.montantPaye).toLocaleString("fr-FR")}
+                          </td>
+                          <td style={{ padding: "2px 4px" }}>
+                            {paymentDatesMap.get(apt.id.toString()) ?? ""}
                           </td>
                           <td
                             style={{
@@ -1487,20 +1532,66 @@ export default function ClientDatabasePage() {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <Table data-ocid="client.table">
+                <Table
+                  data-ocid="client.table"
+                  style={{ width: "100%", tableLayout: "auto" }}
+                >
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="table-header">Photo</TableHead>
-                      <TableHead className="table-header">Nom</TableHead>
-                      <TableHead className="table-header">Référence</TableHead>
-                      <TableHead className="table-header">Téléphone</TableHead>
-                      <TableHead className="table-header">Adresse</TableHead>
-                      <TableHead className="table-header">Service</TableHead>
-                      <TableHead className="table-header">Notes</TableHead>
-                      <TableHead className="text-right table-header">
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Photo
+                      </TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Nom
+                      </TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Référence
+                      </TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Téléphone
+                      </TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Adresse
+                      </TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Service
+                      </TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Notes
+                      </TableHead>
+                      <TableHead
+                        className="text-right table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
                         Payé en 2026
                       </TableHead>
-                      <TableHead className="table-header">Actions</TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

@@ -11,6 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Calendar,
+  CalendarDays,
+  CalendarRange,
   FileBarChart,
   LayoutDashboard,
   LogOut,
@@ -87,6 +89,32 @@ export default function Header({ userName: _userName }: HeaderProps) {
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Tableau de bord
+                </Button>
+                <Button
+                  variant={
+                    currentPath === "/calendrier-semaine" ? "default" : "ghost"
+                  }
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => navigate({ to: "/calendrier-semaine" })}
+                  data-ocid="nav.weekly.link"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Calendrier Semaine
+                </Button>
+                <Button
+                  variant={
+                    currentPath === "/calendrier-journalier"
+                      ? "default"
+                      : "ghost"
+                  }
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => navigate({ to: "/calendrier-journalier" })}
+                  data-ocid="nav.daily.link"
+                >
+                  <CalendarRange className="h-4 w-4" />
+                  Calendrier Journalier
                 </Button>
                 <Button
                   variant={currentPath === "/rapport-pdf" ? "default" : "ghost"}
@@ -176,6 +204,20 @@ export default function Header({ userName: _userName }: HeaderProps) {
                     <DropdownMenuItem onClick={() => navigate({ to: "/" })}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Tableau de bord
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: "/calendrier-semaine" })}
+                      data-ocid="nav.weekly.mobile.link"
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      Calendrier Semaine
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: "/calendrier-journalier" })}
+                      data-ocid="nav.daily.mobile.link"
+                    >
+                      <CalendarRange className="mr-2 h-4 w-4" />
+                      Calendrier Journalier
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate({ to: "/rapport-pdf" })}

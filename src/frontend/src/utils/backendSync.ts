@@ -19,9 +19,20 @@ export function setCurrentActor(actor: backendInterface | null) {
 }
 
 // ── Load data from backend canister into localStorage ─────────────────────────
+export async function syncDataNow(actor: backendInterface): Promise<void> {
+  await syncFromBackend(actor);
+}
+
 export async function syncFromBackend(actor: backendInterface): Promise<void> {
   try {
-    const jsonStr = await actor.getSharedData();
+    let jsonStr: string;
+    try {
+      jsonStr = await actor.getSharedData();
+    } catch (e1) {
+      console.warn("syncFromBackend first attempt failed, retrying in 2s:", e1);
+      await new Promise((r) => setTimeout(r, 2000));
+      jsonStr = await actor.getSharedData();
+    }
     if (!jsonStr || jsonStr === "{}" || jsonStr === "") return;
     const data = JSON.parse(jsonStr);
     if (data.appointments !== undefined) {

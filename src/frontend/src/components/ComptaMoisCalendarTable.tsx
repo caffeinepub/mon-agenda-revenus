@@ -487,7 +487,7 @@ export default function ComptaMoisCalendarTable({
                     const cellKey = `${timeSlot}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 
                     if (appointment) {
-                      const rowSpan = Math.ceil(
+                      const _rowSpan = Math.ceil(
                         (timeToMinutes(appointment.heureFin) -
                           timeToMinutes(appointment.heureDebut)) /
                           30,
@@ -506,10 +506,10 @@ export default function ComptaMoisCalendarTable({
                       return (
                         <td
                           key={cellKey}
-                          rowSpan={rowSpan}
                           className={`compta-mois-day-cell table-data border ${bgColor} ${
                             isSunday ? "compta-mois-sunday-appointment" : ""
                           } ${isToday ? "compta-mois-today-appointment" : ""} cursor-pointer hover:opacity-80`}
+                          style={{ height: "130px", verticalAlign: "top" }}
                           onClick={() => handleAppointmentClick(appointment)}
                           onKeyDown={(e) =>
                             e.key === "Enter" &&
@@ -647,7 +647,22 @@ export default function ComptaMoisCalendarTable({
                     });
 
                     if (coveringAppointment) {
-                      return null;
+                      let bgColorCont = "#dbeafe";
+                      if (coveringAppointment.annule) bgColorCont = "#fee2e2";
+                      else if (coveringAppointment.fait)
+                        bgColorCont = "#dcfce7";
+                      const isSunCont = date.getDay() === 0;
+                      const isTodayCont = isSameDay(date, today);
+                      return (
+                        <td
+                          key={cellKey}
+                          className={`border ${isSunCont ? "compta-mois-sunday-appointment" : ""} ${isTodayCont ? "compta-mois-today-appointment" : ""}`}
+                          style={{
+                            backgroundColor: bgColorCont,
+                            height: "130px",
+                          }}
+                        />
+                      );
                     }
 
                     return (
@@ -660,6 +675,7 @@ export default function ComptaMoisCalendarTable({
                               ? "compta-mois-sunday-empty"
                               : ""
                         }`}
+                        style={{ height: "130px" }}
                       />
                     );
                   })}

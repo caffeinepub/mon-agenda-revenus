@@ -17,10 +17,12 @@ import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
 import ClientDatabasePage from "./pages/ClientDatabasePage";
+import DailyCalendarPage from "./pages/DailyCalendarPage";
 import Dashboard from "./pages/Dashboard";
 import LocalLoginPage from "./pages/LocalLoginPage";
 import RapportPDFPage from "./pages/RapportPDFPage";
 import UserManagementPage from "./pages/UserManagementPage";
+import WeeklyCalendarPage from "./pages/WeeklyCalendarPage";
 import { setCurrentActor, syncFromBackend } from "./utils/backendSync";
 
 function Layout() {
@@ -47,6 +49,12 @@ const dashboardRoute = createRoute({
   component: Dashboard,
 });
 
+const weeklyCalendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/calendrier-semaine",
+  component: WeeklyCalendarPage,
+});
+
 const rapportPDFRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/rapport-pdf",
@@ -65,8 +73,16 @@ const userManagementRoute = createRoute({
   component: UserManagementPage,
 });
 
+const dailyCalendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/calendrier-journalier",
+  component: DailyCalendarPage,
+});
+
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
+  weeklyCalendarRoute,
+  dailyCalendarRoute,
   rapportPDFRoute,
   clientDatabaseRoute,
   userManagementRoute,
@@ -86,24 +102,34 @@ function BackendSyncProvider({ children }: { children: React.ReactNode }) {
     // Register actor for background sync (used by syncToBackendBackground)
     setCurrentActor(actor);
 
+    const invalidateAll = () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
+      queryClient.invalidateQueries({ queryKey: ["financialStats"] });
+      queryClient.invalidateQueries({ queryKey: ["monthlyListing"] });
+      queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] });
+      queryClient.invalidateQueries({ queryKey: ["rapportPDF"] });
+      queryClient.invalidateQueries({ queryKey: ["clientCredit"] });
+    };
+
     // On first load, sync FROM backend to get shared data on this computer
     if (!syncedRef.current) {
       syncedRef.current = true;
       syncFromBackend(actor)
-        .then(() => {
-          // Invalidate all queries so UI refreshes with backend data
-          queryClient.invalidateQueries({ queryKey: ["appointments"] });
-          queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
-          queryClient.invalidateQueries({ queryKey: ["financialStats"] });
-          queryClient.invalidateQueries({ queryKey: ["monthlyListing"] });
-          queryClient.invalidateQueries({ queryKey: ["totalReelRecu"] });
-          queryClient.invalidateQueries({ queryKey: ["rapportPDF"] });
-          queryClient.invalidateQueries({ queryKey: ["clientCredit"] });
-        })
+        .then(invalidateAll)
         .catch(() => {
           // Silent fail - localStorage data still available
         });
     }
+
+    // Periodic sync every 60 seconds to keep data fresh
+    const intervalId = setInterval(() => {
+      syncFromBackend(actor)
+        .then(invalidateAll)
+        .catch(() => {});
+    }, 60000);
+
+    return () => clearInterval(intervalId);
   }, [actor, queryClient]);
 
   return <>{children}</>;
