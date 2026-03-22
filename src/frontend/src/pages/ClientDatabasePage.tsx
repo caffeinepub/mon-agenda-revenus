@@ -542,8 +542,8 @@ export default function ClientDatabasePage() {
         <th style="text-align:left">Date</th>
         <th style="text-align:right">Dû</th>
         <th style="text-align:right">Payé</th>
-        <th style="text-align:left">Date Pmt</th>
-        <th style="text-align:left">Info</th>
+        <th style="text-align:left">Date</th>
+        <th style="text-align:left">Note</th>
         <th style="text-align:center">Fait</th>
         <th style="text-align:right">Crédit</th>
       </tr>
@@ -931,7 +931,7 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
-                        Date Pmt
+                        Date
                       </th>
                       <th
                         style={{
@@ -941,7 +941,7 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
-                        Info
+                        Note
                       </th>
                       <th
                         style={{
@@ -1542,6 +1542,12 @@ export default function ClientDatabasePage() {
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
+                        Actions
+                      </TableHead>
+                      <TableHead
+                        className="table-header"
+                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
+                      >
                         Photo
                       </TableHead>
                       <TableHead
@@ -1586,12 +1592,6 @@ export default function ClientDatabasePage() {
                       >
                         Payé en 2026
                       </TableHead>
-                      <TableHead
-                        className="table-header"
-                        style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
-                      >
-                        Actions
-                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1617,6 +1617,37 @@ export default function ClientDatabasePage() {
                           }
                           data-ocid={`client.table.row.${idx + 1}`}
                         >
+                          <TableCell className="table-data">
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewFiche(client)}
+                                className="table-data"
+                                data-ocid={`client.view_fiche.button.${idx + 1}`}
+                              >
+                                Fiche
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleClientSelect(client)}
+                                className="table-data"
+                                data-ocid={`client.edit.button.${idx + 1}`}
+                              >
+                                Modifier
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteClick(client.id)}
+                                className="table-data"
+                                data-ocid={`client.delete.button.${idx + 1}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                           <TableCell className="table-data">
                             {client.photo ? (
                               <img
@@ -1655,37 +1686,6 @@ export default function ClientDatabasePage() {
                             {calculatePaidThisYear(
                               client.referenceClient,
                             ).toLocaleString("fr-FR")}
-                          </TableCell>
-                          <TableCell className="table-data">
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewFiche(client)}
-                                className="table-data"
-                                data-ocid={`client.view_fiche.button.${idx + 1}`}
-                              >
-                                Fiche
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleClientSelect(client)}
-                                className="table-data"
-                                data-ocid={`client.edit.button.${idx + 1}`}
-                              >
-                                Modifier
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteClick(client.id)}
-                                className="table-data"
-                                data-ocid={`client.delete.button.${idx + 1}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
                           </TableCell>
                         </TableRow>
                       ))

@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
 import { DemandeEdition, type TypeRepetition } from "../backend";
+import AppointmentDialog from "../components/AppointmentDialog";
 import { useLocalAuth } from "../context/LocalAuthContext";
 import {
   useDeleteAppointment,
@@ -60,8 +61,8 @@ const COLS = [
   { label: "F", w: 24 },
   { label: "A", w: 24 },
   { label: "Dû", w: 47 },
-  { label: "Payé", w: 47 },
-  { label: "Date", w: 40 },
+  { label: "Payé", w: 52 },
+  { label: "Date", w: 44 },
   { label: "Note", w: 74 },
 ];
 
@@ -341,214 +342,6 @@ function ClientFicheModal({
   );
 }
 
-// ── EditModal ─────────────────────────────────────────────────────────────────
-interface EditFormState {
-  apt: RendezVous;
-  mode: "unique" | "futurs";
-}
-
-interface EditModalProps {
-  state: EditFormState;
-  onClose: () => void;
-}
-
-function EditModal({ state, onClose }: EditModalProps) {
-  const { apt, mode } = state;
-  const updateApt = useUpdateAppointment();
-
-  const [heureDebut, setHeureDebut] = useState(apt.heureDebut);
-  const [heureFin, setHeureFin] = useState(apt.heureFin);
-  const [montantDu, setMontantDu] = useState(Number(apt.montantDu).toString());
-  const [service, setService] = useState(apt.service);
-  const [notes, setNotes] = useState(apt.notes);
-
-  const handleSubmit = () => {
-    updateApt.mutate(
-      {
-        id: apt.id,
-        dateHeure: apt.dateHeure,
-        heureDebut,
-        heureFin,
-        nomClient: apt.nomClient,
-        referenceClient: apt.referenceClient,
-        numeroTelephone: apt.numeroTelephone,
-        adresse: apt.adresse,
-        service,
-        notes,
-        montantDu: BigInt(Number.parseInt(montantDu, 10) || 0),
-        repetition: apt.repetition as unknown as TypeRepetition,
-        demandeEdition:
-          mode === "unique"
-            ? DemandeEdition.unique
-            : DemandeEdition.futursDuClient,
-        clientRef: { owner: apt.owner, referenceClient: apt.referenceClient },
-      },
-      { onSuccess: onClose },
-    );
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontFamily: "Verdana, sans-serif",
-    fontSize: 12,
-    display: "block",
-    marginBottom: 2,
-    fontWeight: "bold",
-  };
-  const inputStyle: React.CSSProperties = {
-    border: "1px solid #d1d5db",
-    borderRadius: 3,
-    padding: "2px 6px",
-    fontFamily: "Verdana, sans-serif",
-    fontSize: 12,
-    width: "100%",
-    boxSizing: "border-box",
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 10000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 6,
-          padding: 16,
-          width: 320,
-          fontFamily: "Verdana, sans-serif",
-        }}
-      >
-        <div
-          style={{
-            fontWeight: "bold",
-            fontSize: 13,
-            marginBottom: 12,
-            borderBottom: "1px solid #e5e7eb",
-            paddingBottom: 8,
-          }}
-        >
-          {mode === "unique"
-            ? "Modifier ce RDV"
-            : "Modifier tous les futurs RDV"}
-          <span
-            style={{ fontWeight: "normal", color: "#6b7280", marginLeft: 6 }}
-          >
-            {apt.nomClient}
-          </span>
-        </div>
-        <div style={{ display: "grid", gap: 8 }}>
-          <div>
-            <label htmlFor="daily-edit-heureDebut" style={labelStyle}>
-              Heure début
-            </label>
-            <input
-              id="daily-edit-heureDebut"
-              type="time"
-              value={heureDebut}
-              onChange={(e) => setHeureDebut(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="daily-edit-heureFin" style={labelStyle}>
-              Heure fin
-            </label>
-            <input
-              id="daily-edit-heureFin"
-              type="time"
-              value={heureFin}
-              onChange={(e) => setHeureFin(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="daily-edit-montantDu" style={labelStyle}>
-              Montant dû
-            </label>
-            <input
-              id="daily-edit-montantDu"
-              type="number"
-              value={montantDu}
-              onChange={(e) => setMontantDu(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="daily-edit-service" style={labelStyle}>
-              Service
-            </label>
-            <input
-              id="daily-edit-service"
-              type="text"
-              value={service}
-              onChange={(e) => setService(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="daily-edit-notes" style={labelStyle}>
-              Notes
-            </label>
-            <textarea
-              id="daily-edit-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              style={{ ...inputStyle, resize: "vertical" }}
-            />
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginTop: 12,
-            justifyContent: "flex-end",
-          }}
-        >
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "4px 12px",
-              border: "1px solid #d1d5db",
-              borderRadius: 3,
-              cursor: "pointer",
-              fontFamily: "Verdana, sans-serif",
-              fontSize: 12,
-            }}
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            style={{
-              padding: "4px 12px",
-              background: "#2563eb",
-              color: "#fff",
-              border: "none",
-              borderRadius: 3,
-              cursor: "pointer",
-              fontFamily: "Verdana, sans-serif",
-              fontSize: 12,
-            }}
-          >
-            Enregistrer
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── DailyCalendarPage ─────────────────────────────────────────────────────────
 export default function DailyCalendarPage() {
   const { session } = useLocalAuth();
@@ -570,7 +363,10 @@ export default function DailyCalendarPage() {
     y: number;
   } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [editForm, setEditForm] = useState<EditFormState | null>(null);
+  const [editForm, setEditForm] = useState<{
+    apt: RendezVous;
+    mode: "unique" | "futurs";
+  } | null>(null);
   const [ficheClientRef, setFicheClientRef] = useState<{
     ref: string;
     name: string;
@@ -601,10 +397,23 @@ export default function DailyCalendarPage() {
     );
   });
 
-  // Build a map: heureDebut -> appointment (only first one per slot if multiple)
+  // Build slotMap: heureDebut -> appointment (for interactive data)
   const slotMap = new Map<string, RendezVous>();
   for (const apt of dayApts) {
     if (!slotMap.has(apt.heureDebut)) slotMap.set(apt.heureDebut, apt);
+  }
+
+  // Build coveredSlots: slot -> appointment that covers this slot (for background coloring)
+  const coveredSlots = new Map<string, RendezVous>();
+  for (const apt of dayApts) {
+    const startIdx = TIME_SLOTS.indexOf(apt.heureDebut);
+    const endIdx = TIME_SLOTS.findIndex((s) => s >= apt.heureFin);
+    const actualEnd = endIdx === -1 ? TIME_SLOTS.length : endIdx;
+    for (let i = startIdx; i >= 0 && i < actualEnd; i++) {
+      if (!coveredSlots.has(TIME_SLOTS[i])) {
+        coveredSlots.set(TIME_SLOTS[i], apt);
+      }
+    }
   }
 
   useEffect(() => {
@@ -677,7 +486,15 @@ export default function DailyCalendarPage() {
   const totalW = COLS.reduce((s, c) => s + c.w, 0);
 
   return (
-    <div style={{ ...VERDANA, padding: 12 }}>
+    <div
+      style={{
+        ...VERDANA,
+        padding: 12,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
       <h1
         style={{
           fontFamily: "Verdana, sans-serif",
@@ -793,13 +610,14 @@ export default function DailyCalendarPage() {
             {/* Time slot rows */}
             {TIME_SLOTS.map((slot, idx) => {
               const apt = slotMap.get(slot) ?? null;
+              const coverApt = coveredSlots.get(slot) ?? null;
               const bg = idx % 2 === 0 ? "#fff" : "#f9f9f9";
-              const nameBg = apt
-                ? apt.annule
+              const nameBg = coverApt
+                ? coverApt.annule
                   ? "#fce7f3"
-                  : apt.fait
+                  : coverApt.fait
                     ? "#d1fae5"
-                    : "#fff"
+                    : "#e0f2fe"
                 : bg;
               const aptIdStr = apt ? apt.id.toString() : null;
               const slotLabel = slot.replace(":", "h");
@@ -875,10 +693,20 @@ export default function DailyCalendarPage() {
                           }
                         : undefined
                     }
-                    title={apt ? apt.nomClient : ""}
+                    title={
+                      apt ? apt.nomClient : coverApt ? coverApt.nomClient : ""
+                    }
                     data-ocid={apt ? "daily.nom.button" : undefined}
                   >
-                    {apt ? apt.nomClient : ""}
+                    {apt ? (
+                      apt.nomClient
+                    ) : coverApt ? (
+                      <span style={{ color: "#9ca3af" }}>
+                        {coverApt.nomClient}
+                      </span>
+                    ) : (
+                      ""
+                    )}
                   </div>
                   {/* Réf */}
                   <div style={{ ...colStyle(51) }}>
@@ -888,7 +716,7 @@ export default function DailyCalendarPage() {
                   <div
                     style={{
                       ...colStyle(24),
-                      background: apt?.fait ? "#d1fae5" : bg,
+                      background: apt?.fait || coverApt?.fait ? "#d1fae5" : bg,
                       textAlign: "center",
                       display: "flex",
                       alignItems: "center",
@@ -914,7 +742,8 @@ export default function DailyCalendarPage() {
                   <div
                     style={{
                       ...colStyle(24),
-                      background: apt?.annule ? "#fce7f3" : bg,
+                      background:
+                        apt?.annule || coverApt?.annule ? "#fce7f3" : bg,
                       textAlign: "center",
                       display: "flex",
                       alignItems: "center",
@@ -949,6 +778,12 @@ export default function DailyCalendarPage() {
                         value={apt.annule ? 0 : Number(apt.montantPaye)}
                         disabled={isReader || apt.annule}
                         onChange={(e) => handlePaye(apt, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handlePaye(apt, e.currentTarget.value);
+                            e.currentTarget.blur();
+                          }
+                        }}
                         style={{
                           border: "none",
                           background: "transparent",
@@ -977,6 +812,11 @@ export default function DailyCalendarPage() {
                           aptIdStr &&
                           handlePaymentDateChange(aptIdStr, e.target.value)
                         }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
                         maxLength={5}
                         style={{
                           border: "none",
@@ -999,6 +839,12 @@ export default function DailyCalendarPage() {
                         value={apt.commentaireManuel ?? ""}
                         disabled={isReader}
                         onChange={(e) => handleNote(apt, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleNote(apt, e.currentTarget.value);
+                            e.currentTarget.blur();
+                          }
+                        }}
                         style={{
                           border: "none",
                           background: "transparent",
@@ -1103,7 +949,16 @@ export default function DailyCalendarPage() {
 
       {/* Edit modal */}
       {editForm && (
-        <EditModal state={editForm} onClose={() => setEditForm(null)} />
+        <AppointmentDialog
+          open={true}
+          onClose={() => setEditForm(null)}
+          appointment={editForm.apt}
+          editMode={
+            editForm.mode === "unique"
+              ? DemandeEdition.unique
+              : DemandeEdition.futursDuClient
+          }
+        />
       )}
 
       {/* Client fiche modal */}

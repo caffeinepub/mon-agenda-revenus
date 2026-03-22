@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
 import { DemandeEdition, type TypeRepetition } from "../backend";
+import AppointmentDialog from "../components/AppointmentDialog";
 import { useLocalAuth } from "../context/LocalAuthContext";
 import {
   useDeleteAppointment,
@@ -71,11 +72,6 @@ function sameDay(a: Date, b: Date): boolean {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
-}
-
-interface EditFormState {
-  apt: RendezVous;
-  mode: "unique" | "futurs";
 }
 
 interface ContextMenuState {
@@ -392,6 +388,12 @@ function DayBox({
                       value={apt.annule ? 0 : Number(apt.montantPaye)}
                       disabled={isReader || apt.annule}
                       onChange={(e) => handlePaye(apt, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handlePaye(apt, e.currentTarget.value);
+                          e.currentTarget.blur();
+                        }
+                      }}
                       style={{
                         border: "none",
                         background: "transparent",
@@ -418,6 +420,11 @@ function DayBox({
                         aptIdStr &&
                         onPaymentDateChange(aptIdStr, e.target.value)
                       }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.currentTarget.blur();
+                        }
+                      }}
                       maxLength={5}
                       style={{
                         border: "none",
@@ -441,6 +448,12 @@ function DayBox({
                       value={apt.commentaireManuel ?? ""}
                       disabled={isReader}
                       onChange={(e) => handleNote(apt, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleNote(apt, e.currentTarget.value);
+                          e.currentTarget.blur();
+                        }
+                      }}
                       style={{
                         border: "none",
                         background: "transparent",
@@ -1002,209 +1015,6 @@ function ClientFicheModal({
   );
 }
 
-// Edit modal for appointment
-interface EditModalProps {
-  state: EditFormState;
-  onClose: () => void;
-}
-
-function EditModal({ state, onClose }: EditModalProps) {
-  const { apt, mode } = state;
-  const updateApt = useUpdateAppointment();
-
-  const [heureDebut, setHeureDebut] = useState(apt.heureDebut);
-  const [heureFin, setHeureFin] = useState(apt.heureFin);
-  const [montantDu, setMontantDu] = useState(Number(apt.montantDu).toString());
-  const [service, setService] = useState(apt.service);
-  const [notes, setNotes] = useState(apt.notes);
-
-  const handleSubmit = () => {
-    updateApt.mutate(
-      {
-        id: apt.id,
-        dateHeure: apt.dateHeure,
-        heureDebut,
-        heureFin,
-        nomClient: apt.nomClient,
-        referenceClient: apt.referenceClient,
-        numeroTelephone: apt.numeroTelephone,
-        adresse: apt.adresse,
-        service,
-        notes,
-        montantDu: BigInt(Number.parseInt(montantDu, 10) || 0),
-        repetition: apt.repetition as unknown as TypeRepetition,
-        demandeEdition:
-          mode === "unique"
-            ? DemandeEdition.unique
-            : DemandeEdition.futursDuClient,
-        clientRef: { owner: apt.owner, referenceClient: apt.referenceClient },
-      },
-      { onSuccess: onClose },
-    );
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontFamily: "Verdana, sans-serif",
-    fontSize: 12,
-    display: "block",
-    marginBottom: 2,
-    fontWeight: "bold",
-  };
-  const inputStyle: React.CSSProperties = {
-    border: "1px solid #d1d5db",
-    borderRadius: 3,
-    padding: "2px 6px",
-    fontFamily: "Verdana, sans-serif",
-    fontSize: 12,
-    width: "100%",
-    boxSizing: "border-box",
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 10000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 6,
-          padding: 16,
-          width: 320,
-          fontFamily: "Verdana, sans-serif",
-        }}
-      >
-        <div
-          style={{
-            fontWeight: "bold",
-            fontSize: 13,
-            marginBottom: 12,
-            borderBottom: "1px solid #e5e7eb",
-            paddingBottom: 8,
-          }}
-        >
-          {mode === "unique"
-            ? "Modifier ce RDV"
-            : "Modifier tous les futurs RDV"}
-          <span
-            style={{ fontWeight: "normal", color: "#6b7280", marginLeft: 6 }}
-          >
-            {apt.nomClient}
-          </span>
-        </div>
-        <div style={{ display: "grid", gap: 8 }}>
-          <div>
-            <label htmlFor="edit-heureDebut" style={labelStyle}>
-              Heure début
-            </label>
-            <input
-              id="edit-heureDebut"
-              type="time"
-              value={heureDebut}
-              onChange={(e) => setHeureDebut(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="edit-heureFin" style={labelStyle}>
-              Heure fin
-            </label>
-            <input
-              id="edit-heureFin"
-              type="time"
-              value={heureFin}
-              onChange={(e) => setHeureFin(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="edit-montantDu" style={labelStyle}>
-              Montant dû
-            </label>
-            <input
-              id="edit-montantDu"
-              type="number"
-              value={montantDu}
-              onChange={(e) => setMontantDu(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="edit-service" style={labelStyle}>
-              Service
-            </label>
-            <input
-              id="edit-service"
-              type="text"
-              value={service}
-              onChange={(e) => setService(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="edit-notes" style={labelStyle}>
-              Notes
-            </label>
-            <textarea
-              id="edit-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              style={{ ...inputStyle, resize: "vertical" }}
-            />
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginTop: 12,
-            justifyContent: "flex-end",
-          }}
-        >
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "4px 12px",
-              border: "1px solid #d1d5db",
-              borderRadius: 3,
-              cursor: "pointer",
-              fontFamily: "Verdana, sans-serif",
-              fontSize: 12,
-            }}
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            style={{
-              padding: "4px 12px",
-              background: "#2563eb",
-              color: "#fff",
-              border: "none",
-              borderRadius: 3,
-              cursor: "pointer",
-              fontFamily: "Verdana, sans-serif",
-              fontSize: 12,
-            }}
-          >
-            Enregistrer
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function WeeklyCalendarPage() {
   const { session } = useLocalAuth();
   const isReader = session?.role === "reader";
@@ -1218,7 +1028,10 @@ export default function WeeklyCalendarPage() {
     }
   });
 
-  const [editForm, setEditForm] = useState<EditFormState | null>(null);
+  const [editForm, setEditForm] = useState<{
+    apt: RendezVous;
+    mode: "unique" | "futurs";
+  } | null>(null);
   const [ficheClientRef, setFicheClientRef] = useState<{
     ref: string;
     name: string;
@@ -1375,7 +1188,16 @@ export default function WeeklyCalendarPage() {
 
       {/* Edit modal */}
       {editForm && (
-        <EditModal state={editForm} onClose={() => setEditForm(null)} />
+        <AppointmentDialog
+          open={true}
+          onClose={() => setEditForm(null)}
+          appointment={editForm.apt}
+          editMode={
+            editForm.mode === "unique"
+              ? DemandeEdition.unique
+              : DemandeEdition.futursDuClient
+          }
+        />
       )}
       {/* Client fiche modal */}
       {ficheClientRef && (
