@@ -16,15 +16,20 @@ import {
   FileBarChart,
   Grid3x3,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Plus,
+  Save,
   ShieldCheck,
   User,
   Users,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useLocalAuth } from "../context/LocalAuthContext";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { syncToBackend } from "../utils/backendSync";
 import AppointmentDialog from "./AppointmentDialog";
 
 interface HeaderProps {
@@ -39,6 +44,8 @@ export default function Header({ userName: _userName }: HeaderProps) {
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { actor } = useActor();
 
   const isAdmin = session?.role === "admin";
   const isReader = session?.role === "reader";
@@ -51,6 +58,24 @@ export default function Header({ userName: _userName }: HeaderProps) {
       /* ignore */
     }
     queryClient.clear();
+  };
+
+  const handleManualSave = async () => {
+    if (!actor) {
+      toast.error("Connexion au serveur non disponible");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await syncToBackend(actor);
+      toast.success("Données sauvegardées sur le serveur avec succès");
+    } catch {
+      toast.error(
+        "Erreur lors de la sauvegarde. Les données sont conservées en local.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const roleLabel =
@@ -164,6 +189,26 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   </Button>
                 )}
               </nav>
+
+              {/* Manual save button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 px-2 border-green-600 text-green-700 hover:bg-green-50 dark:text-green-400 dark:border-green-500 dark:hover:bg-green-950"
+                onClick={handleManualSave}
+                disabled={isSaving}
+                title="Sauvegarder manuellement toutes les données vers le serveur"
+                data-ocid="header.manual_save.button"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline text-xs">
+                  {isSaving ? "Sauvegarde..." : "Sauvegarder"}
+                </span>
+              </Button>
 
               {!isReader && (
                 <Button

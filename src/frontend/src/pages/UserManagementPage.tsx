@@ -27,6 +27,7 @@ import {
   UserX,
   X,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { type UserRole, useLocalAuth } from "../context/LocalAuthContext";
@@ -78,6 +79,7 @@ export default function UserManagementPage() {
   } = useLocalAuth();
 
   const { actor } = useActor();
+  const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importLoading, setImportLoading] = useState(false);
 
@@ -875,6 +877,92 @@ export default function UserManagementPage() {
           >
             Accéder sans mot de passe (l'application s'ouvrira automatiquement
             sans demander de connexion)
+          </label>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* Thème de l'application */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          marginTop: 16,
+          padding: "16px 20px",
+          background: "#e8eaf6",
+          border: "1px solid #5c6bc0",
+          borderRadius: 8,
+        }}
+      >
+        <div
+          style={{
+            fontWeight: "bold",
+            fontSize: 12,
+            color: "#283593",
+            marginBottom: 12,
+            fontFamily: "Verdana, sans-serif",
+          }}
+        >
+          Apparence de l'application
+        </div>
+        <div
+          style={{
+            fontSize: 10,
+            color: "#555",
+            marginBottom: 14,
+            fontFamily: "Verdana, sans-serif",
+            lineHeight: 1.6,
+          }}
+        >
+          Choisissez entre le mode clair et le mode sombre pour toute
+          l'application.
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontFamily: "Verdana, sans-serif",
+              fontSize: 11,
+              color: "#333",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={theme === "light" || theme === undefined}
+              onChange={() => setTheme("light")}
+              data-ocid="users.theme_light.checkbox"
+              style={{ width: 16, height: 16, cursor: "pointer" }}
+            />
+            ☀️ Mode Clair
+          </label>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontFamily: "Verdana, sans-serif",
+              fontSize: 11,
+              color: "#333",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={theme === "dark"}
+              onChange={() => setTheme("dark")}
+              data-ocid="users.theme_dark.checkbox"
+              style={{ width: 16, height: 16, cursor: "pointer" }}
+            />
+            🌙 Mode Sombre
           </label>
         </div>
       </div>

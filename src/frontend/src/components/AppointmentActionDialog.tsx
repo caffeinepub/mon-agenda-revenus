@@ -8,7 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Edit, Trash2, User, Users } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DemandeEdition, type RendezVous } from "../backend";
+import { useDeleteAppointment } from "../hooks/useQueries";
 import AppointmentDeleteDialog from "./AppointmentDeleteDialog";
 import AppointmentDialog from "./AppointmentDialog";
 
@@ -28,6 +30,8 @@ export default function AppointmentActionDialog({
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editMode, setEditMode] = useState<DemandeEdition | null>(null);
+  const [deletingFuture, setDeletingFuture] = useState(false);
+  const deleteAppointment = useDeleteAppointment();
 
   const handleEditChoice = (mode: DemandeEdition) => {
     setEditMode(mode);
@@ -38,6 +42,24 @@ export default function AppointmentActionDialog({
   const handleDeleteChoice = () => {
     setShowDeleteDialog(true);
     onClose();
+  };
+
+  const handleDeleteAllFuture = async () => {
+    if (!appointment) return;
+    setDeletingFuture(true);
+    try {
+      await deleteAppointment.mutateAsync({
+        id: appointment.id,
+        mode: DemandeEdition.futursDuClient,
+      });
+      toast.success("Tous les rendez-vous futurs ont été supprimés");
+      onClose();
+      onFullyDone?.();
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setDeletingFuture(false);
+    }
   };
 
   const handleCloseEditDialog = () => {
@@ -109,23 +131,44 @@ export default function AppointmentActionDialog({
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                 Supprimer
               </h3>
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 h-auto py-3 border-destructive/50 hover:bg-destructive/10"
-                onClick={handleDeleteChoice}
-                data-ocid="appointment.action.delete.button"
-              >
-                <Trash2 className="h-5 w-5 text-destructive" />
-                <div className="text-left">
-                  <div className="font-semibold text-destructive">
-                    Supprimer le rendez-vous
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 h-auto py-3 border-destructive/50 hover:bg-destructive/10"
+                  onClick={handleDeleteChoice}
+                  data-ocid="appointment.action.delete.button"
+                >
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                  <div className="text-left">
+                    <div className="font-semibold text-destructive">
+                      Supprimer ce rendez-vous
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Supprime uniquement ce rendez-vous
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Choisir entre suppression unique ou en lot (inclut le
-                    rendez-vous actuel/aujourd'hui)
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 h-auto py-3 border-destructive/50 hover:bg-destructive/10"
+                  onClick={handleDeleteAllFuture}
+                  disabled={deletingFuture}
+                  data-ocid="appointment.action.delete_future.button"
+                >
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                  <div className="text-left">
+                    <div className="font-semibold text-destructive">
+                      {deletingFuture
+                        ? "Suppression en cours..."
+                        : "Supprimer tous les RDV futurs"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Supprime ce rendez-vous et tous les futurs du même client
+                      (même jour de la semaine)
+                    </div>
                   </div>
-                </div>
-              </Button>
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
