@@ -1,45 +1,28 @@
-# Mon Agenda Revenus — Version 177
+# Mon Agenda Revenus
 
 ## Current State
-- WeeklyCalendarPage (Calendrier Semaine) : menu contextuel sur clic du nom ouvre un `EditModal` local (seulement heureDebut, heureFin, montantDu, service, notes) — formulaire incomplet
-- DailyCalendarPage (Calendrier Journalier) : idem, EditModal local incomplet. Une seule ligne colorée pour chaque RDV. Colonnes Payé=47px, Date=40px. Tableau aligné à gauche.
-- ClientDatabasePage : colonnes de la fiche "Date Pmt" et "Info" dans le tableau "Rendez-vous 2026". Boutons Fiche/Modifier/Supprimer à droite du tableau (dernier colonne)
-- Payment dates stored in localStorage (weekly_payment_dates), notes via commentaireManuel in backend
+- MonthlyCalendarPage: colonnes 100px, légende avec texte 'Signification des couleurs :', pas de bordure arrondie sur le tableau, aligné à gauche
+- WeeklyCalendarPage: Nom=110px, Dû=51px, Payé=52px, Date=52px; SummaryBox bug sur desktop (textes se chevauchent quand sub-label présent)
+- DailyCalendarPage: Nom=100px, Dû=47px, Payé=52px, Date=44px; en-tête colonnes gris clair #f3f4f6
+- ClientFicheModal (dans les 3 pages): colonne 'Date Pmt' dans le tableau RDV, pas de colonne 'Crédit'
 
 ## Requested Changes (Diff)
 
 ### Add
-- (Point 2) DailyCalendarPage : coloration de toutes les lignes 15-min entre heureDebut et heureFin d'un RDV
+- MonthlyCalendarPage: bordure arrondie (border-radius 8px, border 1px solid #d1d5db) autour du tableau entier; centrage du tableau dans la page
+- ClientFicheModal (3 pages): colonne 'Crédit' dans le tableau Rendez-vous (montantPaye - montantDu si fait, sinon montantPaye)
 
 ### Modify
-1. (Point 1) WeeklyCalendarPage ET DailyCalendarPage : remplacer EditModal local par AppointmentDialog (formulaire complet, même que Tableau de bord). Le menu contextuel doit utiliser DemandeEdition.unique/futursDuClient et ouvrir AppointmentDialog avec appointment + editMode. Ajouter aussi "Aller à la fiche client" dans le menu contextuel.
-2. (Point 2) DailyCalendarPage : colorer toutes les lignes 15-min comprises dans la plage heureDebut→heureFin du RDV (fond vert pâle si fait, rose pâle si annulé, bleu pâle sinon)
-3. (Point 3) DailyCalendarPage : col 7 (Payé) → 52px, col 8 (Date) → 44px. Centrer le tableau horizontalement dans la page (margin auto ou flex justify-center)
-4. (Point 4) ClientDatabasePage : renommer "Date Pmt" → "Date" et "Info" → "Note" dans le tableau fiche client (affichage ET export HTML)
-5. (Point 5) ClientDatabasePage : déplacer les boutons Fiche/Modifier/Supprimer en première colonne (avant Photo), supprimer la colonne Actions en fin de tableau
-6. (Point 6) WeeklyCalendarPage : s'assurer que les dates de paiement ET les notes persistent correctement quand on change de page. Sauvegarder paymentDates dans localStorage sur chaque changement (déjà fait). Pour les notes (commentaireManuel), s'assurer que la mutation est bien appelée et que le champ utilise onBlur + onKeyDown Enter pour déclencher la sauvegarde plutôt qu'onChange (évite les sauvegardes intempestives)
-7. (Point 7) Tous les champs de saisie (inputs, textareas) : ajouter onKeyDown avec validation sur touche Entrée (submit du formulaire ou blur du champ)
+- MonthlyCalendarPage: COL_W 100→87px; supprimer le span 'Signification des couleurs :' (garder les swatches); uniformiser la couleur des séparateurs de colonnes (#d1d5db partout)
+- WeeklyCalendarPage DAY_COLS: nom 110→88, dû 51→44, payé 52→44, date 52→44; mettre à jour toutes les références hardcodées à ces largeurs dans DayBox render; corriger le SummaryBox (rendre chaque ligne height:auto, padding suffisant pour éviter overflow du texte)
+- DailyCalendarPage COLS: nom 100→88, dû 47→44, payé 52→44; en-tête colonnes en bleu pâle #dbeafe; mettre à jour toutes les références hardcodées à ces largeurs dans le render
+- ClientFicheModal (3 pages): renommer 'Date Pmt' → 'Date' dans l'en-tête du tableau RDV
 
 ### Remove
-- EditModal local dans WeeklyCalendarPage (remplacé par AppointmentDialog)
-- EditModal local dans DailyCalendarPage (remplacé par AppointmentDialog)
-- Colonne "Actions" en dernière position dans ClientDatabasePage (boutons déplacés à gauche)
+- Rien
 
 ## Implementation Plan
-1. WeeklyCalendarPage :
-   - Importer AppointmentDialog
-   - Remplacer `EditModal` et `EditFormState` par AppointmentDialog (open={!!editForm} appointment={editForm?.apt} editMode={editForm?.mode === 'unique' ? DemandeEdition.unique : DemandeEdition.futursDuClient})
-   - Ajouter "Aller à la fiche client" dans le menu contextuel
-   - Note fields : utiliser valeur locale + onBlur/Enter pour sauvegarder via updateStatus
-   - paymentDates : déjà persisté, vérifier que ça fonctionne bien
-2. DailyCalendarPage :
-   - Importer AppointmentDialog
-   - Remplacer EditModal par AppointmentDialog
-   - Construire un Set de slots couverts par chaque RDV (parser heureDebut/heureFin, trouver tous les slots TIME_SLOTS entre eux)
-   - Appliquer la couleur background sur les colonnes Nom, Réf, F, A de chaque slot couvert
-   - Changer col 7 (Payé) à 52px et col 8 (Date) à 44px
-   - Envelopper le tableau dans un div centré (display:flex, justifyContent:center)
-3. ClientDatabasePage :
-   - Renommer "Date Pmt" → "Date" et "Info" → "Note" (HTML export + affichage)
-   - Déplacer les boutons Fiche/Modifier/Supprimer en première colonne
-4. Champs : ajouter onKeyDown Enter pour déclencher submit ou blur sur les inputs dans les formulaires de saisie
+1. MonthlyCalendarPage: COL_W=87, retirer le span 'Signification des couleurs :', entourer le tableau d'un div avec border 1px solid #d1d5db + borderRadius 8 + overflow hidden, centrer avec justifyContent center, uniformiser borderRight à #d1d5db dans tous les th/td
+2. WeeklyCalendarPage: mettre à jour DAY_COLS et toutes les valeurs hardcodées (88, 44, 44, 44), corriger SummaryBox (height auto, minHeight 16px, padding 2px)
+3. DailyCalendarPage: mettre à jour COLS et toutes les valeurs hardcodées (88, 44, 44), header background #dbeafe
+4. ClientFicheModal dans les 3 fichiers: headers ['Date', 'Heure', 'Dû', 'Payé', 'Date', 'Note', 'Crédit', 'Fait'], ajouter cellule Crédit = montantPaye - (fait ? montantDu : 0)

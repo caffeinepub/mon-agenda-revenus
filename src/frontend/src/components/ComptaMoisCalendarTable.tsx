@@ -241,8 +241,6 @@ export default function ComptaMoisCalendarTable({
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-    // Point 5: If annulé, do not allow editing
-    if (appointment.annule) return;
     const currentValue =
       localMontantPayeUpdates.get(appointment.id.toString()) ??
       appointment.montantPaye;
@@ -500,9 +498,6 @@ export default function ComptaMoisCalendarTable({
                         bgColor = "bg-green-100";
                       }
 
-                      // Point 5: annulé blocks payé
-                      const isAnnule = appointment.annule;
-
                       return (
                         <td
                           key={cellKey}
@@ -584,22 +579,20 @@ export default function ComptaMoisCalendarTable({
                                 <button
                                   type="button"
                                   className={`table-data bg-white border border-gray-300 rounded px-2 py-0.5 min-w-[4rem] text-left ${
-                                    isAnnule
+                                    isReader
                                       ? "opacity-50 cursor-not-allowed"
                                       : "cursor-pointer hover:underline"
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (!isAnnule) {
+                                    if (!isReader) {
                                       handleMontantPayeClick(appointment, e);
                                     }
                                   }}
-                                  disabled={isAnnule || isReader}
-                                  aria-disabled={isAnnule || isReader}
+                                  disabled={isReader}
+                                  aria-disabled={isReader}
                                 >
-                                  {isAnnule
-                                    ? "0"
-                                    : getDisplayedMontantPaye(appointment)}
+                                  {getDisplayedMontantPaye(appointment)}
                                 </button>
                               )}
                             </div>

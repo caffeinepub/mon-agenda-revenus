@@ -14,6 +14,7 @@ import {
   CalendarDays,
   CalendarRange,
   FileBarChart,
+  Grid3x3,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -79,28 +80,40 @@ export default function Header({ userName: _userName }: HeaderProps) {
 
           {session && (
             <div className="flex items-center gap-2">
-              <nav className="hidden md:flex items-center gap-2">
+              <nav className="hidden md:flex items-center gap-1">
                 <Button
                   variant={currentPath === "/" ? "default" : "ghost"}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 px-2"
                   onClick={() => navigate({ to: "/" })}
                   data-ocid="nav.dashboard.link"
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  Tableau de bord
+                  <span className="text-xs">Tableau de bord</span>
+                </Button>
+                <Button
+                  variant={
+                    currentPath === "/calendrier-mensuel" ? "default" : "ghost"
+                  }
+                  size="sm"
+                  className="gap-1 px-2"
+                  onClick={() => navigate({ to: "/calendrier-mensuel" })}
+                  data-ocid="nav.monthly.link"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                  <span className="text-xs">Cal. Mensuel</span>
                 </Button>
                 <Button
                   variant={
                     currentPath === "/calendrier-semaine" ? "default" : "ghost"
                   }
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 px-2"
                   onClick={() => navigate({ to: "/calendrier-semaine" })}
                   data-ocid="nav.weekly.link"
                 >
                   <CalendarDays className="h-4 w-4" />
-                  Calendrier Semaine
+                  <span className="text-xs">Cal. Semaine</span>
                 </Button>
                 <Button
                   variant={
@@ -109,50 +122,49 @@ export default function Header({ userName: _userName }: HeaderProps) {
                       : "ghost"
                   }
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 px-2"
                   onClick={() => navigate({ to: "/calendrier-journalier" })}
                   data-ocid="nav.daily.link"
                 >
                   <CalendarRange className="h-4 w-4" />
-                  Calendrier Journalier
+                  <span className="text-xs">Cal. Journalier</span>
                 </Button>
                 <Button
                   variant={currentPath === "/rapport-pdf" ? "default" : "ghost"}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 px-2"
                   onClick={() => navigate({ to: "/rapport-pdf" })}
                   data-ocid="nav.rapport.link"
                 >
                   <FileBarChart className="h-4 w-4" />
-                  Rapport PDF
+                  <span className="text-xs">Rapport PDF</span>
                 </Button>
                 <Button
                   variant={
                     currentPath === "/client-database" ? "default" : "ghost"
                   }
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 px-2"
                   onClick={() => navigate({ to: "/client-database" })}
                   data-ocid="nav.clients.link"
                 >
                   <Users className="h-4 w-4" />
-                  Base Client
+                  <span className="text-xs">Base Client</span>
                 </Button>
                 {isAdmin && (
                   <Button
                     variant={currentPath === "/users" ? "default" : "ghost"}
                     size="sm"
-                    className="gap-2"
+                    className="gap-1 px-2"
                     onClick={() => navigate({ to: "/users" })}
                     data-ocid="nav.users.link"
                   >
                     <ShieldCheck className="h-4 w-4" />
-                    Utilisateurs
+                    <span className="text-xs">Utilisateurs</span>
                   </Button>
                 )}
               </nav>
 
-              {/* New appointment - hidden for reader */}
               {!isReader && (
                 <Button
                   variant="default"
@@ -162,7 +174,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="header.new_appointment.button"
                 >
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Nouveau Rendez-vous</span>
+                  <span className="hidden sm:inline text-xs">Nouveau RDV</span>
                 </Button>
               )}
 
@@ -204,6 +216,13 @@ export default function Header({ userName: _userName }: HeaderProps) {
                     <DropdownMenuItem onClick={() => navigate({ to: "/" })}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Tableau de bord
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: "/calendrier-mensuel" })}
+                      data-ocid="nav.monthly.mobile.link"
+                    >
+                      <Grid3x3 className="mr-2 h-4 w-4" />
+                      Calendrier Mensuel
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate({ to: "/calendrier-semaine" })}

@@ -1,14 +1,13 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
-import { DemandeEdition, type TypeRepetition } from "../backend";
+import { DemandeEdition } from "../backend";
 import AppointmentDialog from "../components/AppointmentDialog";
 import { useLocalAuth } from "../context/LocalAuthContext";
 import {
   useDeleteAppointment,
   useGetAllAppointments,
   useGetAllClientRecords,
-  useUpdateAppointment,
   useUpdateAppointmentStatus,
   useUpdateMontantPaye,
 } from "../hooks/useQueries";
@@ -61,11 +60,9 @@ function getWeekDates(weekOffset: number): Date[] {
 function formatHeure(h: string): string {
   return h.replace(":", "h");
 }
-
 function aptDate(apt: RendezVous): Date {
   return new Date(Number(apt.dateHeure) / 1_000_000);
 }
-
 function sameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -78,6 +75,43 @@ interface ContextMenuState {
   apt: RendezVous;
   x: number;
   y: number;
+}
+
+// Column definitions — widths used for header AND cells
+const DAY_COLS = [
+  { key: "heure", label: "Heure", w: 51 },
+  { key: "nom", label: "Nom", w: 88 },
+  { key: "ref", label: "Réf", w: 51 },
+  { key: "f", label: "F", w: 24 },
+  { key: "a", label: "A", w: 24 },
+  { key: "du", label: "Dû", w: 44 },
+  { key: "paye", label: "Payé", w: 44 },
+  { key: "date", label: "Date", w: 44 },
+  // Note is flex:1 (fills remaining width)
+  { key: "note", label: "Note", w: 74 },
+];
+// Fixed total of first 8 cols
+const FIXED_W = DAY_COLS.slice(0, 8).reduce((s, c) => s + c.w, 0); // 415
+
+function colStyle(
+  w: number,
+  flex?: boolean,
+  last = false,
+): React.CSSProperties {
+  return {
+    ...(flex
+      ? { flex: 1, minWidth: w }
+      : { width: w, minWidth: w, maxWidth: w }),
+    height: ROW_H,
+    lineHeight: `${ROW_H}px`,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    borderRight: last ? "none" : "1px solid #d1d5db",
+    padding: "0 2px",
+    boxSizing: "border-box",
+    fontSize: 12,
+  };
 }
 
 interface DayBoxProps {
@@ -115,15 +149,13 @@ function DayBox({
     ...dayApts,
     ...Array(Math.max(0, MAX_ROWS - dayApts.length)).fill(null),
   ];
-
   const dayLabel = `${DAY_NAMES[(date.getDay() + 6) % 7]} ${date.getDate()}`;
 
   useEffect(() => {
     if (!contextMenu) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
         setContextMenu(null);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -147,11 +179,10 @@ function DayBox({
 
   const handlePaye = useCallback(
     (apt: RendezVous, val: string) => {
-      if (isReader || apt.annule) return;
-      const num = Math.max(0, Number.parseInt(val, 10) || 0);
+      if (isReader) return;
       updatePaye.mutate({
         id: apt.id,
-        montantPaye: BigInt(num),
+        montantPaye: BigInt(Math.max(0, Number.parseInt(val, 10) || 0)),
         referenceClient: apt.referenceClient,
       });
     },
@@ -172,33 +203,6 @@ function DayBox({
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setContextMenu({ apt, x: rect.left, y: rect.bottom + 2 });
   };
-
-  const cols = [
-    { label: "Heure", w: 51 },
-    { label: "Nom", w: 110 },
-    { label: "Réf", w: 51 },
-    { label: "F", w: 24 },
-    { label: "A", w: 24 },
-    { label: "Dû", w: 51 },
-    { label: "Payé", w: 51 },
-    { label: "Date", w: 74 },
-    { label: "Note", w: 74 },
-  ];
-
-  const colStyle = (w: number, last = false): React.CSSProperties => ({
-    width: w,
-    minWidth: w,
-    maxWidth: w,
-    height: ROW_H,
-    lineHeight: `${ROW_H}px`,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    borderRight: last ? "none" : "1px solid #d1d5db",
-    padding: "0 2px",
-    boxSizing: "border-box",
-    fontSize: 12,
-  });
 
   return (
     <div
@@ -224,9 +228,15 @@ function DayBox({
       >
         {dayLabel}
       </div>
-      {/* Scrollable table container */}
+      {/* Scrollable table */}
       <div style={{ overflowX: "auto" }}>
-        <div style={{ minWidth: 510 }}>
+        <div
+          style={{
+            minWidth: FIXED_W + 74,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           {/* Column headers */}
           <div
             style={{
@@ -235,15 +245,22 @@ function DayBox({
               borderBottom: "1px solid #d1d5db",
             }}
           >
-            {cols.map((col, ci) => (
+            {DAY_COLS.map((col, ci) => (
               <div
-                key={col.label}
+                key={col.key}
                 style={{
-                  ...colStyle(col.w, ci === cols.length - 1),
+                  ...colStyle(
+                    col.w,
+                    ci === DAY_COLS.length - 1,
+                    ci === DAY_COLS.length - 1,
+                  ),
                   fontWeight: "bold",
                   fontSize: 11,
                   background: "#f3f4f6",
                   textAlign: "center",
+                  ...(ci === DAY_COLS.length - 1
+                    ? { flex: 1, minWidth: col.w }
+                    : {}),
                 }}
               >
                 {col.label}
@@ -260,15 +277,8 @@ function DayBox({
                   ? "#d1fae5"
                   : "#fff"
               : bg;
-            const payeBg =
-              apt?.fait &&
-              !apt.annule &&
-              Number(apt.montantPaye) < Number(apt.montantDu)
-                ? "#fecaca"
-                : bg;
             const rowKey = apt ? `apt-${apt.id.toString()}` : `empty-${idx}`;
             const aptIdStr = apt ? apt.id.toString() : null;
-
             return (
               <div
                 key={rowKey}
@@ -283,10 +293,10 @@ function DayBox({
                 <div style={{ ...colStyle(51), textAlign: "center" }}>
                   {apt ? formatHeure(apt.heureDebut) : ""}
                 </div>
-                {/* Nom - clickable */}
+                {/* Nom */}
                 <div
                   style={{
-                    ...colStyle(110),
+                    ...colStyle(88),
                     background: nameBg,
                     cursor: apt && !isReader ? "pointer" : "default",
                     userSelect: "none",
@@ -321,7 +331,7 @@ function DayBox({
                 <div style={{ ...colStyle(51) }}>
                   {apt ? apt.referenceClient : ""}
                 </div>
-                {/* F checkbox */}
+                {/* F */}
                 <div
                   style={{
                     ...colStyle(24),
@@ -347,7 +357,7 @@ function DayBox({
                     />
                   )}
                 </div>
-                {/* A checkbox */}
+                {/* A */}
                 <div
                   style={{
                     ...colStyle(24),
@@ -374,19 +384,17 @@ function DayBox({
                   )}
                 </div>
                 {/* Dû */}
-                <div style={{ ...colStyle(51), textAlign: "right" }}>
+                <div style={{ ...colStyle(44), textAlign: "right" }}>
                   {apt ? Number(apt.montantDu).toString() : ""}
                 </div>
-                {/* Payé */}
-                <div
-                  style={{ ...colStyle(51), background: payeBg, padding: 0 }}
-                >
+                {/* Payé — width 52, no spinner (type=text) */}
+                <div style={{ ...colStyle(44), padding: 0 }}>
                   {apt && (
                     <input
-                      type="number"
-                      min={0}
-                      value={apt.annule ? 0 : Number(apt.montantPaye)}
-                      disabled={isReader || apt.annule}
+                      type="text"
+                      inputMode="numeric"
+                      value={Number(apt.montantPaye)}
+                      disabled={isReader}
                       onChange={(e) => handlePaye(apt, e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -397,7 +405,7 @@ function DayBox({
                       style={{
                         border: "none",
                         background: "transparent",
-                        width: "100%",
+                        width: 52,
                         height: ROW_H,
                         padding: "0 2px",
                         fontFamily: "Verdana, sans-serif",
@@ -408,8 +416,8 @@ function DayBox({
                     />
                   )}
                 </div>
-                {/* Date paiement */}
-                <div style={{ ...colStyle(74), padding: 0 }}>
+                {/* Date — width 52 */}
+                <div style={{ ...colStyle(44), padding: 0 }}>
                   {apt && (
                     <input
                       type="text"
@@ -421,15 +429,13 @@ function DayBox({
                         onPaymentDateChange(aptIdStr, e.target.value)
                       }
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.currentTarget.blur();
-                        }
+                        if (e.key === "Enter") e.currentTarget.blur();
                       }}
                       maxLength={5}
                       style={{
                         border: "none",
                         background: "transparent",
-                        width: "100%",
+                        width: 52,
                         height: ROW_H,
                         padding: "0 2px",
                         fontFamily: "Verdana, sans-serif",
@@ -439,12 +445,21 @@ function DayBox({
                     />
                   )}
                 </div>
-                {/* Note */}
-                <div style={{ ...colStyle(74, true), padding: 0 }}>
+                {/* Note — flex:1, fills remaining width */}
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: 74,
+                    height: ROW_H,
+                    lineHeight: `${ROW_H}px`,
+                    overflow: "hidden",
+                    padding: 0,
+                    boxSizing: "border-box",
+                  }}
+                >
                   {apt && (
                     <input
                       type="text"
-                      placeholder=""
                       value={apt.commentaireManuel ?? ""}
                       disabled={isReader}
                       onChange={(e) => handleNote(apt, e.target.value)}
@@ -472,7 +487,6 @@ function DayBox({
           })}
         </div>
       </div>
-
       {/* Context menu */}
       {contextMenu && (
         <div
@@ -587,14 +601,12 @@ function SummaryBox({
         )
     );
   });
-
   const monthStart = new Date(year, month, 1);
   const monthEnd = new Date(year, month + 1, 0, 23, 59, 59);
   const monthApts = allAppointments.filter((a) => {
     const d = aptDate(a);
     return d >= monthStart && d <= monthEnd;
   });
-
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year, 11, 31, 23, 59, 59);
   const yearApts = allAppointments.filter((a) => {
@@ -605,11 +617,9 @@ function SummaryBox({
   const totalSemaineFaitPaye = weekApts
     .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantPaye), 0);
-
   const totalSemaineFaitImpaye = weekApts
     .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantDu), 0);
-
   const totalMensuelPaye = monthApts
     .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantPaye), 0);
@@ -631,11 +641,9 @@ function SummaryBox({
     weeksWithRdv.size > 0
       ? Math.round(totalMensuelPaye / weeksWithRdv.size)
       : 0;
-
   const totalAnneePaye = yearApts
     .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantPaye), 0);
-
   const totalDu = weekApts
     .filter(
       (a) => a.fait && !a.annule && Number(a.montantPaye) < Number(a.montantDu),
@@ -645,40 +653,40 @@ function SummaryBox({
   const summaryRows = [
     {
       key: "sem-paye",
-      label: "Total semaine :",
+      label: "Total semaine",
       value: totalSemaineFaitPaye,
       sub: "Fait et payé",
       red: false,
     },
     {
       key: "sem-impaye",
-      label: "Total semaine :",
+      label: "Total semaine",
       value: totalSemaineFaitImpaye,
       sub: "Fait payé/impayé",
       red: false,
     },
     {
       key: "mois-paye",
-      label: "Total Mensuel :",
+      label: "Total Mensuel",
       value: totalMensuelPaye,
       sub: "Fait et payé",
       red: false,
     },
     {
       key: "mois-moy",
-      label: "Moy Mensuel :",
+      label: "Moy Mensuel",
       value: moyMensuel,
       sub: "Fait et payé",
       red: false,
     },
     {
       key: "annee-paye",
-      label: "Total Année :",
+      label: "Total Année",
       value: totalAnneePaye,
       sub: "Fait et payé",
       red: false,
     },
-    { key: "du", label: "Dû :", value: totalDu, sub: "", red: true },
+    { key: "du", label: "Dû", value: totalDu, sub: "", red: true },
   ];
 
   return (
@@ -716,36 +724,50 @@ function SummaryBox({
           style={{
             display: "flex",
             alignItems: "center",
-            height: ROW_H,
-            lineHeight: `${ROW_H}px`,
+            minHeight: 18,
+            height: "auto",
             background: i % 2 === 0 ? "#fff" : "#f9f9f9",
             borderBottom:
               i < summaryRows.length - 1 ? "1px solid #e5e7eb" : "none",
-            padding: "0 6px",
+            padding: "2px 4px",
             fontFamily: "Verdana, sans-serif",
             fontSize: 12,
           }}
         >
-          <span style={{ flex: 1, fontWeight: "bold" }}>{row.label}</span>
+          {/* Label right-aligned so all ":" are on same position */}
           <span
             style={{
+              width: 110,
+              textAlign: "right",
               fontWeight: "bold",
-              color: row.red ? "#dc2626" : "inherit",
-              marginRight: 4,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {row.label} :
+          </span>
+          <span
+            style={{
+              marginLeft: 4,
+              fontWeight: "bold",
+              color: row.red ? "#dc2626" : "#111",
+              flexShrink: 0,
             }}
           >
             {row.value}
           </span>
           {row.sub && (
-            <span style={{ color: "#6b7280", fontSize: 11 }}>{row.sub}</span>
+            <span style={{ marginLeft: 4, color: "#6b7280", fontSize: 11 }}>
+              {row.sub}
+            </span>
           )}
         </div>
       ))}
-      {["f0", "f1", "f2", "f3"]
-        .slice(0, MAX_ROWS - summaryRows.length)
-        .map((fk, i) => (
+      {Array(Math.max(0, MAX_ROWS - summaryRows.length))
+        .fill(0)
+        .map((_, i) => (
           <div
-            key={fk}
+            key={`fill-row-${summaryRows.length + i}`}
             style={{
               height: ROW_H,
               background:
@@ -777,15 +799,12 @@ function ClientFicheModal({
   const now = BigInt(Date.now()) * BigInt(1_000_000);
   const startOfYear =
     BigInt(new Date(currentYear, 0, 1).getTime()) * BigInt(1_000_000);
-  const endOfYear =
-    BigInt(new Date(currentYear + 1, 0, 1).getTime()) * BigInt(1_000_000);
 
   const clientApts = allApts
     .filter(
       (apt) =>
         apt.referenceClient === referenceClient &&
         apt.dateHeure >= startOfYear &&
-        apt.dateHeure < endOfYear &&
         apt.dateHeure <= now,
     )
     .sort((a, b) => Number(a.dateHeure) - Number(b.dateHeure));
@@ -824,7 +843,7 @@ function ClientFicheModal({
           background: "#fff",
           borderRadius: 6,
           padding: 16,
-          width: 420,
+          width: 460,
           maxWidth: "95vw",
           maxHeight: "90vh",
           overflowY: "auto",
@@ -940,12 +959,24 @@ function ClientFicheModal({
         >
           <thead>
             <tr style={{ background: "#e8e8e8" }}>
-              {["Date", "Heure", "Dû", "Payé", "Date Pmt", "Fait"].map((h) => (
+              {[
+                "Date",
+                "Heure",
+                "Dû",
+                "Payé",
+                "Date",
+                "Note",
+                "Crédit",
+                "Fait",
+              ].map((h) => (
                 <th
                   key={h}
                   style={{
                     padding: "2px 4px",
-                    textAlign: h === "Dû" || h === "Payé" ? "right" : "left",
+                    textAlign:
+                      h === "Dû" || h === "Payé" || h === "Crédit"
+                        ? "right"
+                        : "left",
                     fontSize: 10,
                     fontWeight: "bold",
                     border: "1px solid #ccc",
@@ -994,6 +1025,27 @@ function ClientFicheModal({
                   <td style={{ padding: "2px 4px", border: "1px solid #ddd" }}>
                     {payDate}
                   </td>
+                  <td style={{ padding: "2px 4px", border: "1px solid #ddd" }}>
+                    {apt.commentaireManuel ?? ""}
+                  </td>
+                  <td
+                    style={{
+                      padding: "2px 4px",
+                      textAlign: "right",
+                      border: "1px solid #ddd",
+                      color:
+                        Number(apt.montantPaye) -
+                          (apt.fait ? Number(apt.montantDu) : 0) >=
+                        0
+                          ? "#27ae60"
+                          : "#c0392b",
+                    }}
+                  >
+                    {(
+                      Number(apt.montantPaye) -
+                      (apt.fait ? Number(apt.montantDu) : 0)
+                    ).toLocaleString("fr-FR")}
+                  </td>
                   <td
                     style={{
                       padding: "2px 4px",
@@ -1027,7 +1079,6 @@ export default function WeeklyCalendarPage() {
       return new Map();
     }
   });
-
   const [editForm, setEditForm] = useState<{
     apt: RendezVous;
     mode: "unique" | "futurs";
@@ -1045,13 +1096,6 @@ export default function WeeklyCalendarPage() {
   const firstDate = weekDates[0];
   const lastDate = weekDates[6];
 
-  let weekTitle: string;
-  if (firstDate.getMonth() === lastDate.getMonth()) {
-    weekTitle = `${MONTH_NAMES[firstDate.getMonth()]} ${firstDate.getFullYear()}`;
-  } else {
-    weekTitle = `${MONTH_NAMES[firstDate.getMonth()]} – ${MONTH_NAMES[lastDate.getMonth()]} ${lastDate.getFullYear()}`;
-  }
-
   const handlePaymentDateChange = useCallback((aptId: string, val: string) => {
     setPaymentDates((prev) => {
       const next = new Map(prev);
@@ -1065,9 +1109,7 @@ export default function WeeklyCalendarPage() {
   }, []);
 
   const handleOpenEdit = useCallback(
-    (apt: RendezVous, mode: "unique" | "futurs") => {
-      setEditForm({ apt, mode });
-    },
+    (apt: RendezVous, mode: "unique" | "futurs") => setEditForm({ apt, mode }),
     [],
   );
 
@@ -1092,7 +1134,6 @@ export default function WeeklyCalendarPage() {
 
   return (
     <div style={{ ...VERDANA, padding: 12 }}>
-      {/* Week navigation */}
       <div
         style={{
           display: "flex",
@@ -1125,7 +1166,6 @@ export default function WeeklyCalendarPage() {
           Semaine du {firstDate.getDate()} {MONTH_NAMES[firstDate.getMonth()]} —{" "}
           {lastDate.getDate()} {MONTH_NAMES[lastDate.getMonth()]}{" "}
           {lastDate.getFullYear()}
-          &nbsp;|&nbsp;{weekTitle}
         </span>
         <button
           type="button"
@@ -1161,7 +1201,6 @@ export default function WeeklyCalendarPage() {
         </button>
       </div>
 
-      {/* 2-column grid on desktop, 1-column on mobile */}
       <div
         style={{
           display: "grid",
@@ -1186,7 +1225,6 @@ export default function WeeklyCalendarPage() {
         <SummaryBox weekDates={weekDates} allAppointments={appointments} />
       </div>
 
-      {/* Edit modal */}
       {editForm && (
         <AppointmentDialog
           open={true}
@@ -1199,7 +1237,6 @@ export default function WeeklyCalendarPage() {
           }
         />
       )}
-      {/* Client fiche modal */}
       {ficheClientRef && (
         <ClientFicheModal
           referenceClient={ficheClientRef.ref}

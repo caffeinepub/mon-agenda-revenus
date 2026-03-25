@@ -184,7 +184,7 @@ export default function Dashboard() {
         </h1>
 
         {/* ── TOP SECTION: 3-column grid — 1 column on mobile ── */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] gap-4 mb-6 items-start dashboard-grid">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4 mb-6 items-start dashboard-grid">
           {/* ── LEFT COLUMN: A / B / C merged — Synthèse de l'année ── */}
           <div className="flex flex-col gap-4">
             <p
@@ -283,6 +283,106 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ── RIGHT COLUMN: E / F / G merged — Mois courant ── */}
+            <div className="flex flex-col gap-4">
+              <p
+                className="text-center font-bold text-xl"
+                style={{ fontFamily: "Verdana, sans-serif" }}
+              >
+                Mois de : {currentMonthLabel}
+              </p>
+
+              <Card>
+                <CardContent className="px-4 py-2">
+                  {/* Row E — Dus (RDV Faits ; Mois Courant) */}
+                  <div className="py-1">
+                    <p
+                      className="frame-title font-bold"
+                      style={{
+                        fontFamily: "Verdana,sans-serif",
+                        fontSize: "11px",
+                      }}
+                    >
+                      Dus (RDV Faits ; Mois Courant)
+                    </p>
+                    <p
+                      className="sum-total font-bold text-orange-600"
+                      style={{
+                        fontFamily: "Verdana,sans-serif",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {formatNum(financialOverviewData.totalDue)}
+                    </p>
+                    <p
+                      className="table-data text-muted-foreground"
+                      style={{ fontSize: "9px" }}
+                    >
+                      Montants restant à percevoir
+                    </p>
+                  </div>
+
+                  {/* Row F — RDV faits (Payés et Impayés ; Mois Courant) */}
+                  <div className="border-t py-1">
+                    <p
+                      className="frame-title font-bold"
+                      style={{
+                        fontFamily: "Verdana,sans-serif",
+                        fontSize: "11px",
+                      }}
+                    >
+                      RDV faits (Payés et Impayés ; Mois Courant)
+                    </p>
+                    <p
+                      className="sum-total font-bold text-blue-600"
+                      style={{
+                        fontFamily: "Verdana,sans-serif",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {formatNum(
+                        financialOverviewData.totalRdvFaitsMoisCourant,
+                      )}
+                    </p>
+                    <p
+                      className="table-data text-muted-foreground"
+                      style={{ fontSize: "9px" }}
+                    >
+                      Total des montants dus pour les rendez-vous effectués
+                    </p>
+                  </div>
+
+                  {/* Row G — Revenus du Mois en Cours (Faits et Payés) */}
+                  <div className="border-t py-1">
+                    <p
+                      className="frame-title font-bold"
+                      style={{
+                        fontFamily: "Verdana,sans-serif",
+                        fontSize: "11px",
+                      }}
+                    >
+                      Revenus du Mois en Cours (Faits et Payés)
+                    </p>
+                    <p
+                      className="sum-total font-bold text-green-600"
+                      style={{
+                        fontFamily: "Verdana,sans-serif",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {formatNum(financialOverviewData.totalPaid)}
+                    </p>
+                    <p
+                      className="table-data text-muted-foreground"
+                      style={{ fontSize: "9px" }}
+                    >
+                      Montants perçus pour les rendez-vous effectués
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* ── CENTER COLUMN: D — Résumé Mensuels ── */}
@@ -297,104 +397,6 @@ export default function Dashboard() {
               year={selectedYear}
               allAppointments={allAppointments}
             />
-          </div>
-
-          {/* ── RIGHT COLUMN: E / F / G merged — Mois courant ── */}
-          <div className="flex flex-col gap-4">
-            <p
-              className="text-center font-bold text-xl"
-              style={{ fontFamily: "Verdana, sans-serif" }}
-            >
-              Mois de : {currentMonthLabel}
-            </p>
-
-            <Card>
-              <CardContent className="px-4 py-2">
-                {/* Row E — Dus (RDV Faits ; Mois Courant) */}
-                <div className="py-1">
-                  <p
-                    className="frame-title font-bold"
-                    style={{
-                      fontFamily: "Verdana,sans-serif",
-                      fontSize: "11px",
-                    }}
-                  >
-                    Dus (RDV Faits ; Mois Courant)
-                  </p>
-                  <p
-                    className="sum-total font-bold text-orange-600"
-                    style={{
-                      fontFamily: "Verdana,sans-serif",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {formatNum(financialOverviewData.totalDue)}
-                  </p>
-                  <p
-                    className="table-data text-muted-foreground"
-                    style={{ fontSize: "9px" }}
-                  >
-                    Montants restant à percevoir
-                  </p>
-                </div>
-
-                {/* Row F — RDV faits (Payés et Impayés ; Mois Courant) */}
-                <div className="border-t py-1">
-                  <p
-                    className="frame-title font-bold"
-                    style={{
-                      fontFamily: "Verdana,sans-serif",
-                      fontSize: "11px",
-                    }}
-                  >
-                    RDV faits (Payés et Impayés ; Mois Courant)
-                  </p>
-                  <p
-                    className="sum-total font-bold text-blue-600"
-                    style={{
-                      fontFamily: "Verdana,sans-serif",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {formatNum(financialOverviewData.totalRdvFaitsMoisCourant)}
-                  </p>
-                  <p
-                    className="table-data text-muted-foreground"
-                    style={{ fontSize: "9px" }}
-                  >
-                    Total des montants dus pour les rendez-vous effectués
-                  </p>
-                </div>
-
-                {/* Row G — Revenus du Mois en Cours (Faits et Payés) */}
-                <div className="border-t py-1">
-                  <p
-                    className="frame-title font-bold"
-                    style={{
-                      fontFamily: "Verdana,sans-serif",
-                      fontSize: "11px",
-                    }}
-                  >
-                    Revenus du Mois en Cours (Faits et Payés)
-                  </p>
-                  <p
-                    className="sum-total font-bold text-green-600"
-                    style={{
-                      fontFamily: "Verdana,sans-serif",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {formatNum(financialOverviewData.totalPaid)}
-                  </p>
-                  <p
-                    className="table-data text-muted-foreground"
-                    style={{ fontSize: "9px" }}
-                  >
-                    Montants perçus pour les rendez-vous effectués
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
 

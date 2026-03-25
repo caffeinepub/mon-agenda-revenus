@@ -20,6 +20,7 @@ import ClientDatabasePage from "./pages/ClientDatabasePage";
 import DailyCalendarPage from "./pages/DailyCalendarPage";
 import Dashboard from "./pages/Dashboard";
 import LocalLoginPage from "./pages/LocalLoginPage";
+import MonthlyCalendarPage from "./pages/MonthlyCalendarPage";
 import RapportPDFPage from "./pages/RapportPDFPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import WeeklyCalendarPage from "./pages/WeeklyCalendarPage";
@@ -27,7 +28,6 @@ import { setCurrentActor, syncFromBackend } from "./utils/backendSync";
 
 function Layout() {
   const { data: userProfile } = useGetCallerUserProfile();
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header userName={userProfile?.name} />
@@ -39,50 +39,49 @@ function Layout() {
   );
 }
 
-const rootRoute = createRootRoute({
-  component: Layout,
-});
+const rootRoute = createRootRoute({ component: Layout });
 
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: Dashboard,
 });
-
 const weeklyCalendarRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/calendrier-semaine",
   component: WeeklyCalendarPage,
 });
-
+const dailyCalendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/calendrier-journalier",
+  component: DailyCalendarPage,
+});
+const monthlyCalendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/calendrier-mensuel",
+  component: MonthlyCalendarPage,
+});
 const rapportPDFRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/rapport-pdf",
   component: RapportPDFPage,
 });
-
 const clientDatabaseRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/client-database",
   component: ClientDatabasePage,
 });
-
 const userManagementRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/users",
   component: UserManagementPage,
 });
 
-const dailyCalendarRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/calendrier-journalier",
-  component: DailyCalendarPage,
-});
-
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
   weeklyCalendarRoute,
   dailyCalendarRoute,
+  monthlyCalendarRoute,
   rapportPDFRoute,
   clientDatabaseRoute,
   userManagementRoute,
@@ -90,7 +89,6 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({ routeTree });
 
-// Component that handles backend actor initialization and data sync
 function BackendSyncProvider({ children }: { children: React.ReactNode }) {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -98,10 +96,7 @@ function BackendSyncProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!actor) return;
-
-    // Register actor for background sync (used by syncToBackendBackground)
     setCurrentActor(actor);
-
     const invalidateAll = () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["clientRecords"] });
@@ -111,24 +106,17 @@ function BackendSyncProvider({ children }: { children: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["rapportPDF"] });
       queryClient.invalidateQueries({ queryKey: ["clientCredit"] });
     };
-
-    // On first load, sync FROM backend to get shared data on this computer
     if (!syncedRef.current) {
       syncedRef.current = true;
       syncFromBackend(actor)
         .then(invalidateAll)
-        .catch(() => {
-          // Silent fail - localStorage data still available
-        });
+        .catch(() => {});
     }
-
-    // Periodic sync every 60 seconds to keep data fresh
     const intervalId = setInterval(() => {
       syncFromBackend(actor)
         .then(invalidateAll)
         .catch(() => {});
     }, 60000);
-
     return () => clearInterval(intervalId);
   }, [actor, queryClient]);
 
@@ -146,16 +134,9 @@ function AuthenticatedApp() {
   const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      !profileLoading &&
-      isFetched &&
-      userProfile === null
-    ) {
+    if (isAuthenticated && !profileLoading && isFetched && userProfile === null)
       setShowProfileSetup(true);
-    } else {
-      setShowProfileSetup(false);
-    }
+    else setShowProfileSetup(false);
   }, [isAuthenticated, profileLoading, isFetched, userProfile]);
 
   return (
@@ -169,7 +150,6 @@ function AuthenticatedApp() {
   );
 }
 
-// Inner component that uses LocalAuthContext
 function AppWithLocalAuth() {
   const { session, isReady } = useLocalAuth();
   const { identity } = useInternetIdentity();
@@ -191,7 +171,6 @@ function AppWithLocalAuth() {
     );
   }
 
-  // If not locally authenticated, show local login
   if (!session) {
     return (
       <>
@@ -201,7 +180,6 @@ function AppWithLocalAuth() {
     );
   }
 
-  // Locally authenticated - show the app
   return <AuthenticatedApp />;
 }
 

@@ -1,14 +1,13 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
-import { DemandeEdition, type TypeRepetition } from "../backend";
+import { DemandeEdition } from "../backend";
 import AppointmentDialog from "../components/AppointmentDialog";
 import { useLocalAuth } from "../context/LocalAuthContext";
 import {
   useDeleteAppointment,
   useGetAllAppointments,
   useGetAllClientRecords,
-  useUpdateAppointment,
   useUpdateAppointmentStatus,
   useUpdateMontantPaye,
 } from "../hooks/useQueries";
@@ -54,14 +53,15 @@ for (let h = 7; h <= 22; h++) {
   }
 }
 
+// Column definitions — widths used for both header AND cells
 const COLS = [
   { label: "Heure", w: 47 },
-  { label: "Nom", w: 100 },
+  { label: "Nom", w: 88 },
   { label: "Réf", w: 51 },
   { label: "F", w: 24 },
   { label: "A", w: 24 },
-  { label: "Dû", w: 47 },
-  { label: "Payé", w: 52 },
+  { label: "Dû", w: 44 },
+  { label: "Payé", w: 44 },
   { label: "Date", w: 44 },
   { label: "Note", w: 74 },
 ];
@@ -81,6 +81,12 @@ function colStyle(w: number, last = false): React.CSSProperties {
     boxSizing: "border-box",
     fontSize: 12,
   };
+}
+
+// Helper: first slot index >= time (ceiling match)
+function findSlotIdxCeil(time: string): number {
+  const idx = TIME_SLOTS.findIndex((s) => s >= time);
+  return idx === -1 ? TIME_SLOTS.length : idx;
 }
 
 // ── ClientFicheModal ──────────────────────────────────────────────────────────
@@ -104,15 +110,12 @@ function ClientFicheModal({
   const now = BigInt(Date.now()) * BigInt(1_000_000);
   const startOfYear =
     BigInt(new Date(currentYear, 0, 1).getTime()) * BigInt(1_000_000);
-  const endOfYear =
-    BigInt(new Date(currentYear + 1, 0, 1).getTime()) * BigInt(1_000_000);
 
   const clientApts = allApts
     .filter(
       (apt) =>
         apt.referenceClient === referenceClient &&
         apt.dateHeure >= startOfYear &&
-        apt.dateHeure < endOfYear &&
         apt.dateHeure <= now,
     )
     .sort((a, b) => Number(a.dateHeure) - Number(b.dateHeure));
@@ -151,7 +154,7 @@ function ClientFicheModal({
           background: "#fff",
           borderRadius: 6,
           padding: 16,
-          width: 420,
+          width: 460,
           maxWidth: "95vw",
           maxHeight: "90vh",
           overflowY: "auto",
@@ -267,12 +270,24 @@ function ClientFicheModal({
         >
           <thead>
             <tr style={{ background: "#e8e8e8" }}>
-              {["Date", "Heure", "Dû", "Payé", "Date Pmt", "Fait"].map((h) => (
+              {[
+                "Date",
+                "Heure",
+                "Dû",
+                "Payé",
+                "Date",
+                "Note",
+                "Crédit",
+                "Fait",
+              ].map((h) => (
                 <th
                   key={h}
                   style={{
                     padding: "2px 4px",
-                    textAlign: h === "Dû" || h === "Payé" ? "right" : "left",
+                    textAlign:
+                      h === "Dû" || h === "Payé" || h === "Crédit"
+                        ? "right"
+                        : "left",
                     fontSize: 10,
                     fontWeight: "bold",
                     border: "1px solid #ccc",
@@ -320,6 +335,27 @@ function ClientFicheModal({
                   </td>
                   <td style={{ padding: "2px 4px", border: "1px solid #ddd" }}>
                     {payDate}
+                  </td>
+                  <td style={{ padding: "2px 4px", border: "1px solid #ddd" }}>
+                    {apt.commentaireManuel ?? ""}
+                  </td>
+                  <td
+                    style={{
+                      padding: "2px 4px",
+                      textAlign: "right",
+                      border: "1px solid #ddd",
+                      color:
+                        Number(apt.montantPaye) -
+                          (apt.fait ? Number(apt.montantDu) : 0) >=
+                        0
+                          ? "#27ae60"
+                          : "#c0392b",
+                    }}
+                  >
+                    {(
+                      Number(apt.montantPaye) -
+                      (apt.fait ? Number(apt.montantDu) : 0)
+                    ).toLocaleString("fr-FR")}
                   </td>
                   <td
                     style={{
@@ -378,7 +414,6 @@ export default function DailyCalendarPage() {
   const updatePaye = useUpdateMontantPaye();
   const deleteApt = useDeleteAppointment();
 
-  // Calculate the current day
   const today = new Date();
   const currentDay = new Date(today);
   currentDay.setDate(today.getDate() + dayOffset);
@@ -387,7 +422,6 @@ export default function DailyCalendarPage() {
   const dayName = DAY_NAMES_FR[currentDay.getDay()];
   const dayLabel = `${dayName} ${currentDay.getDate()} ${MONTH_NAMES_FR[currentDay.getMonth()]} ${currentDay.getFullYear()}`;
 
-  // Filter appointments for this day
   const dayApts = appointments.filter((apt) => {
     const d = new Date(Number(apt.dateHeure) / 1_000_000);
     return (
@@ -397,21 +431,18 @@ export default function DailyCalendarPage() {
     );
   });
 
-  // Build slotMap: heureDebut -> appointment (for interactive data)
-  const slotMap = new Map<string, RendezVous>();
-  for (const apt of dayApts) {
-    if (!slotMap.has(apt.heureDebut)) slotMap.set(apt.heureDebut, apt);
-  }
-
-  // Build coveredSlots: slot -> appointment that covers this slot (for background coloring)
-  const coveredSlots = new Map<string, RendezVous>();
-  for (const apt of dayApts) {
-    const startIdx = TIME_SLOTS.indexOf(apt.heureDebut);
-    const endIdx = TIME_SLOTS.findIndex((s) => s >= apt.heureFin);
-    const actualEnd = endIdx === -1 ? TIME_SLOTS.length : endIdx;
-    for (let i = startIdx; i >= 0 && i < actualEnd; i++) {
-      if (!coveredSlots.has(TIME_SLOTS[i])) {
-        coveredSlots.set(TIME_SLOTS[i], apt);
+  const coverageMap = new Map<string, { apt: RendezVous; rowIdx: number }>();
+  const sortedDayApts = [...dayApts].sort((a, b) =>
+    a.heureDebut.localeCompare(b.heureDebut),
+  );
+  for (const apt of sortedDayApts) {
+    const startIdx = findSlotIdxCeil(apt.heureDebut);
+    const endIdx = findSlotIdxCeil(apt.heureFin);
+    let rowIdx = 0;
+    for (let i = startIdx; i < endIdx && i < TIME_SLOTS.length; i++) {
+      if (!coverageMap.has(TIME_SLOTS[i])) {
+        coverageMap.set(TIME_SLOTS[i], { apt, rowIdx });
+        rowIdx++;
       }
     }
   }
@@ -456,7 +487,7 @@ export default function DailyCalendarPage() {
 
   const handlePaye = useCallback(
     (apt: RendezVous, val: string) => {
-      if (isReader || apt.annule) return;
+      if (isReader) return;
       updatePaye.mutate({
         id: apt.id,
         montantPaye: BigInt(Math.max(0, Number.parseInt(val, 10) || 0)),
@@ -588,7 +619,7 @@ export default function DailyCalendarPage() {
             <div
               style={{
                 display: "flex",
-                background: "#f3f4f6",
+                background: "#dbeafe",
                 borderBottom: "1px solid #d1d5db",
               }}
             >
@@ -600,7 +631,7 @@ export default function DailyCalendarPage() {
                     fontWeight: "bold",
                     fontSize: 11,
                     textAlign: "center",
-                    background: "#f3f4f6",
+                    background: "#dbeafe",
                   }}
                 >
                   {col.label}
@@ -609,19 +640,38 @@ export default function DailyCalendarPage() {
             </div>
             {/* Time slot rows */}
             {TIME_SLOTS.map((slot, idx) => {
-              const apt = slotMap.get(slot) ?? null;
-              const coverApt = coveredSlots.get(slot) ?? null;
+              const coverage = coverageMap.get(slot) ?? null;
+              const apt = coverage?.apt ?? null;
+              const rowIdx = coverage?.rowIdx ?? -1;
               const bg = idx % 2 === 0 ? "#fff" : "#f9f9f9";
-              const nameBg = coverApt
-                ? coverApt.annule
+              const nameBg = coverage
+                ? coverage.apt.annule
                   ? "#fce7f3"
-                  : coverApt.fait
+                  : coverage.apt.fait
                     ? "#d1fae5"
                     : "#e0f2fe"
                 : bg;
               const aptIdStr = apt ? apt.id.toString() : null;
               const slotLabel = slot.replace(":", "h");
               const isHour = slot.endsWith(":00");
+
+              let nomContent: React.ReactNode = "";
+              if (coverage) {
+                if (rowIdx === 0)
+                  nomContent = <span>{coverage.apt.nomClient}</span>;
+                else if (rowIdx === 1)
+                  nomContent = (
+                    <span style={{ color: "#6b7280", fontSize: 11 }}>
+                      {coverage.apt.referenceClient}
+                    </span>
+                  );
+                else if (rowIdx === 2)
+                  nomContent = (
+                    <span style={{ color: "#6b7280", fontSize: 11 }}>
+                      {coverage.apt.heureDebut} - {coverage.apt.heureFin}
+                    </span>
+                  );
+              }
 
               return (
                 <div
@@ -637,7 +687,7 @@ export default function DailyCalendarPage() {
                   {/* Heure */}
                   <div
                     style={{
-                      ...colStyle(47),
+                      ...colStyle(44),
                       textAlign: "center",
                       fontWeight: isHour ? "bold" : "normal",
                       color: isHour ? "#374151" : "#6b7280",
@@ -645,7 +695,7 @@ export default function DailyCalendarPage() {
                   >
                     {isHour ? (
                       slotLabel
-                    ) : apt ? (
+                    ) : apt && rowIdx === 0 ? (
                       slotLabel
                     ) : (
                       <span style={{ color: "#d1d5db" }}>{slotLabel}</span>
@@ -653,23 +703,33 @@ export default function DailyCalendarPage() {
                   </div>
                   {/* Nom */}
                   <div
+                    data-nom-cell="1"
                     style={{
-                      ...colStyle(100),
+                      ...colStyle(88),
                       background: nameBg,
-                      cursor: apt && !isReader ? "pointer" : "default",
+                      cursor:
+                        coverage && rowIdx === 0 && !isReader
+                          ? "pointer"
+                          : "default",
                       userSelect: "none",
                     }}
-                    role={apt && !isReader ? "button" : undefined}
-                    tabIndex={apt && !isReader ? 0 : undefined}
+                    role={
+                      coverage && rowIdx === 0 && !isReader
+                        ? "button"
+                        : undefined
+                    }
+                    tabIndex={
+                      coverage && rowIdx === 0 && !isReader ? 0 : undefined
+                    }
                     onClick={
-                      apt && !isReader
+                      coverage && rowIdx === 0 && !isReader
                         ? (e) => {
                             e.stopPropagation();
                             const rect = (
                               e.currentTarget as HTMLElement
                             ).getBoundingClientRect();
                             setContextMenu({
-                              apt,
+                              apt: coverage.apt,
                               x: rect.left,
                               y: rect.bottom + 2,
                             });
@@ -677,7 +737,7 @@ export default function DailyCalendarPage() {
                         : undefined
                     }
                     onKeyDown={
-                      apt && !isReader
+                      coverage && rowIdx === 0 && !isReader
                         ? (e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
@@ -685,7 +745,7 @@ export default function DailyCalendarPage() {
                                 e.currentTarget as HTMLElement
                               ).getBoundingClientRect();
                               setContextMenu({
-                                apt,
+                                apt: coverage.apt,
                                 x: rect.left,
                                 y: rect.bottom + 2,
                               });
@@ -693,30 +753,22 @@ export default function DailyCalendarPage() {
                           }
                         : undefined
                     }
-                    title={
-                      apt ? apt.nomClient : coverApt ? coverApt.nomClient : ""
+                    title={coverage ? coverage.apt.nomClient : ""}
+                    data-ocid={
+                      coverage && rowIdx === 0 ? "daily.nom.button" : undefined
                     }
-                    data-ocid={apt ? "daily.nom.button" : undefined}
                   >
-                    {apt ? (
-                      apt.nomClient
-                    ) : coverApt ? (
-                      <span style={{ color: "#9ca3af" }}>
-                        {coverApt.nomClient}
-                      </span>
-                    ) : (
-                      ""
-                    )}
+                    {nomContent}
                   </div>
                   {/* Réf */}
                   <div style={{ ...colStyle(51) }}>
-                    {apt ? apt.referenceClient : ""}
+                    {apt && rowIdx === 0 ? apt.referenceClient : ""}
                   </div>
                   {/* F */}
                   <div
                     style={{
                       ...colStyle(24),
-                      background: apt?.fait || coverApt?.fait ? "#d1fae5" : bg,
+                      background: coverage?.apt.fait ? "#d1fae5" : bg,
                       textAlign: "center",
                       display: "flex",
                       alignItems: "center",
@@ -724,7 +776,7 @@ export default function DailyCalendarPage() {
                       padding: 0,
                     }}
                   >
-                    {apt && (
+                    {apt && rowIdx === 0 && (
                       <input
                         type="checkbox"
                         checked={apt.fait}
@@ -742,8 +794,7 @@ export default function DailyCalendarPage() {
                   <div
                     style={{
                       ...colStyle(24),
-                      background:
-                        apt?.annule || coverApt?.annule ? "#fce7f3" : bg,
+                      background: coverage?.apt.annule ? "#fce7f3" : bg,
                       textAlign: "center",
                       display: "flex",
                       alignItems: "center",
@@ -751,7 +802,7 @@ export default function DailyCalendarPage() {
                       padding: 0,
                     }}
                   >
-                    {apt && (
+                    {apt && rowIdx === 0 && (
                       <input
                         type="checkbox"
                         checked={apt.annule}
@@ -766,17 +817,19 @@ export default function DailyCalendarPage() {
                     )}
                   </div>
                   {/* Dû */}
-                  <div style={{ ...colStyle(47), textAlign: "right" }}>
-                    {apt ? Number(apt.montantDu).toString() : ""}
+                  <div style={{ ...colStyle(44), textAlign: "right" }}>
+                    {apt && rowIdx === 0
+                      ? Number(apt.montantDu).toString()
+                      : ""}
                   </div>
-                  {/* Payé */}
-                  <div style={{ ...colStyle(47), padding: 0 }}>
-                    {apt && (
+                  {/* Payé — width 52, no spinner arrows */}
+                  <div style={{ ...colStyle(44), padding: 0 }}>
+                    {apt && rowIdx === 0 && (
                       <input
-                        type="number"
-                        min={0}
-                        value={apt.annule ? 0 : Number(apt.montantPaye)}
-                        disabled={isReader || apt.annule}
+                        type="text"
+                        inputMode="numeric"
+                        value={Number(apt.montantPaye)}
+                        disabled={isReader}
                         onChange={(e) => handlePaye(apt, e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
@@ -787,7 +840,7 @@ export default function DailyCalendarPage() {
                         style={{
                           border: "none",
                           background: "transparent",
-                          width: "100%",
+                          width: 52,
                           height: ROW_H,
                           padding: "0 2px",
                           fontFamily: "Verdana, sans-serif",
@@ -798,9 +851,9 @@ export default function DailyCalendarPage() {
                       />
                     )}
                   </div>
-                  {/* Date paiement */}
-                  <div style={{ ...colStyle(40), padding: 0 }}>
-                    {apt && (
+                  {/* Date paiement — width 44 */}
+                  <div style={{ ...colStyle(44), padding: 0 }}>
+                    {apt && rowIdx === 0 && (
                       <input
                         type="text"
                         placeholder="JJ/MM"
@@ -813,15 +866,13 @@ export default function DailyCalendarPage() {
                           handlePaymentDateChange(aptIdStr, e.target.value)
                         }
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.currentTarget.blur();
-                          }
+                          if (e.key === "Enter") e.currentTarget.blur();
                         }}
                         maxLength={5}
                         style={{
                           border: "none",
                           background: "transparent",
-                          width: "100%",
+                          width: 44,
                           height: ROW_H,
                           padding: "0 2px",
                           fontFamily: "Verdana, sans-serif",
@@ -833,7 +884,7 @@ export default function DailyCalendarPage() {
                   </div>
                   {/* Note */}
                   <div style={{ ...colStyle(74, true), padding: 0 }}>
-                    {apt && (
+                    {apt && rowIdx === 0 && (
                       <input
                         type="text"
                         value={apt.commentaireManuel ?? ""}
@@ -848,7 +899,7 @@ export default function DailyCalendarPage() {
                         style={{
                           border: "none",
                           background: "transparent",
-                          width: "100%",
+                          width: 74,
                           height: ROW_H,
                           padding: "0 2px",
                           fontFamily: "Verdana, sans-serif",
@@ -947,7 +998,6 @@ export default function DailyCalendarPage() {
         </div>
       )}
 
-      {/* Edit modal */}
       {editForm && (
         <AppointmentDialog
           open={true}
@@ -961,7 +1011,6 @@ export default function DailyCalendarPage() {
         />
       )}
 
-      {/* Client fiche modal */}
       {ficheClientRef && (
         <ClientFicheModal
           referenceClient={ficheClientRef.ref}
