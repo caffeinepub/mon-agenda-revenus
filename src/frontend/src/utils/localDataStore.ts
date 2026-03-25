@@ -261,10 +261,13 @@ export function updateAppointment(data: {
 
   const updated = appointments.map((apt) => {
     const isTarget = apt.id === data.id;
+    const targetDay = new Date(Number(data.dateHeure) / 1_000_000).getDay();
+    const aptDay = new Date(Number(apt.dateHeure) / 1_000_000).getDay();
     const isFutureOfSameClient =
       data.demandeEdition === "futursDuClient" &&
       apt.referenceClient === data.referenceClient &&
-      apt.dateHeure >= data.dateHeure;
+      apt.dateHeure >= data.dateHeure &&
+      aptDay === targetDay;
 
     if (isTarget || isFutureOfSameClient) {
       return {
@@ -307,7 +310,9 @@ export function deleteAppointment(
     if (
       mode === "futursDuClient" &&
       apt.referenceClient === refClient &&
-      apt.dateHeure >= targetDate
+      apt.dateHeure >= targetDate &&
+      new Date(Number(apt.dateHeure) / 1_000_000).getDay() ===
+        new Date(Number(targetDate) / 1_000_000).getDay()
     )
       return false;
     return true;

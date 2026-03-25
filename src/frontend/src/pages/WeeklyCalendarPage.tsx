@@ -139,6 +139,10 @@ function DayBox({
   const updatePaye = useUpdateMontantPaye();
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [editingPaye, setEditingPaye] = useState<{
+    id: string;
+    val: string;
+  } | null>(null);
 
   const dayApts = appointments
     .filter((a) => sameDay(aptDate(a), date))
@@ -150,6 +154,7 @@ function DayBox({
     ...Array(Math.max(0, MAX_ROWS - dayApts.length)).fill(null),
   ];
   const dayLabel = `${DAY_NAMES[(date.getDay() + 6) % 7]} ${date.getDate()}`;
+  const isToday = sameDay(date, new Date());
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -216,7 +221,7 @@ function DayBox({
       {/* Day header */}
       <div
         style={{
-          background: "#dbeafe",
+          background: isToday ? "#fef9c3" : "#dbeafe",
           fontWeight: "bold",
           textAlign: "center",
           height: ROW_H,
@@ -387,31 +392,59 @@ function DayBox({
                 <div style={{ ...colStyle(44), textAlign: "right" }}>
                   {apt ? Number(apt.montantDu).toString() : ""}
                 </div>
-                {/* Payé — width 52, no spinner (type=text) */}
+                {/* Payé — width 44, no spinner (type=text) */}
                 <div style={{ ...colStyle(44), padding: 0 }}>
                   {apt && (
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={Number(apt.montantPaye)}
+                      value={
+                        editingPaye?.id === apt.id.toString()
+                          ? editingPaye.val
+                          : Number(apt.montantPaye).toString()
+                      }
                       disabled={isReader}
-                      onChange={(e) => handlePaye(apt, e.target.value)}
+                      onFocus={(e) => {
+                        setEditingPaye({
+                          id: apt.id.toString(),
+                          val: Number(apt.montantPaye).toString(),
+                        });
+                        e.currentTarget.select();
+                      }}
+                      onChange={(e) => {
+                        setEditingPaye({
+                          id: apt.id.toString(),
+                          val: e.target.value,
+                        });
+                      }}
+                      onBlur={(e) => {
+                        handlePaye(apt, e.target.value);
+                        setEditingPaye(null);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           handlePaye(apt, e.currentTarget.value);
+                          setEditingPaye(null);
                           e.currentTarget.blur();
                         }
+                      }}
+                      onFocusCapture={(e) => {
+                        e.currentTarget.style.outline = "1px solid #3b82f6";
+                      }}
+                      onBlurCapture={(e) => {
+                        e.currentTarget.style.outline = "none";
                       }}
                       style={{
                         border: "none",
                         background: "transparent",
-                        width: 52,
+                        width: 40,
                         height: ROW_H,
                         padding: "0 2px",
                         fontFamily: "Verdana, sans-serif",
                         fontSize: 12,
                         textAlign: "right",
                         outline: "none",
+                        cursor: "text",
                       }}
                     />
                   )}

@@ -1,7 +1,11 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
+import { DemandeEdition } from "../backend";
+import AppointmentDialog from "../components/AppointmentDialog";
+import { useLocalAuth } from "../context/LocalAuthContext";
 import {
+  useDeleteAppointment,
   useGetAllAppointments,
   useGetAllClientRecords,
 } from "../hooks/useQueries";
@@ -352,6 +356,30 @@ export default function MonthlyCalendarPage() {
     name: string;
   } | null>(null);
 
+  const { session } = useLocalAuth();
+  const isReader = session?.role === "reader";
+  const deleteApt = useDeleteAppointment();
+  const [contextMenu, setContextMenu] = useState<{
+    apt: RendezVous;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [editForm, setEditForm] = useState<{
+    apt: RendezVous;
+    mode: "unique" | "futurs";
+  } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setContextMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [contextMenu]);
+
   const { data: appointments = [] } = useGetAllAppointments();
   const { data: allClients = [] } = useGetAllClientRecords();
 
@@ -659,11 +687,18 @@ export default function MonthlyCalendarPage() {
                                 }
                                 onClick={
                                   apt
-                                    ? () =>
-                                        setFicheClient({
-                                          ref: apt.referenceClient,
-                                          name: apt.nomClient,
-                                        })
+                                    ? (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const rect = (
+                                          e.currentTarget as HTMLElement
+                                        ).getBoundingClientRect();
+                                        setContextMenu({
+                                          apt,
+                                          x: rect.left,
+                                          y: rect.bottom + 2,
+                                        });
+                                      }
                                     : undefined
                                 }
                                 onKeyDown={
@@ -674,9 +709,13 @@ export default function MonthlyCalendarPage() {
                                           e.key === " "
                                         ) {
                                           e.preventDefault();
-                                          setFicheClient({
-                                            ref: apt.referenceClient,
-                                            name: apt.nomClient,
+                                          const rect = (
+                                            e.currentTarget as HTMLElement
+                                          ).getBoundingClientRect();
+                                          setContextMenu({
+                                            apt,
+                                            x: rect.left,
+                                            y: rect.bottom + 2,
                                           });
                                         }
                                       }
@@ -730,6 +769,139 @@ export default function MonthlyCalendarPage() {
           clients={allClients}
           appointments={appointments}
           onClose={() => setFicheClient(null)}
+        />
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          ref={menuRef}
+          style={{
+            position: "fixed",
+            left: contextMenu.x,
+            top: contextMenu.y,
+            background: "#fff",
+            border: "1px solid #d1d5db",
+            borderRadius: 6,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 9999,
+            minWidth: 200,
+            fontFamily: "Verdana, sans-serif",
+            fontSize: 12,
+          }}
+        >
+          {!isReader && (
+            <>
+              <button
+                type="button"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  background: "none",
+                  border: "none",
+                  fontFamily: "Verdana, sans-serif",
+                  fontSize: 12,
+                }}
+                onClick={() => {
+                  setEditForm({ apt: contextMenu.apt, mode: "unique" });
+                  setContextMenu(null);
+                }}
+              >
+                ✏️ Modifier ce RDV
+              </button>
+              <button
+                type="button"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  background: "none",
+                  border: "none",
+                  fontFamily: "Verdana, sans-serif",
+                  fontSize: 12,
+                }}
+                onClick={() => {
+                  setEditForm({ apt: contextMenu.apt, mode: "futurs" });
+                  setContextMenu(null);
+                }}
+              >
+                📅 Modifier tous les futurs RDV
+              </button>
+              <button
+                type="button"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  background: "none",
+                  border: "none",
+                  color: "#dc2626",
+                  fontFamily: "Verdana, sans-serif",
+                  fontSize: 12,
+                }}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Supprimer le RDV de ${contextMenu.apt.nomClient} ?`,
+                    )
+                  ) {
+                    deleteApt.mutate({
+                      id: contextMenu.apt.id,
+                      mode: DemandeEdition.unique,
+                    });
+                  }
+                  setContextMenu(null);
+                }}
+              >
+                🗑️ Supprimer ce RDV
+              </button>
+              <div style={{ borderTop: "1px solid #e5e7eb" }} />
+            </>
+          )}
+          <button
+            type="button"
+            style={{
+              display: "block",
+              width: "100%",
+              textAlign: "left",
+              padding: "8px 16px",
+              cursor: "pointer",
+              background: "none",
+              border: "none",
+              fontFamily: "Verdana, sans-serif",
+              fontSize: 12,
+            }}
+            onClick={() => {
+              setFicheClient({
+                ref: contextMenu.apt.referenceClient,
+                name: contextMenu.apt.nomClient,
+              });
+              setContextMenu(null);
+            }}
+          >
+            👤 Voir la fiche client
+          </button>
+        </div>
+      )}
+
+      {/* Edit dialog */}
+      {editForm && (
+        <AppointmentDialog
+          open={true}
+          appointment={editForm.apt}
+          editMode={
+            editForm.mode === "futurs"
+              ? DemandeEdition.futursDuClient
+              : DemandeEdition.unique
+          }
+          onClose={() => setEditForm(null)}
         />
       )}
     </div>

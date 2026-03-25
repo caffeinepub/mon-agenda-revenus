@@ -403,6 +403,10 @@ export default function DailyCalendarPage() {
     apt: RendezVous;
     mode: "unique" | "futurs";
   } | null>(null);
+  const [editingPaye, setEditingPaye] = useState<{
+    id: string;
+    val: string;
+  } | null>(null);
   const [ficheClientRef, setFicheClientRef] = useState<{
     ref: string;
     name: string;
@@ -822,31 +826,59 @@ export default function DailyCalendarPage() {
                       ? Number(apt.montantDu).toString()
                       : ""}
                   </div>
-                  {/* Payé — width 52, no spinner arrows */}
+                  {/* Payé — width 44, no spinner arrows */}
                   <div style={{ ...colStyle(44), padding: 0 }}>
                     {apt && rowIdx === 0 && (
                       <input
                         type="text"
                         inputMode="numeric"
-                        value={Number(apt.montantPaye)}
+                        value={
+                          editingPaye?.id === apt.id.toString()
+                            ? editingPaye.val
+                            : Number(apt.montantPaye).toString()
+                        }
                         disabled={isReader}
-                        onChange={(e) => handlePaye(apt, e.target.value)}
+                        onFocus={(e) => {
+                          setEditingPaye({
+                            id: apt.id.toString(),
+                            val: Number(apt.montantPaye).toString(),
+                          });
+                          e.currentTarget.select();
+                        }}
+                        onChange={(e) => {
+                          setEditingPaye({
+                            id: apt.id.toString(),
+                            val: e.target.value,
+                          });
+                        }}
+                        onBlur={(e) => {
+                          handlePaye(apt, e.target.value);
+                          setEditingPaye(null);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handlePaye(apt, e.currentTarget.value);
+                            setEditingPaye(null);
                             e.currentTarget.blur();
                           }
+                        }}
+                        onFocusCapture={(e) => {
+                          e.currentTarget.style.outline = "1px solid #3b82f6";
+                        }}
+                        onBlurCapture={(e) => {
+                          e.currentTarget.style.outline = "none";
                         }}
                         style={{
                           border: "none",
                           background: "transparent",
-                          width: 52,
+                          width: 40,
                           height: ROW_H,
                           padding: "0 2px",
                           fontFamily: "Verdana, sans-serif",
                           fontSize: 12,
                           textAlign: "right",
                           outline: "none",
+                          cursor: "text",
                         }}
                       />
                     )}

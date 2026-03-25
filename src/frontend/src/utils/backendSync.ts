@@ -44,6 +44,12 @@ export async function syncFromBackend(actor: backendInterface): Promise<void> {
     if (data.nextId !== undefined) {
       localStorage.setItem(NEXT_ID_KEY, String(data.nextId));
     }
+    if (data.paymentDates !== undefined) {
+      localStorage.setItem(
+        "weekly_payment_dates",
+        JSON.stringify(data.paymentDates),
+      );
+    }
   } catch (e) {
     console.warn("syncFromBackend failed:", e);
   }
@@ -59,7 +65,14 @@ export async function syncToBackend(actor: backendInterface): Promise<void> {
     const appointments = JSON.parse(appointmentsRaw);
     const clients = JSON.parse(clientsRaw);
 
-    const data = { appointments, clients, nextId };
+    const paymentDatesRaw =
+      localStorage.getItem("weekly_payment_dates") || "[]";
+    const data = {
+      appointments,
+      clients,
+      nextId,
+      paymentDates: JSON.parse(paymentDatesRaw),
+    };
     await actor.setSharedData(JSON.stringify(data));
   } catch (e) {
     console.warn("syncToBackend failed:", e);

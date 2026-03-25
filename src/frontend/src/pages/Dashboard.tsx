@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMemo, useState } from "react";
-import ComptaMoisCalendarTable from "../components/ComptaMoisCalendarTable";
+import { useMemo } from "react";
 import MonthlyListingTable from "../components/MonthlyListingTable";
 import MonthlySummarySection from "../components/MonthlySummarySection";
 import {
@@ -36,10 +35,8 @@ function formatNum(amount: bigint): string {
 
 export default function Dashboard() {
   const currentDate = new Date();
-  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(
-    currentDate.getMonth() + 1,
-  );
+  const selectedYear = currentDate.getFullYear();
+  const selectedMonth = currentDate.getMonth() + 1;
 
   const { data: allAppointments = [] } = useGetAllAppointments();
   const { data: monthlyListingData } = useGetMonthlyListing(
@@ -49,11 +46,6 @@ export default function Dashboard() {
 
   const listings = monthlyListingData?.[0] ?? [];
   const totals = monthlyListingData?.[1] ?? null;
-
-  const handleMonthChange = (year: number, month: number) => {
-    setSelectedYear(year);
-    setSelectedMonth(month);
-  };
 
   // Monthly revenues for the entire year (used by MonthlySummarySection and annual stats)
   const monthlyRevenues = useMemo(() => {
@@ -413,22 +405,6 @@ export default function Dashboard() {
                 allAppointments={allAppointments}
                 year={selectedYear}
                 month={selectedMonth}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── FRAME I — Calendrier mensuel ── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="frame-title">Calendrier mensuel</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 md:p-6">
-            <div className="table-scroll-wrapper">
-              <ComptaMoisCalendarTable
-                year={selectedYear}
-                month={selectedMonth}
-                onMonthChange={handleMonthChange}
               />
             </div>
           </CardContent>

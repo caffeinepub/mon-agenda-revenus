@@ -1,28 +1,30 @@
-# Mon Agenda Revenus
+# Mon Agenda Revenus — Version 182
 
 ## Current State
-- MonthlyCalendarPage: colonnes 100px, légende avec texte 'Signification des couleurs :', pas de bordure arrondie sur le tableau, aligné à gauche
-- WeeklyCalendarPage: Nom=110px, Dû=51px, Payé=52px, Date=52px; SummaryBox bug sur desktop (textes se chevauchent quand sub-label présent)
-- DailyCalendarPage: Nom=100px, Dû=47px, Payé=52px, Date=44px; en-tête colonnes gris clair #f3f4f6
-- ClientFicheModal (dans les 3 pages): colonne 'Date Pmt' dans le tableau RDV, pas de colonne 'Crédit'
+Application React/TypeScript avec backend Motoko. Pages principales : Tableau de bord, Calendrier Semaine (WeeklyCalendarPage), Calendrier Journalier (DailyCalendarPage), Calendrier Mensuel (MonthlyCalendarPage), Base Client, Rapport PDF, Utilisateurs. La synchronisation backend Motoko est en place mais les dates de paiement (weekly_payment_dates) ne sont pas incluses. Le Tableau de bord contient le ComptaMoisCalendarTable.
 
 ## Requested Changes (Diff)
 
 ### Add
-- MonthlyCalendarPage: bordure arrondie (border-radius 8px, border 1px solid #d1d5db) autour du tableau entier; centrage du tableau dans la page
-- ClientFicheModal (3 pages): colonne 'Crédit' dans le tableau Rendez-vous (montantPaye - montantDu si fait, sinon montantPaye)
+- Filtrage par jour de la semaine dans les opérations "futursDuClient" (update + delete)
+- Menu contextuel dans MonthlyCalendarPage au clic sur un nom (Modifier ce RDV / Modifier tous les futurs / Supprimer ce RDV / Voir la fiche client)
+- Surbrillance jaune pâle sur la case du jour actuel dans WeeklyCalendarPage
 
 ### Modify
-- MonthlyCalendarPage: COL_W 100→87px; supprimer le span 'Signification des couleurs :' (garder les swatches); uniformiser la couleur des séparateurs de colonnes (#d1d5db partout)
-- WeeklyCalendarPage DAY_COLS: nom 110→88, dû 51→44, payé 52→44, date 52→44; mettre à jour toutes les références hardcodées à ces largeurs dans DayBox render; corriger le SummaryBox (rendre chaque ligne height:auto, padding suffisant pour éviter overflow du texte)
-- DailyCalendarPage COLS: nom 100→88, dû 47→44, payé 52→44; en-tête colonnes en bleu pâle #dbeafe; mettre à jour toutes les références hardcodées à ces largeurs dans le render
-- ClientFicheModal (3 pages): renommer 'Date Pmt' → 'Date' dans l'en-tête du tableau RDV
+- `backendSync.ts` : inclure `weekly_payment_dates` dans syncToBackend/syncFromBackend
+- `localDataStore.ts` : ajouter filtre weekday dans updateAppointment et deleteAppointment pour mode futursDuClient
+- `WeeklyCalendarPage.tsx` : corriger champ Payé (width, curseur visible, pas de zéro auto), jour actuel en jaune
+- `DailyCalendarPage.tsx` : corriger champ Payé (même corrections)
+- `MonthlyCalendarPage.tsx` : remplacer clic direct fiche client par menu contextuel avec AppointmentDialog
+- `Dashboard.tsx` : supprimer le bloc ComptaMoisCalendarTable (Frame I)
 
 ### Remove
-- Rien
+- Import et rendu de `ComptaMoisCalendarTable` dans `Dashboard.tsx`
 
 ## Implementation Plan
-1. MonthlyCalendarPage: COL_W=87, retirer le span 'Signification des couleurs :', entourer le tableau d'un div avec border 1px solid #d1d5db + borderRadius 8 + overflow hidden, centrer avec justifyContent center, uniformiser borderRight à #d1d5db dans tous les th/td
-2. WeeklyCalendarPage: mettre à jour DAY_COLS et toutes les valeurs hardcodées (88, 44, 44, 44), corriger SummaryBox (height auto, minHeight 16px, padding 2px)
-3. DailyCalendarPage: mettre à jour COLS et toutes les valeurs hardcodées (88, 44, 44), header background #dbeafe
-4. ClientFicheModal dans les 3 fichiers: headers ['Date', 'Heure', 'Dû', 'Payé', 'Date', 'Note', 'Crédit', 'Fait'], ajouter cellule Crédit = montantPaye - (fait ? montantDu : 0)
+1. `backendSync.ts` — ajouter `weekly_payment_dates` dans les fonctions sync
+2. `localDataStore.ts` — dans `updateAppointment` et `deleteAppointment`, pour `futursDuClient`, ajouter condition `getDay() === targetDay` sur la date
+3. `WeeklyCalendarPage.tsx` — champ Payé: utiliser état local + onFocus sélectionne tout, width correct, outline visible au focus; case du jour actuel: fond jaune pâle `#fef9c3` sur le header du DayBox
+4. `DailyCalendarPage.tsx` — même corrections pour le champ Payé
+5. `MonthlyCalendarPage.tsx` — ajouter imports AppointmentDialog/DemandeEdition, état contextMenu, menu 4 options, fonctions onDelete/onOpenEdit
+6. `Dashboard.tsx` — supprimer le Card "Calendrier mensuel" (Frame I) et les imports/usages liés
