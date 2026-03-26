@@ -82,6 +82,19 @@ export default function UserManagementPage() {
   const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importLoading, setImportLoading] = useState(false);
+  const [useOrangeFont, setUseOrangeFontState] = useState<boolean>(
+    () => localStorage.getItem("agenda_orange_font") === "true",
+  );
+
+  const setUseOrangeFont = (val: boolean) => {
+    setUseOrangeFontState(val);
+    localStorage.setItem("agenda_orange_font", val ? "true" : "false");
+    if (val) {
+      document.documentElement.classList.add("orange-font");
+    } else {
+      document.documentElement.classList.remove("orange-font");
+    }
+  };
 
   // Reset dialog state
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -964,6 +977,49 @@ export default function UserManagementPage() {
             />
             🌙 Mode Sombre
           </label>
+        </div>
+        {/* Police orangée */}
+        <div
+          style={{
+            marginTop: 14,
+            borderTop: "1px solid #c5cae9",
+            paddingTop: 12,
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontFamily: "Verdana, sans-serif",
+              fontSize: 11,
+              color: "#333",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={useOrangeFont}
+              onChange={(e) => setUseOrangeFont(e.target.checked)}
+              data-ocid="users.orange_font.checkbox"
+              style={{ width: 16, height: 16, cursor: "pointer" }}
+            />
+            🟠 Police orangée en mode sombre (rgb(226, 107, 10))
+          </label>
+          <div
+            style={{
+              fontSize: 10,
+              color: "#666",
+              marginTop: 6,
+              fontFamily: "Verdana, sans-serif",
+              lineHeight: 1.5,
+              paddingLeft: 24,
+            }}
+          >
+            Quand cette option est activée, la couleur de toute la police
+            devient orangée pour une meilleure lisibilité en mode sombre.
+            Désélectionnez pour revenir à la couleur d'origine.
+          </div>
         </div>
       </div>
 

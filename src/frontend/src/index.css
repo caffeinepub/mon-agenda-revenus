@@ -305,3 +305,10 @@
   -webkit-overflow-scrolling: touch;
   max-width: 100%;
 }
+
+/* ─── Police orangée - option mode sombre ──────────────────────────────────── */
+/* Activé via la case à cocher dans la page Utilisateurs */
+.orange-font,
+.orange-font * {
+  color: rgb(226, 107, 10) !important;
+}

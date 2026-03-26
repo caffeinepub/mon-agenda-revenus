@@ -56,6 +56,7 @@ import { photoToUrl } from "../utils/imageCrop";
 const AGENDA_CLIENT_EXTRA_FIELDS_KEY = "agenda_client_extra_fields";
 
 interface ClientExtraFields {
+  prenom: string;
   courriel1: string;
   courriel2: string;
   dateNaissance: string;
@@ -64,6 +65,7 @@ interface ClientExtraFields {
 }
 
 const emptyExtraFields = (): ClientExtraFields => ({
+  prenom: "",
   courriel1: "",
   courriel2: "",
   dateNaissance: "",
@@ -697,6 +699,23 @@ export default function ClientDatabasePage() {
             </p>
             <p className="table-data">{ficheClient.clientName}</p>
           </div>
+          {(() => {
+            const extras = loadExtraFields(ficheClient.referenceClient);
+            return extras.prenom ? (
+              <div>
+                <p
+                  className="table-header font-bold"
+                  style={{
+                    fontFamily: "Verdana, sans-serif",
+                    fontSize: "12px",
+                  }}
+                >
+                  Prénom
+                </p>
+                <p className="table-data">{extras.prenom}</p>
+              </div>
+            ) : null;
+          })()}
           <div>
             <p
               className="table-header font-bold"
@@ -1258,6 +1277,25 @@ export default function ClientDatabasePage() {
               required
               className="table-data"
               data-ocid="client.form_name.input"
+            />
+          </div>
+
+          <div>
+            <Label
+              htmlFor="addPrenom"
+              style={{ fontFamily: "Verdana, sans-serif", fontSize: 12 }}
+            >
+              Prénom (optionnel)
+            </Label>
+            <Input
+              id="addPrenom"
+              value={extraFields.prenom}
+              onChange={(e) =>
+                setExtraFields({ ...extraFields, prenom: e.target.value })
+              }
+              placeholder="Prénom du client"
+              style={{ fontFamily: "Verdana, sans-serif", fontSize: 12 }}
+              data-ocid="client.form_prenom.input"
             />
           </div>
 

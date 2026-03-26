@@ -122,6 +122,7 @@ interface DayBoxProps {
   onPaymentDateChange: (aptId: string, val: string) => void;
   onOpenEdit: (apt: RendezVous, mode: "unique" | "futurs") => void;
   onDelete: (apt: RendezVous) => void;
+  onDeleteAllFuture: (apt: RendezVous) => void;
   onViewClient: (referenceClient: string, clientName: string) => void;
 }
 
@@ -133,6 +134,7 @@ function DayBox({
   onPaymentDateChange,
   onOpenEdit,
   onDelete,
+  onDeleteAllFuture,
   onViewClient,
 }: DayBoxProps) {
   const updateStatus = useUpdateAppointmentStatus();
@@ -562,6 +564,20 @@ function DayBox({
               danger: true,
             },
             {
+              label: "Supprimer tous les RDV futurs",
+              action: () => {
+                if (
+                  window.confirm(
+                    `Supprimer TOUS les RDV futurs de ${contextMenu.apt.nomClient} ?`,
+                  )
+                ) {
+                  onDeleteAllFuture(contextMenu.apt);
+                }
+                setContextMenu(null);
+              },
+              danger: true,
+            },
+            {
               label: "Voir la fiche client",
               action: () => {
                 onViewClient(
@@ -833,7 +849,8 @@ function ClientFicheModal({
   const startOfYear =
     BigInt(new Date(currentYear, 0, 1).getTime()) * BigInt(1_000_000);
 
-  const clientApts = allApts
+  // Sort ascending for cumulative credit computation
+  const clientAptsAscending = allApts
     .filter(
       (apt) =>
         apt.referenceClient === referenceClient &&
@@ -842,11 +859,28 @@ function ClientFicheModal({
     )
     .sort((a, b) => Number(a.dateHeure) - Number(b.dateHeure));
 
-  const totalPaye = clientApts.reduce((s, a) => s + Number(a.montantPaye), 0);
-  const totalDu = clientApts
+  // Compute cumulative credits: credit_i = credit_{i-1} + paid_i - due_i
+  let runningCredit = 0;
+  const aptsWithCredit = clientAptsAscending.map((apt) => {
+    runningCredit =
+      runningCredit + Number(apt.montantPaye) - Number(apt.montantDu);
+    return { apt, credit: runningCredit };
+  });
+
+  // Display newest first
+  const clientApts = [...aptsWithCredit].reverse();
+  // Total credit = most recent running credit
+  const totalCredit =
+    aptsWithCredit.length > 0
+      ? aptsWithCredit[aptsWithCredit.length - 1].credit
+      : 0;
+  const totalPaye = clientAptsAscending.reduce(
+    (s, a) => s + Number(a.montantPaye),
+    0,
+  );
+  const totalDu = clientAptsAscending
     .filter((a) => a.fait)
     .reduce((s, a) => s + Number(a.montantDu), 0);
-  const totalCredit = totalPaye - totalDu;
 
   const paymentDatesRaw = (() => {
     try {
@@ -950,7 +984,7 @@ function ClientFicheModal({
           >
             <span>Nb RDV faits</span>
             <span style={{ textAlign: "right", fontWeight: "bold" }}>
-              {clientApts.filter((a) => a.fait).length}
+              {clientAptsAscending.filter((a) => a.fait).length}
             </span>
             <span>Total payé</span>
             <span
@@ -1021,7 +1055,29 @@ function ClientFicheModal({
             </tr>
           </thead>
           <tbody>
-            {clientApts.map((apt, idx) => {
+            <tr style={{ background: "#e8e8e8" }}>
+              <td style={{ padding: "2px 4px", border: "1px solid #ddd" }} />
+              <td style={{ padding: "2px 4px", border: "1px solid #ddd" }} />
+              <td style={{ padding: "2px 4px", border: "1px solid #ddd" }} />
+              <td style={{ padding: "2px 4px", border: "1px solid #ddd" }} />
+              <td style={{ padding: "2px 4px", border: "1px solid #ddd" }} />
+              <td style={{ padding: "2px 4px", border: "1px solid #ddd" }} />
+              <td
+                style={{
+                  padding: "2px 4px",
+                  textAlign: "right",
+                  border: "1px solid #ddd",
+                  fontWeight: "bold",
+                  color: totalCredit >= 0 ? "#27ae60" : "#c0392b",
+                }}
+              >
+                {totalCredit.toLocaleString("fr-FR")}
+              </td>
+              <td style={{ padding: "2px 4px", border: "1px solid #ddd" }} />
+            </tr>
+          </tbody>
+          <tbody>
+            {clientApts.map(({ apt, credit }, idx) => {
               const d = new Date(Number(apt.dateHeure) / 1_000_000);
               const dateStr = d.toLocaleDateString("fr-FR", {
                 day: "2-digit",
@@ -1066,18 +1122,10 @@ function ClientFicheModal({
                       padding: "2px 4px",
                       textAlign: "right",
                       border: "1px solid #ddd",
-                      color:
-                        Number(apt.montantPaye) -
-                          (apt.fait ? Number(apt.montantDu) : 0) >=
-                        0
-                          ? "#27ae60"
-                          : "#c0392b",
+                      color: credit >= 0 ? "#27ae60" : "#c0392b",
                     }}
                   >
-                    {(
-                      Number(apt.montantPaye) -
-                      (apt.fait ? Number(apt.montantDu) : 0)
-                    ).toLocaleString("fr-FR")}
+                    {credit.toLocaleString("fr-FR")}
                   </td>
                   <td
                     style={{
@@ -1150,6 +1198,13 @@ export default function WeeklyCalendarPage() {
     (apt: RendezVous) => {
       if (!window.confirm(`Supprimer le RDV de ${apt.nomClient} ?`)) return;
       deleteApt.mutate({ id: apt.id, mode: DemandeEdition.unique });
+    },
+    [deleteApt],
+  );
+
+  const handleDeleteAllFuture = useCallback(
+    (apt: RendezVous) => {
+      deleteApt.mutate({ id: apt.id, mode: DemandeEdition.futursDuClient });
     },
     [deleteApt],
   );
@@ -1252,6 +1307,7 @@ export default function WeeklyCalendarPage() {
             onPaymentDateChange={handlePaymentDateChange}
             onOpenEdit={handleOpenEdit}
             onDelete={handleDelete}
+            onDeleteAllFuture={handleDeleteAllFuture}
             onViewClient={handleViewClient}
           />
         ))}

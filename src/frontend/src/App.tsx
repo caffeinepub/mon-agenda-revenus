@@ -89,6 +89,24 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({ routeTree });
 
+// Apply orange font on startup based on localStorage setting
+function OrangeFontInitializer() {
+  useEffect(() => {
+    const applyOrangeFont = () => {
+      if (localStorage.getItem("agenda_orange_font") === "true") {
+        document.documentElement.classList.add("orange-font");
+      } else {
+        document.documentElement.classList.remove("orange-font");
+      }
+    };
+    applyOrangeFont();
+    // React to storage changes from other tabs
+    window.addEventListener("storage", applyOrangeFont);
+    return () => window.removeEventListener("storage", applyOrangeFont);
+  }, []);
+  return null;
+}
+
 function BackendSyncProvider({ children }: { children: React.ReactNode }) {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -186,6 +204,7 @@ function AppWithLocalAuth() {
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <OrangeFontInitializer />
       <LocalAuthProvider>
         <AppWithLocalAuth />
       </LocalAuthProvider>

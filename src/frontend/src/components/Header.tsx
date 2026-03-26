@@ -70,9 +70,16 @@ export default function Header({ userName: _userName }: HeaderProps) {
       await syncToBackend(actor);
       toast.success("Données sauvegardées sur le serveur avec succès");
     } catch {
-      toast.error(
-        "Erreur lors de la sauvegarde. Les données sont conservées en local.",
-      );
+      // Retry once after 3 seconds
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await syncToBackend(actor);
+        toast.success("Données sauvegardées sur le serveur avec succès");
+      } catch {
+        toast.error(
+          "Erreur lors de la sauvegarde. Réessayez dans quelques minutes. Les données sont conservées en local.",
+        );
+      }
     } finally {
       setIsSaving(false);
     }

@@ -35,6 +35,13 @@ export async function syncFromBackend(actor: backendInterface): Promise<void> {
     }
     if (!jsonStr || jsonStr === "{}" || jsonStr === "") return;
     const data = JSON.parse(jsonStr);
+
+    // Only load from backend if data was explicitly saved (has lastSaved timestamp)
+    // This prevents overwriting local data with the default empty backend state
+    if (!data.lastSaved) {
+      return;
+    }
+
     if (data.appointments !== undefined) {
       localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(data.appointments));
     }
@@ -56,33 +63,38 @@ export async function syncFromBackend(actor: backendInterface): Promise<void> {
 }
 
 // ── Save localStorage data to backend canister ────────────────────────────────
+// NOTE: This function intentionally does NOT catch errors.
+// Callers (e.g. manual save button) should handle errors to show proper messages.
 export async function syncToBackend(actor: backendInterface): Promise<void> {
-  try {
-    const appointmentsRaw = localStorage.getItem(APPOINTMENTS_KEY) || "[]";
-    const clientsRaw = localStorage.getItem(CLIENTS_KEY) || "[]";
-    const nextId = localStorage.getItem(NEXT_ID_KEY) || "1";
+  const appointmentsRaw = localStorage.getItem(APPOINTMENTS_KEY) || "[]";
+  const clientsRaw = localStorage.getItem(CLIENTS_KEY) || "[]";
+  const nextId = localStorage.getItem(NEXT_ID_KEY) || "1";
 
-    const appointments = JSON.parse(appointmentsRaw);
-    const clients = JSON.parse(clientsRaw);
+  const appointments = JSON.parse(appointmentsRaw);
+  const clients = JSON.parse(clientsRaw);
 
-    const paymentDatesRaw =
-      localStorage.getItem("weekly_payment_dates") || "[]";
-    const data = {
-      appointments,
-      clients,
-      nextId,
-      paymentDates: JSON.parse(paymentDatesRaw),
-    };
-    await actor.setSharedData(JSON.stringify(data));
-  } catch (e) {
-    console.warn("syncToBackend failed:", e);
-  }
+  const paymentDatesRaw = localStorage.getItem("weekly_payment_dates") || "[]";
+  const data = {
+    appointments,
+    clients,
+    nextId,
+    paymentDates: JSON.parse(paymentDatesRaw),
+    lastSaved: new Date().toISOString(),
+  };
+  await actor.setSharedData(JSON.stringify(data));
 }
 
 // ── Fire-and-forget sync (used after mutations) ───────────────────────────────
 export function syncToBackendBackground(): void {
   if (_currentActor) {
-    syncToBackend(_currentActor).catch(() => {});
+    syncToBackend(_currentActor).catch(() => {
+      // retry once after 3 seconds
+      setTimeout(() => {
+        if (_currentActor) {
+          syncToBackend(_currentActor).catch(() => {});
+        }
+      }, 3000);
+    });
   }
 }
 
@@ -97,7 +109,12 @@ export async function clearAllData(): Promise<void> {
   if (_currentActor) {
     try {
       await _currentActor.setSharedData(
-        JSON.stringify({ appointments: [], clients: [], nextId: "1" }),
+        JSON.stringify({
+          appointments: [],
+          clients: [],
+          nextId: "1",
+          lastSaved: new Date().toISOString(),
+        }),
       );
     } catch (e) {
       console.warn("clearAllData backend failed:", e);
@@ -140,7 +157,7 @@ export function getExportJson(): string {
       users,
       bypass,
       exportedAt: new Date().toISOString(),
-      version: "170",
+      version: "184",
     },
     null,
     2,
