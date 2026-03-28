@@ -4,6 +4,7 @@
  * This enables data sharing across multiple computers.
  */
 import type { backendInterface } from "../backend";
+import { createActorWithConfig } from "../config";
 
 const APPOINTMENTS_KEY = "agenda_appointments_v2";
 const CLIENTS_KEY = "agenda_client_records_v2";
@@ -13,6 +14,14 @@ const BYPASS_KEY = "agenda_bypass_login";
 
 // ── Module-level actor reference for background sync ─────────────────────────
 let _currentActor: backendInterface | null = null;
+let _anonymousActor: backendInterface | null = null;
+
+async function getAnonymousActor(): Promise<backendInterface> {
+  if (!_anonymousActor) {
+    _anonymousActor = await createActorWithConfig();
+  }
+  return _anonymousActor;
+}
 
 export function setCurrentActor(actor: backendInterface | null) {
   _currentActor = actor;
@@ -57,8 +66,14 @@ export async function syncFromBackend(actor: backendInterface): Promise<void> {
         JSON.stringify(data.paymentDates),
       );
     }
-  } catch (e) {
-    console.warn("syncFromBackend failed:", e);
+    if (data.clientExtraFields !== undefined) {
+      localStorage.setItem(
+        "agenda_client_extra_fields",
+        JSON.stringify(data.clientExtraFields),
+      );
+    }
+  } catch (_e) {
+    console.warn("syncFromBackend failed:", _e);
   }
 }
 
@@ -74,14 +89,23 @@ export async function syncToBackend(actor: backendInterface): Promise<void> {
   const clients = JSON.parse(clientsRaw);
 
   const paymentDatesRaw = localStorage.getItem("weekly_payment_dates") || "[]";
+  const clientExtraFieldsRaw =
+    localStorage.getItem("agenda_client_extra_fields") || "{}";
   const data = {
     appointments,
     clients,
     nextId,
     paymentDates: JSON.parse(paymentDatesRaw),
+    clientExtraFields: JSON.parse(clientExtraFieldsRaw),
     lastSaved: new Date().toISOString(),
   };
-  await actor.setSharedData(JSON.stringify(data));
+  try {
+    await actor.setSharedData(JSON.stringify(data));
+  } catch (_e) {
+    // Try with a fresh anonymous actor as fallback
+    const anonActor = await getAnonymousActor();
+    await anonActor.setSharedData(JSON.stringify(data));
+  }
 }
 
 // ── Fire-and-forget sync (used after mutations) ───────────────────────────────
@@ -116,8 +140,8 @@ export async function clearAllData(): Promise<void> {
           lastSaved: new Date().toISOString(),
         }),
       );
-    } catch (e) {
-      console.warn("clearAllData backend failed:", e);
+    } catch (_e) {
+      console.warn("clearAllData backend failed:", _e);
     }
   }
 }
@@ -157,7 +181,7 @@ export function getExportJson(): string {
       users,
       bypass,
       exportedAt: new Date().toISOString(),
-      version: "184",
+      version: "186",
     },
     null,
     2,

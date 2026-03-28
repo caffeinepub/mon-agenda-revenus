@@ -125,7 +125,7 @@ export default function MonthlyListingTable({
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-muted/50">
             <TableHead className="table-header">Réf</TableHead>
             <TableHead className="table-header">Nom</TableHead>
             <TableHead className="text-right table-header">Nbr</TableHead>

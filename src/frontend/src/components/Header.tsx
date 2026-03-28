@@ -62,23 +62,27 @@ export default function Header({ userName: _userName }: HeaderProps) {
 
   const handleManualSave = async () => {
     if (!actor) {
-      toast.error("Connexion au serveur non disponible");
+      toast.error("Connexion au serveur non disponible. Rechargez la page.");
       return;
     }
     setIsSaving(true);
     try {
       await syncToBackend(actor);
       toast.success("Données sauvegardées sur le serveur avec succès");
-    } catch {
+    } catch (err1) {
       // Retry once after 3 seconds
       try {
         await new Promise((resolve) => setTimeout(resolve, 3000));
         await syncToBackend(actor);
         toast.success("Données sauvegardées sur le serveur avec succès");
-      } catch {
+      } catch (err2) {
+        const msg = err2 instanceof Error ? err2.message : String(err2);
+        const shortMsg = msg.length > 300 ? `${msg.slice(0, 300)}…` : msg;
         toast.error(
-          "Erreur lors de la sauvegarde. Réessayez dans quelques minutes. Les données sont conservées en local.",
+          `Erreur lors de la sauvegarde. Les données sont conservées en local. Détail : ${shortMsg}`,
+          { duration: 8000 },
         );
+        console.error("Manuel save error:", err1, err2);
       }
     } finally {
       setIsSaving(false);
@@ -94,7 +98,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
@@ -104,9 +108,6 @@ export default function Header({ userName: _userName }: HeaderProps) {
               <h1 className="text-xl font-bold text-foreground">
                 Mon Agenda Revenus
               </h1>
-              <p className="text-xs text-muted-foreground">
-                Gestion de rendez-vous
-              </p>
             </div>
           </div>
 

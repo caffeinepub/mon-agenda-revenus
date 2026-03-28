@@ -125,7 +125,9 @@ function ClientFicheModal({
   let runningCredit = 0;
   const aptsWithCredit = clientAptsAscending.map((apt) => {
     runningCredit =
-      runningCredit + Number(apt.montantPaye) - Number(apt.montantDu);
+      runningCredit +
+      Number(apt.montantPaye) -
+      (apt.annule ? 0 : Number(apt.montantDu));
     return { apt, credit: runningCredit };
   });
 
@@ -141,7 +143,7 @@ function ClientFicheModal({
     0,
   );
   const totalDu = clientAptsAscending
-    .filter((a) => a.fait)
+    .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantDu), 0);
 
   const paymentDatesRaw = (() => {
@@ -362,7 +364,9 @@ function ClientFicheModal({
                       border: "1px solid #ddd",
                     }}
                   >
-                    {Number(apt.montantDu).toLocaleString("fr-FR")}
+                    {apt.annule
+                      ? "0"
+                      : Number(apt.montantDu).toLocaleString("fr-FR")}
                   </td>
                   <td
                     style={{
@@ -415,6 +419,25 @@ export default function DailyCalendarPage() {
   const { session } = useLocalAuth();
   const isReader = session?.role === "reader";
   const [dayOffset, setDayOffset] = useState(0);
+  const [clientExtraFields, setClientExtraFields] = useState<
+    Record<string, { prenom?: string }>
+  >({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("agenda_client_extra_fields");
+      if (raw) setClientExtraFields(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const getDisplayName = useCallback(
+    (ref: string, name: string): string => {
+      const prenom = clientExtraFields[ref]?.prenom;
+      return prenom ? `${prenom}, ${name}` : name;
+    },
+    [clientExtraFields],
+  );
 
   const [paymentDates, setPaymentDates] = useState<Map<string, string>>(() => {
     try {
@@ -694,7 +717,14 @@ export default function DailyCalendarPage() {
               let nomContent: React.ReactNode = "";
               if (coverage) {
                 if (rowIdx === 0)
-                  nomContent = <span>{coverage.apt.nomClient}</span>;
+                  nomContent = (
+                    <span>
+                      {getDisplayName(
+                        coverage.apt.referenceClient,
+                        coverage.apt.nomClient,
+                      )}
+                    </span>
+                  );
                 else if (rowIdx === 1)
                   nomContent = (
                     <span style={{ color: "#6b7280", fontSize: 11 }}>
@@ -855,7 +885,9 @@ export default function DailyCalendarPage() {
                   {/* Dû */}
                   <div style={{ ...colStyle(44), textAlign: "right" }}>
                     {apt && rowIdx === 0
-                      ? Number(apt.montantDu).toString()
+                      ? apt.annule
+                        ? "0"
+                        : Number(apt.montantDu).toString()
                       : ""}
                   </div>
                   {/* Payé — width 44, no spinner arrows */}

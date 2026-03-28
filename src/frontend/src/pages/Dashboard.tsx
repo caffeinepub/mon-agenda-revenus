@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import MonthlyListingTable from "../components/MonthlyListingTable";
 import MonthlySummarySection from "../components/MonthlySummarySection";
 import {
@@ -35,8 +35,34 @@ function formatNum(amount: bigint): string {
 
 export default function Dashboard() {
   const currentDate = new Date();
-  const selectedYear = currentDate.getFullYear();
-  const selectedMonth = currentDate.getMonth() + 1;
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(
+    currentDate.getMonth() + 1,
+  );
+
+  const goToPrevMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear((y) => y - 1);
+    } else {
+      setSelectedMonth((m) => m - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear((y) => y + 1);
+    } else {
+      setSelectedMonth((m) => m + 1);
+    }
+  };
+
+  const goToToday = () => {
+    const now = new Date();
+    setSelectedYear(now.getFullYear());
+    setSelectedMonth(now.getMonth() + 1);
+  };
 
   const { data: allAppointments = [] } = useGetAllAppointments();
   const { data: monthlyListingData } = useGetMonthlyListing(
@@ -395,7 +421,44 @@ export default function Dashboard() {
         {/* ── FRAME H — Listing Mensuel (full width) ── */}
         <Card className="mb-6 w-full">
           <CardHeader>
-            <CardTitle className="frame-title">Listing Mensuel</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="frame-title">
+                Listing Mensuel — {MONTH_NAMES[selectedMonth - 1]}{" "}
+                {selectedYear}
+              </CardTitle>
+              <div className="flex items-center gap-1 ml-auto">
+                <button
+                  type="button"
+                  onClick={goToPrevMonth}
+                  className="p-1 rounded hover:bg-muted border border-border"
+                  title="Mois précédent"
+                >
+                  &#8249;
+                </button>
+                <span
+                  className="text-sm font-medium px-2"
+                  style={{ fontFamily: "Verdana, sans-serif" }}
+                >
+                  {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+                </span>
+                <button
+                  type="button"
+                  onClick={goToNextMonth}
+                  className="p-1 rounded hover:bg-muted border border-border"
+                  title="Mois suivant"
+                >
+                  &#8250;
+                </button>
+                <button
+                  type="button"
+                  onClick={goToToday}
+                  className="ml-2 px-2 py-1 text-xs rounded border border-border hover:bg-muted"
+                  style={{ fontFamily: "Verdana, sans-serif" }}
+                >
+                  Aujourd'hui
+                </button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0 md:p-6">
             <div className="table-scroll-wrapper">

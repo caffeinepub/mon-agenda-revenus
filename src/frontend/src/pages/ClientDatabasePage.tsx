@@ -128,8 +128,31 @@ export default function ClientDatabasePage() {
   const [clientToDelete, setClientToDelete] = useState<bigint | null>(null);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
+  // ── All extra fields for Prénom display ──
+  const [allExtraFields, setAllExtraFields] = useState<
+    Record<string, { prenom?: string }>
+  >(() => {
+    try {
+      const raw = localStorage.getItem(AGENDA_CLIENT_EXTRA_FIELDS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Reload allExtraFields when needed
+  const reloadAllExtraFields = () => {
+    try {
+      const raw = localStorage.getItem(AGENDA_CLIENT_EXTRA_FIELDS_KEY);
+      setAllExtraFields(raw ? JSON.parse(raw) : {});
+    } catch {
+      setAllExtraFields({});
+    }
+  };
+
   // ── Recherche ──
   const [searchName, setSearchName] = useState("");
+  const [searchPrenom, setSearchPrenom] = useState("");
   const [searchRef, setSearchRef] = useState("");
   const [searchPhone, setSearchPhone] = useState("");
   const [searchService, setSearchService] = useState("");
@@ -243,6 +266,7 @@ export default function ClientDatabasePage() {
           photo: formData.photo,
         });
         saveExtraFields(formData.referenceClient, extraFields);
+        reloadAllExtraFields();
         toast.success("Client modifié avec succès");
       } else {
         await addClient.mutateAsync({
@@ -255,6 +279,7 @@ export default function ClientDatabasePage() {
           photo: formData.photo,
         });
         saveExtraFields(formData.referenceClient, extraFields);
+        reloadAllExtraFields();
         toast.success("Client ajouté avec succès");
       }
       resetForm();
@@ -333,22 +358,28 @@ export default function ClientDatabasePage() {
   // ── Recherche multi-critères ──
   const handleSearch = () => {
     const name = searchName.trim().toLowerCase();
+    const prenom = searchPrenom.trim().toLowerCase();
     const ref = searchRef.trim().toLowerCase();
     const phone = searchPhone.trim().toLowerCase();
     const service = searchService.trim().toLowerCase();
 
-    if (!name && !ref && !phone && !service) {
+    if (!name && !prenom && !ref && !phone && !service) {
       toast.error("Veuillez saisir au moins un critère de recherche");
       return;
     }
 
     const results = clients.filter((c) => {
       const matchName = !name || c.clientName.toLowerCase().includes(name);
+      const matchPrenom =
+        !prenom ||
+        (allExtraFields[c.referenceClient]?.prenom || "")
+          .toLowerCase()
+          .includes(prenom);
       const matchRef = !ref || c.referenceClient.toLowerCase().includes(ref);
       const matchPhone = !phone || c.phoneNumber.toLowerCase().includes(phone);
       const matchService =
         !service || c.service.toLowerCase().includes(service);
-      return matchName && matchRef && matchPhone && matchService;
+      return matchName && matchPrenom && matchRef && matchPhone && matchService;
     });
 
     setSearchResults(results);
@@ -356,6 +387,7 @@ export default function ClientDatabasePage() {
 
   const handleResetSearch = () => {
     setSearchName("");
+    setSearchPrenom("");
     setSearchRef("");
     setSearchPhone("");
     setSearchService("");
@@ -1160,6 +1192,17 @@ export default function ClientDatabasePage() {
           />
         </div>
         <div>
+          <Label className="table-header">Prénom</Label>
+          <Input
+            value={searchPrenom}
+            onChange={(e) => setSearchPrenom(e.target.value)}
+            placeholder="Rechercher par prénom..."
+            className="table-data"
+            data-ocid="client.search_prenom.input"
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+        </div>
+        <div>
           <Label className="table-header">Référence</Label>
           <Input
             value={searchRef}
@@ -1700,7 +1743,14 @@ export default function ClientDatabasePage() {
                             )}
                           </TableCell>
                           <TableCell className="table-data">
-                            {client.clientName}
+                            {(() => {
+                              const ext =
+                                allExtraFields[client.referenceClient];
+                              const prenom = ext?.prenom?.trim();
+                              return prenom
+                                ? `${prenom}, ${client.clientName}`
+                                : client.clientName;
+                            })()}
                           </TableCell>
                           <TableCell className="table-data">
                             {client.referenceClient}

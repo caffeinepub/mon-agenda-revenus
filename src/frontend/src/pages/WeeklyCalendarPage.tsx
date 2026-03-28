@@ -11,6 +11,10 @@ import {
   useUpdateAppointmentStatus,
   useUpdateMontantPaye,
 } from "../hooks/useQueries";
+import {
+  calculateMonthlyListingRow,
+  calculateTotalRevenusFaitsEtPayes,
+} from "../utils/monthlyListing";
 
 const VERDANA: React.CSSProperties = {
   fontFamily: "Verdana, sans-serif",
@@ -137,6 +141,26 @@ function DayBox({
   onDeleteAllFuture,
   onViewClient,
 }: DayBoxProps) {
+  const [clientExtraFields, setClientExtraFields] = useState<
+    Record<string, { prenom?: string }>
+  >({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("agenda_client_extra_fields");
+      if (raw) setClientExtraFields(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const getDisplayName = useCallback(
+    (ref: string, name: string): string => {
+      const prenom = clientExtraFields[ref]?.prenom;
+      return prenom ? `${prenom}, ${name}` : name;
+    },
+    [clientExtraFields],
+  );
+
   const updateStatus = useUpdateAppointmentStatus();
   const updatePaye = useUpdateMontantPaye();
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -332,7 +356,9 @@ function DayBox({
                   }
                   title={apt ? apt.nomClient : ""}
                 >
-                  {apt ? apt.nomClient : ""}
+                  {apt
+                    ? getDisplayName(apt.referenceClient, apt.nomClient)
+                    : ""}
                 </div>
                 {/* Réf */}
                 <div style={{ ...colStyle(51) }}>
@@ -392,7 +418,11 @@ function DayBox({
                 </div>
                 {/* Dû */}
                 <div style={{ ...colStyle(44), textAlign: "right" }}>
-                  {apt ? Number(apt.montantDu).toString() : ""}
+                  {apt
+                    ? apt.annule
+                      ? "0"
+                      : Number(apt.montantDu).toString()
+                    : ""}
                 </div>
                 {/* Payé — width 44, no spinner (type=text) */}
                 <div style={{ ...colStyle(44), padding: 0 }}>
@@ -656,22 +686,22 @@ function SummaryBox({
     const d = aptDate(a);
     return d >= monthStart && d <= monthEnd;
   });
-  const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year, 11, 31, 23, 59, 59);
-  const yearApts = allAppointments.filter((a) => {
-    const d = aptDate(a);
-    return d >= yearStart && d <= yearEnd;
-  });
-
   const totalSemaineFaitPaye = weekApts
     .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantPaye), 0);
   const totalSemaineFaitImpaye = weekApts
     .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantDu), 0);
-  const totalMensuelPaye = monthApts
-    .filter((a) => a.fait && !a.annule)
-    .reduce((s, a) => s + Number(a.montantPaye), 0);
+  const clientsInMonth = new Map<string, string>();
+  for (const a of monthApts) {
+    clientsInMonth.set(a.referenceClient, a.nomClient);
+  }
+  const monthlyRows = Array.from(clientsInMonth.entries()).map(([ref, nom]) =>
+    calculateMonthlyListingRow(ref, nom, allAppointments, year, month + 1),
+  );
+  const totalMensuelPaye = Number(
+    calculateTotalRevenusFaitsEtPayes(monthlyRows),
+  );
 
   const weeksWithRdv = new Set<string>();
   for (const a of monthApts) {
@@ -690,9 +720,22 @@ function SummaryBox({
     weeksWithRdv.size > 0
       ? Math.round(totalMensuelPaye / weeksWithRdv.size)
       : 0;
-  const totalAnneePaye = yearApts
-    .filter((a) => a.fait && !a.annule)
-    .reduce((s, a) => s + Number(a.montantPaye), 0);
+  // Calculate Total Année using same formula as Dashboard (sum of revenusFaitsEtPayes per month)
+  let totalAnneePaye = 0;
+  for (let m = 1; m <= 12; m++) {
+    const mStart = new Date(year, m - 1, 1);
+    const mEnd = new Date(year, m, 0, 23, 59, 59);
+    const mApts = allAppointments.filter((a) => {
+      const d = aptDate(a);
+      return d >= mStart && d <= mEnd;
+    });
+    const mClients = new Map<string, string>();
+    for (const a of mApts) mClients.set(a.referenceClient, a.nomClient);
+    const mRows = Array.from(mClients.entries()).map(([ref, nom]) =>
+      calculateMonthlyListingRow(ref, nom, allAppointments, year, m),
+    );
+    totalAnneePaye += Number(calculateTotalRevenusFaitsEtPayes(mRows));
+  }
   const totalDu = weekApts
     .filter(
       (a) => a.fait && !a.annule && Number(a.montantPaye) < Number(a.montantDu),
@@ -863,7 +906,9 @@ function ClientFicheModal({
   let runningCredit = 0;
   const aptsWithCredit = clientAptsAscending.map((apt) => {
     runningCredit =
-      runningCredit + Number(apt.montantPaye) - Number(apt.montantDu);
+      runningCredit +
+      Number(apt.montantPaye) -
+      (apt.annule ? 0 : Number(apt.montantDu));
     return { apt, credit: runningCredit };
   });
 
@@ -879,7 +924,7 @@ function ClientFicheModal({
     0,
   );
   const totalDu = clientAptsAscending
-    .filter((a) => a.fait)
+    .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantDu), 0);
 
   const paymentDatesRaw = (() => {
@@ -1100,7 +1145,9 @@ function ClientFicheModal({
                       border: "1px solid #ddd",
                     }}
                   >
-                    {Number(apt.montantDu).toLocaleString("fr-FR")}
+                    {apt.annule
+                      ? "0"
+                      : Number(apt.montantDu).toLocaleString("fr-FR")}
                   </td>
                   <td
                     style={{

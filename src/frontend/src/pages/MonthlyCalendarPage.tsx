@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
 import { DemandeEdition } from "../backend";
 import AppointmentDialog from "../components/AppointmentDialog";
@@ -383,6 +383,25 @@ export default function MonthlyCalendarPage() {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+  const [clientExtraFields, setClientExtraFields] = useState<
+    Record<string, { prenom?: string }>
+  >({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("agenda_client_extra_fields");
+      if (raw) setClientExtraFields(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const getDisplayName = useCallback(
+    (ref: string, name: string): string => {
+      const prenom = clientExtraFields[ref]?.prenom;
+      return prenom ? `${prenom}, ${name}` : name;
+    },
+    [clientExtraFields],
+  );
   const [ficheClient, setFicheClient] = useState<{
     ref: string;
     name: string;
@@ -766,7 +785,10 @@ export default function MonthlyCalendarPage() {
                                       textOverflow: "ellipsis",
                                     }}
                                   >
-                                    {apt.nomClient}
+                                    {getDisplayName(
+                                      apt.referenceClient,
+                                      apt.nomClient,
+                                    )}
                                   </span>
                                 ) : (
                                   ""
