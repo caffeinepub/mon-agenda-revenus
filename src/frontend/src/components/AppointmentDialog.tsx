@@ -92,6 +92,18 @@ export default function AppointmentDialog({
   const [clientSelectOpen, setClientSelectOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
+  const getClientDisplayName = (ref: string, name: string): string => {
+    try {
+      const raw = localStorage.getItem("agenda_client_extra_fields");
+      const fields: Record<string, { prenom?: string }> = raw
+        ? JSON.parse(raw)
+        : {};
+      const prenom = fields[ref]?.prenom;
+      return prenom ? `${prenom}, ${name}` : name;
+    } catch {
+      return name;
+    }
+  };
   const { data: clientRecords = [] } = useGetAllClientRecords();
   const addAppointment = useAddAppointment();
   const updateAppointment = useUpdateAppointment();
@@ -335,7 +347,7 @@ export default function AppointmentDialog({
                           (c) => c.id.toString() === selectedClientId,
                         );
                         return client
-                          ? `${client.clientName} (${client.referenceClient})`
+                          ? `${getClientDisplayName(client.referenceClient, client.clientName)} (${client.referenceClient})`
                           : "Sélectionner un client...";
                       })()
                     : "Sélectionner un client..."}
@@ -351,7 +363,7 @@ export default function AppointmentDialog({
                       {clientRecords.map((client) => (
                         <CommandItem
                           key={client.id.toString()}
-                          value={`${client.clientName} ${client.referenceClient}`}
+                          value={`${getClientDisplayName(client.referenceClient, client.clientName)} ${client.referenceClient}`}
                           onSelect={() =>
                             handleClientSelect(client.id.toString())
                           }
@@ -364,7 +376,11 @@ export default function AppointmentDialog({
                                 : "opacity-0",
                             )}
                           />
-                          {client.clientName} ({client.referenceClient})
+                          {getClientDisplayName(
+                            client.referenceClient,
+                            client.clientName,
+                          )}{" "}
+                          ({client.referenceClient})
                         </CommandItem>
                       ))}
                     </CommandGroup>

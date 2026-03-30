@@ -93,7 +93,9 @@ function ClientFicheModal({
   let runningCredit = 0;
   const aptsWithCredit = clientAptsAscending.map((apt) => {
     runningCredit =
-      runningCredit + Number(apt.montantPaye) - Number(apt.montantDu);
+      runningCredit +
+      Number(apt.montantPaye) -
+      (apt.annule ? 0 : Number(apt.montantDu));
     return { apt, credit: runningCredit };
   });
 
@@ -109,7 +111,7 @@ function ClientFicheModal({
     0,
   );
   const totalDu = clientAptsAscending
-    .filter((a) => a.fait)
+    .filter((a) => a.fait && !a.annule)
     .reduce((s, a) => s + Number(a.montantDu), 0);
 
   const paymentDatesRaw = (() => {
@@ -330,7 +332,9 @@ function ClientFicheModal({
                       border: "1px solid #ddd",
                     }}
                   >
-                    {Number(apt.montantDu).toLocaleString("fr-FR")}
+                    {apt.annule
+                      ? "0"
+                      : Number(apt.montantDu).toLocaleString("fr-FR")}
                   </td>
                   <td
                     style={{
