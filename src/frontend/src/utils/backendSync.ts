@@ -181,7 +181,7 @@ export function getExportJson(): string {
       users,
       bypass,
       exportedAt: new Date().toISOString(),
-      version: "186",
+      version: "195",
     },
     null,
     2,
@@ -369,4 +369,68 @@ export function restoreFromJson(jsonStr: string): {
   } catch {
     return { ok: false, error: "Fichier JSON invalide ou corrompu" };
   }
+}
+
+// ── Google Apps Script sync ───────────────────────────────────────────────────
+const GOOGLE_SCRIPT_URL_KEY = "agenda_google_script_url";
+
+export function getGoogleScriptUrl(): string {
+  return localStorage.getItem(GOOGLE_SCRIPT_URL_KEY) || "";
+}
+
+export function setGoogleScriptUrl(url: string): void {
+  localStorage.setItem(GOOGLE_SCRIPT_URL_KEY, url);
+}
+
+// POST data to Google Apps Script (no custom Content-Type to avoid CORS preflight)
+export async function syncToGoogle(): Promise<void> {
+  const url = getGoogleScriptUrl();
+  if (!url) throw new Error("URL Google Apps Script non configurée");
+  const secret = getGoogleSecret();
+  const exportData = JSON.parse(getExportJson());
+  const payload = { ...exportData, _secret: secret };
+  const response = await fetch(url, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
+}
+
+// GET data from Google Apps Script and restore to localStorage
+export async function syncFromGoogle(): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const url = getGoogleScriptUrl();
+  if (!url) return { ok: false, error: "URL non configurée" };
+  try {
+    const secret = getGoogleSecret();
+    const fetchUrl = secret ? `${url}?key=${encodeURIComponent(secret)}` : url;
+    const response = await fetch(fetchUrl);
+    if (!response.ok)
+      return { ok: false, error: `Erreur HTTP ${response.status}` };
+    const json = await response.text();
+    if (!json || json === "{}" || json === "")
+      return { ok: false, error: "Aucune donnée trouvée" };
+    try {
+      const parsed = JSON.parse(json);
+      const { _secret: _removed, ...cleanData } = parsed;
+      return restoreFromJson(JSON.stringify(cleanData));
+    } catch {
+      return restoreFromJson(json);
+    }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// Google sync secret key
+const GOOGLE_SECRET_KEY = "agenda_google_secret";
+
+export function getGoogleSecret(): string {
+  return localStorage.getItem(GOOGLE_SECRET_KEY) || "";
+}
+
+export function setGoogleSecret(secret: string): void {
+  localStorage.setItem(GOOGLE_SECRET_KEY, secret);
 }

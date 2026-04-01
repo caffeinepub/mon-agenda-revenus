@@ -13,10 +13,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Cloud,
   Download,
   Edit,
   Eye,
   EyeOff,
+  Loader2,
   Plus,
   Save,
   ShieldCheck,
@@ -31,13 +33,17 @@ import { useTheme } from "next-themes";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { type UserRole, useLocalAuth } from "../context/LocalAuthContext";
-import { useActor } from "../hooks/useActor";
 import {
   clearAllData,
   downloadExportCsv,
   getExportJson,
+  getGoogleScriptUrl,
+  getGoogleSecret,
   restoreFromJson,
-  syncToBackend,
+  setGoogleScriptUrl,
+  setGoogleSecret,
+  syncFromGoogle,
+  syncToGoogle,
 } from "../utils/backendSync";
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -67,6 +73,471 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
     "Lecture seule. Peut consulter les rendez-vous et la comptabilité. Aucune modification possible",
 };
 
+const GOOGLE_APPS_SCRIPT_CODE = `// ============================================================
+// IMPORTANT : Remplacez MON_MOT_DE_PASSE_SECRET par votre mot de passe
+// Ce mot de passe doit correspondre à celui configuré dans l'application
+// ============================================================
+var SECRET_KEY = 'MON_MOT_DE_PASSE_SECRET';
+
+function doGet(e) {
+  // Vérification du mot de passe
+  var key = e && e.parameter ? e.parameter.key : '';
+  if (SECRET_KEY !== '' && key !== SECRET_KEY) {
+    return ContentService.createTextOutput(
+      JSON.stringify({error: 'Accès refusé - mot de passe incorrect'})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+  var fileName = 'agenda-revenus-data.json';
+  var files = DriveApp.getFilesByName(fileName);
+  var content = '{}';
+  if (files.hasNext()) {
+    content = files.next().getBlob().getDataAsString();
+  }
+  return ContentService.createTextOutput(content)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  // Vérification du mot de passe
+  var data = e.postData.contents;
+  var payload = JSON.parse(data);
+  if (SECRET_KEY !== '' && payload._secret !== SECRET_KEY) {
+    return ContentService.createTextOutput(
+      JSON.stringify({error: 'Accès refusé - mot de passe incorrect'})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+  delete payload._secret;
+  var fileName = 'agenda-revenus-data.json';
+  var files = DriveApp.getFilesByName(fileName);
+  var fileContent = JSON.stringify(payload);
+  if (files.hasNext()) {
+    files.next().setContent(fileContent);
+  } else {
+    DriveApp.createFile(fileName, fileContent, MimeType.PLAIN_TEXT);
+  }
+  return ContentService.createTextOutput(
+    JSON.stringify({success: true, updated: new Date().toISOString()})
+  ).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+function GoogleSyncSection() {
+  const [scriptUrl, setScriptUrlState] = useState<string>(() =>
+    getGoogleScriptUrl(),
+  );
+  const [secret, setSecretState] = useState<string>(() => getGoogleSecret());
+  const [showSecret, setShowSecret] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleSaveUrl = () => {
+    setGoogleScriptUrl(scriptUrl.trim());
+    toast.success("URL Google Apps Script enregistrée");
+  };
+
+  const handleSaveSecret = () => {
+    setGoogleSecret(secret.trim());
+    toast.success("Mot de passe enregistré");
+  };
+
+  const handleSyncToGoogle = async () => {
+    setSaving(true);
+    try {
+      await syncToGoogle();
+      toast.success("Données sauvegardées vers Google Drive ✓");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Erreur : ${msg}`, { duration: 8000 });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSyncFromGoogle = async () => {
+    setLoading(true);
+    try {
+      const result = await syncFromGoogle();
+      if (result.ok) {
+        toast.success("Données chargées depuis Google Drive. Rechargement...");
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        toast.error(`Erreur : ${result.error ?? "Inconnu"}`, {
+          duration: 8000,
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyScript = () => {
+    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: 16,
+        padding: "16px 20px",
+        background: "#e8f0fe",
+        border: "1px solid #3b82f6",
+        borderRadius: 8,
+      }}
+    >
+      <div
+        style={{
+          fontWeight: "bold",
+          fontSize: 12,
+          color: "#1e3a8a",
+          marginBottom: 6,
+          fontFamily: "Verdana, sans-serif",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <Cloud size={14} />
+        Synchronisation Google Drive
+      </div>
+      <div
+        style={{
+          fontSize: 10,
+          color: "#374151",
+          marginBottom: 14,
+          fontFamily: "Verdana, sans-serif",
+          lineHeight: 1.6,
+        }}
+      >
+        Connectez l'application à un fichier sur votre Google Drive pour
+        synchroniser vos données entre tous vos appareils. Le bouton "Sync
+        Google" apparaîtra dans la barre de navigation une fois l'URL
+        configurée.
+      </div>
+
+      {/* URL input + save */}
+      <div style={{ marginBottom: 10 }}>
+        <label
+          htmlFor="google-script-url"
+          style={{
+            display: "block",
+            fontSize: 10,
+            fontWeight: "bold",
+            color: "#1e3a8a",
+            marginBottom: 4,
+            fontFamily: "Verdana, sans-serif",
+          }}
+        >
+          URL Google Apps Script
+        </label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            id="google-script-url"
+            type="url"
+            value={scriptUrl}
+            onChange={(e) => setScriptUrlState(e.target.value)}
+            placeholder="https://script.google.com/macros/s/.../exec"
+            data-ocid="users.google_script_url.input"
+            style={{
+              flex: 1,
+              height: 32,
+              padding: "0 8px",
+              fontSize: 10,
+              fontFamily: "Verdana, sans-serif",
+              border: "1px solid #93c5fd",
+              borderRadius: 4,
+              background: "#fff",
+              color: "#111",
+            }}
+          />
+          <Button
+            onClick={handleSaveUrl}
+            data-ocid="users.google_save_url.button"
+            style={{
+              height: 32,
+              fontSize: 10,
+              background: "#1e3a8a",
+              color: "#fff",
+              fontFamily: "Verdana, sans-serif",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Save size={12} /> Enregistrer l'URL
+          </Button>
+        </div>
+      </div>
+
+      {/* Secret key input */}
+      <div style={{ marginBottom: 10 }}>
+        <label
+          htmlFor="google-secret"
+          style={{
+            display: "block",
+            fontSize: 10,
+            fontWeight: "bold",
+            color: "#1e3a8a",
+            marginBottom: 4,
+            fontFamily: "Verdana, sans-serif",
+          }}
+        >
+          Mot de passe secret (doit correspondre au script)
+        </label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <input
+              id="google-secret"
+              type={showSecret ? "text" : "password"}
+              value={secret}
+              onChange={(e) => setSecretState(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveSecret();
+              }}
+              placeholder="Entrez votre mot de passe secret"
+              data-ocid="users.google_secret.input"
+              style={{
+                width: "100%",
+                height: 32,
+                padding: "0 32px 0 8px",
+                fontSize: 10,
+                fontFamily: "Verdana, sans-serif",
+                border: "1px solid #93c5fd",
+                borderRadius: 4,
+                background: "#fff",
+                color: "#111",
+                boxSizing: "border-box",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowSecret((v) => !v)}
+              style={{
+                position: "absolute",
+                right: 6,
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                color: "#4b5563",
+                fontSize: 12,
+              }}
+              title={showSecret ? "Masquer" : "Afficher"}
+            >
+              {showSecret ? "🙈" : "👁"}
+            </button>
+          </div>
+          <Button
+            onClick={handleSaveSecret}
+            data-ocid="users.google_save_secret.button"
+            style={{
+              height: 32,
+              fontSize: 10,
+              background: "#1e3a8a",
+              color: "#fff",
+              fontFamily: "Verdana, sans-serif",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Save size={12} /> Enregistrer le mot de passe
+          </Button>
+        </div>
+        <div
+          style={{
+            fontSize: 9,
+            color: "#6b7280",
+            marginTop: 3,
+            fontFamily: "Verdana, sans-serif",
+          }}
+        >
+          Ce mot de passe doit être identique à la valeur de SECRET_KEY dans
+          votre script Google.
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div
+        style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}
+      >
+        <Button
+          onClick={handleSyncToGoogle}
+          disabled={saving || !scriptUrl.trim()}
+          data-ocid="users.google_upload.button"
+          style={{
+            height: 32,
+            fontSize: 10,
+            background: "#2563eb",
+            color: "#fff",
+            fontFamily: "Verdana, sans-serif",
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+          }}
+        >
+          {saving ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Upload size={12} />
+          )}
+          {saving ? "Sauvegarde..." : "Sauvegarder vers Google"}
+        </Button>
+        <Button
+          onClick={handleSyncFromGoogle}
+          disabled={loading || !scriptUrl.trim()}
+          data-ocid="users.google_download.button"
+          style={{
+            height: 32,
+            fontSize: 10,
+            background: "#0284c7",
+            color: "#fff",
+            fontFamily: "Verdana, sans-serif",
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+          }}
+        >
+          {loading ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Download size={12} />
+          )}
+          {loading ? "Chargement..." : "Charger depuis Google"}
+        </Button>
+      </div>
+
+      {/* Instructions toggle */}
+      <button
+        type="button"
+        onClick={() => setShowInstructions((v) => !v)}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 10,
+          color: "#1e40af",
+          fontFamily: "Verdana, sans-serif",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          padding: 0,
+          marginBottom: showInstructions ? 10 : 0,
+        }}
+      >
+        {showInstructions ? "▼" : "▶"} Instructions de configuration
+      </button>
+
+      {showInstructions && (
+        <div
+          style={{
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: 6,
+            padding: "12px 14px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontFamily: "Verdana, sans-serif",
+              color: "#1e3a8a",
+              fontWeight: "bold",
+              marginBottom: 8,
+            }}
+          >
+            Configuration en 4 étapes (à faire une seule fois)
+          </div>
+          <ol
+            style={{
+              margin: 0,
+              paddingLeft: 18,
+              fontSize: 10,
+              fontFamily: "Verdana, sans-serif",
+              color: "#374151",
+              lineHeight: 2,
+            }}
+          >
+            <li>
+              Aller sur <strong>script.google.com</strong> → "Nouveau projet"
+            </li>
+            <li>
+              Remplacer tout le code par le script ci-dessous, puis cliquer
+              "Enregistrer"
+            </li>
+            <li>
+              Cliquer "Déployer" → "Nouveau déploiement" → Type : "Application
+              Web" → Accès : "Tout le monde" → Déployer
+            </li>
+            <li>Copier l'URL générée et la coller dans le champ ci-dessus</li>
+          </ol>
+          <div style={{ marginTop: 10 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 4,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  fontFamily: "Verdana, sans-serif",
+                  fontWeight: "bold",
+                  color: "#1e3a8a",
+                }}
+              >
+                Script Google Apps Script :
+              </span>
+              <Button
+                onClick={handleCopyScript}
+                data-ocid="users.google_copy_script.button"
+                style={{
+                  height: 26,
+                  fontSize: 9,
+                  background: copied ? "#059669" : "#6366f1",
+                  color: "#fff",
+                  fontFamily: "Verdana, sans-serif",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                {copied ? "✓ Copié !" : "Copier le script"}
+              </Button>
+            </div>
+            <textarea
+              readOnly
+              value={GOOGLE_APPS_SCRIPT_CODE}
+              rows={14}
+              style={{
+                width: "100%",
+                fontSize: 9,
+                fontFamily: "monospace",
+                background: "#1e1e2e",
+                color: "#cdd6f4",
+                border: "1px solid #bfdbfe",
+                borderRadius: 4,
+                padding: "8px 10px",
+                resize: "vertical",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function UserManagementPage() {
   const {
     users,
@@ -78,7 +549,7 @@ export default function UserManagementPage() {
     setBypass,
   } = useLocalAuth();
 
-  const { actor } = useActor();
+  const isAdmin = session?.role === "admin";
   const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -153,9 +624,6 @@ export default function UserManagementPage() {
       if (!result.ok) {
         toast.error(result.error ?? "Erreur lors de l'importation");
         return;
-      }
-      if (actor) {
-        await syncToBackend(actor);
       }
       toast.success("Données importées avec succès. Rechargement...");
       setTimeout(() => window.location.reload(), 1500);
@@ -1082,7 +1550,7 @@ export default function UserManagementPage() {
               gap: 6,
             }}
           >
-            <Download size={14} /> Exporter JSON
+            <Download size={14} /> Exporter JSON (avec photos)
           </Button>
           <Button
             onClick={() => fileInputRef.current?.click()}
@@ -1100,7 +1568,7 @@ export default function UserManagementPage() {
             }}
           >
             <Upload size={14} />{" "}
-            {importLoading ? "Importation..." : "Importer JSON"}
+            {importLoading ? "Importation..." : "Importer JSON (avec photos)"}
           </Button>
           <Button
             onClick={() => {
@@ -1132,6 +1600,11 @@ export default function UserManagementPage() {
           />
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* Synchronisation Google Apps Script */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {isAdmin && <GoogleSyncSection />}
 
       {/* Delete user dialog */}
       <AlertDialog

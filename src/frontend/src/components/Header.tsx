@@ -13,25 +13,22 @@ import {
   Calendar,
   CalendarDays,
   CalendarRange,
+  Cloud,
   FileBarChart,
   Grid3x3,
   LayoutDashboard,
   Loader2,
   LogOut,
   Plus,
-  Save,
   ShieldCheck,
   User,
   Users,
-  Wifi,
-  WifiOff,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useLocalAuth } from "../context/LocalAuthContext";
-import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
-import { syncToBackend } from "../utils/backendSync";
+import { getGoogleScriptUrl, syncToGoogle } from "../utils/backendSync";
 import AppointmentDialog from "./AppointmentDialog";
 
 interface HeaderProps {
@@ -46,31 +43,11 @@ export default function Header({ userName: _userName }: HeaderProps) {
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const { actor } = useActor();
-  // null = checking, true = online, false = stopped/offline
-  const [canisterOnline, setCanisterOnline] = useState<boolean | null>(null);
-  const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const isAdmin = session?.role === "admin";
   const isReader = session?.role === "reader";
-
-  useEffect(() => {
-    if (!actor || !session) return;
-    const checkCanisterStatus = async () => {
-      try {
-        await actor.getSharedData();
-        setCanisterOnline(true);
-      } catch {
-        setCanisterOnline(false);
-      }
-    };
-    checkCanisterStatus();
-    checkIntervalRef.current = setInterval(checkCanisterStatus, 30000);
-    return () => {
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-    };
-  }, [actor, session]);
+  const googleUrl = getGoogleScriptUrl();
 
   const handleLogout = async () => {
     logout();
@@ -82,43 +59,18 @@ export default function Header({ userName: _userName }: HeaderProps) {
     queryClient.clear();
   };
 
-  const handleManualSave = async () => {
-    if (!actor) {
-      toast.error("Connexion au serveur non disponible. Rechargez la page.");
-      return;
-    }
-    setIsSaving(true);
+  const handleGoogleSync = async () => {
+    setIsSyncing(true);
     try {
-      await syncToBackend(actor);
-      setCanisterOnline(true);
-      toast.success("Données sauvegardées sur le serveur avec succès ✓");
-    } catch (err1) {
-      // Retry once after 3 seconds
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        await syncToBackend(actor);
-        setCanisterOnline(true);
-        toast.success("Données sauvegardées sur le serveur avec succès ✓");
-      } catch (err2) {
-        setCanisterOnline(false);
-        const msg = err2 instanceof Error ? err2.message : String(err2);
-        const isStopped = msg.includes("is stopped") || msg.includes("IC0508");
-        if (isStopped) {
-          toast.error(
-            "Le serveur est en veille (brouillon expiré). Vos données restent en local. Demandez un redéploiement pour réactiver la synchronisation.",
-            { duration: 10000 },
-          );
-        } else {
-          const shortMsg = msg.length > 200 ? `${msg.slice(0, 200)}…` : msg;
-          toast.error(
-            `Erreur lors de la sauvegarde. Les données sont conservées en local. Détail : ${shortMsg}`,
-            { duration: 8000 },
-          );
-        }
-        console.error("Manuel save error:", err1, err2);
-      }
+      await syncToGoogle();
+      toast.success("Données sauvegardées vers Google avec succès ✓");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Erreur de synchronisation Google : ${msg}`, {
+        duration: 8000,
+      });
     } finally {
-      setIsSaving(false);
+      setIsSyncing(false);
     }
   };
 
@@ -128,51 +80,6 @@ export default function Header({ userName: _userName }: HeaderProps) {
       : session?.role === "advanced"
         ? "Utilisateur Avancé"
         : "Lecteur";
-
-  // Status indicator for canister
-  const StatusDot = () => {
-    if (canisterOnline === null)
-      return (
-        <span
-          title="Vérification de la connexion au serveur..."
-          style={{
-            display: "inline-block",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#999",
-            marginLeft: 4,
-          }}
-        />
-      );
-    if (canisterOnline)
-      return (
-        <span
-          title="Serveur actif — synchronisation disponible"
-          style={{
-            display: "inline-block",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#22c55e",
-            marginLeft: 4,
-          }}
-        />
-      );
-    return (
-      <span
-        title="Serveur en veille (brouillon expiré) — données locales uniquement. Cliquer sur Sauvegarder ou demander un redéploiement."
-        style={{
-          display: "inline-block",
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: "#ef4444",
-          marginLeft: 4,
-        }}
-      />
-    );
-  };
 
   return (
     <>
@@ -276,51 +183,27 @@ export default function Header({ userName: _userName }: HeaderProps) {
                 )}
               </nav>
 
-              {/* Canister status + Manual save button */}
-              <div
-                className="flex items-center gap-1"
-                title={
-                  canisterOnline === true
-                    ? "Serveur actif — synchronisation disponible"
-                    : canisterOnline === false
-                      ? "Serveur en veille — données locales uniquement. Cliquer sur Sauvegarder pour tenter la reconnexion."
-                      : "Vérification de la connexion..."
-                }
-              >
-                {canisterOnline === false ? (
-                  <WifiOff className="h-3 w-3 text-red-500" />
-                ) : canisterOnline === true ? (
-                  <Wifi className="h-3 w-3 text-green-500" />
-                ) : null}
-                <StatusDot />
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className={
-                  canisterOnline === false
-                    ? "gap-1 px-2 border-red-400 text-red-600 hover:bg-red-50 dark:text-red-400 dark:border-red-500"
-                    : "gap-1 px-2 border-green-600 text-green-700 hover:bg-green-50 dark:text-green-400 dark:border-green-500 dark:hover:bg-green-950"
-                }
-                onClick={handleManualSave}
-                disabled={isSaving}
-                title={
-                  canisterOnline === false
-                    ? "Serveur en veille (brouillon expiré). Tentez quand même une sauvegarde."
-                    : "Sauvegarder manuellement toutes les données vers le serveur"
-                }
-                data-ocid="header.manual_save.button"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline text-xs">
-                  {isSaving ? "Sauvegarde..." : "Sauvegarder"}
-                </span>
-              </Button>
+              {/* Google Sync button — only if URL is configured */}
+              {googleUrl && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 px-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-blue-950"
+                  onClick={handleGoogleSync}
+                  disabled={isSyncing}
+                  title="Sauvegarder toutes les données vers Google Drive"
+                  data-ocid="header.google_sync.button"
+                >
+                  {isSyncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Cloud className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline text-xs">
+                    {isSyncing ? "Sync..." : "Sync Google"}
+                  </span>
+                </Button>
+              )}
 
               {!isReader && (
                 <Button
