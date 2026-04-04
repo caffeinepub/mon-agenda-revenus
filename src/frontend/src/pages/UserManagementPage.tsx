@@ -553,17 +553,44 @@ export default function UserManagementPage() {
   const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importLoading, setImportLoading] = useState(false);
-  const [useOrangeFont, setUseOrangeFontState] = useState<boolean>(
-    () => localStorage.getItem("agenda_orange_font") === "true",
+  const [selectedFontColor, setSelectedFontColorState] = useState<string>(
+    () => {
+      // Backward compat: if old orange flag was set, treat as orange color
+      const oldOrange = localStorage.getItem("agenda_orange_font");
+      if (oldOrange === "true") {
+        return "rgb(226, 107, 10)";
+      }
+      return localStorage.getItem("agenda_font_color") ?? "";
+    },
   );
 
-  const setUseOrangeFont = (val: boolean) => {
-    setUseOrangeFontState(val);
-    localStorage.setItem("agenda_orange_font", val ? "true" : "false");
-    if (val) {
-      document.documentElement.classList.add("orange-font");
-    } else {
-      document.documentElement.classList.remove("orange-font");
+  const FONT_COLOR_OPTIONS = [
+    { label: "Défaut", value: "", bg: "#888", isDefault: true },
+    { label: "Orange", value: "rgb(226, 107, 10)", bg: "rgb(226, 107, 10)" },
+    { label: "Jaune", value: "rgb(230, 210, 50)", bg: "rgb(230, 210, 50)" },
+    {
+      label: "Vert clair",
+      value: "rgb(80, 200, 120)",
+      bg: "rgb(80, 200, 120)",
+    },
+    { label: "Cyan", value: "rgb(80, 200, 220)", bg: "rgb(80, 200, 220)" },
+    { label: "Rose", value: "rgb(240, 140, 180)", bg: "rgb(240, 140, 180)" },
+    { label: "Blanc", value: "rgb(255, 255, 255)", bg: "rgb(255, 255, 255)" },
+  ];
+
+  const applyFontColor = (colorValue: string) => {
+    setSelectedFontColorState(colorValue);
+    localStorage.setItem("agenda_font_color", colorValue);
+    // Remove both old and new classes
+    document.documentElement.classList.remove("orange-font");
+    document.documentElement.classList.remove("custom-font-color");
+    document.documentElement.style.removeProperty("--custom-font-color");
+    if (colorValue) {
+      document.documentElement.style.setProperty(
+        "--custom-font-color",
+        colorValue,
+      );
+      document.documentElement.classList.add("custom-font-color");
     }
   };
 
@@ -718,6 +745,7 @@ export default function UserManagementPage() {
 
   return (
     <div
+      className="bg-background text-foreground"
       style={{
         fontFamily: "Verdana, sans-serif",
         padding: "24px 16px",
@@ -761,6 +789,7 @@ export default function UserManagementPage() {
         {(Object.keys(ROLE_LABELS) as UserRole[]).map((role) => (
           <div
             key={role}
+            className="dark:bg-gray-800 dark:border-gray-600"
             style={{
               background: ROLE_BG[role],
               border: `1px solid ${ROLE_COLORS[role]}`,
@@ -769,6 +798,7 @@ export default function UserManagementPage() {
             }}
           >
             <div
+              className="dark:text-blue-300"
               style={{
                 fontWeight: "bold",
                 fontSize: 11,
@@ -778,7 +808,10 @@ export default function UserManagementPage() {
             >
               {ROLE_LABELS[role]}
             </div>
-            <div style={{ fontSize: 10, color: "#555", lineHeight: 1.5 }}>
+            <div
+              className="dark:text-gray-300"
+              style={{ fontSize: 10, color: "#555", lineHeight: 1.5 }}
+            >
               {ROLE_DESCRIPTIONS[role]}
             </div>
           </div>
@@ -846,8 +879,12 @@ export default function UserManagementPage() {
               <>
                 <tr
                   key={user.username}
+                  className={
+                    idx % 2 === 0
+                      ? "bg-background dark:bg-gray-900"
+                      : "bg-muted/30 dark:bg-gray-800"
+                  }
                   style={{
-                    background: idx % 2 === 0 ? "#fff" : "#f7f9fb",
                     borderBottom: "1px solid #eee",
                   }}
                   data-ocid={`users.user.item.${idx + 1}`}
@@ -872,6 +909,7 @@ export default function UserManagementPage() {
                   </td>
                   <td style={{ padding: "8px 12px" }}>
                     <span
+                      className="dark:bg-gray-700 dark:border-gray-500 dark:text-gray-200"
                       style={{
                         display: "inline-block",
                         background: ROLE_BG[user.role],
@@ -1311,6 +1349,7 @@ export default function UserManagementPage() {
       {/* Configuration d'accès */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div
+        className="dark:bg-gray-800 dark:border-gray-600"
         style={{
           marginTop: 24,
           padding: "16px 20px",
@@ -1320,6 +1359,7 @@ export default function UserManagementPage() {
         }}
       >
         <div
+          className="dark:text-yellow-400"
           style={{
             fontWeight: "bold",
             fontSize: 12,
@@ -1366,6 +1406,7 @@ export default function UserManagementPage() {
       {/* Thème de l'application */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div
+        className="dark:bg-gray-800 dark:border-gray-600"
         style={{
           marginTop: 16,
           padding: "16px 20px",
@@ -1375,6 +1416,7 @@ export default function UserManagementPage() {
         }}
       >
         <div
+          className="dark:text-blue-300"
           style={{
             fontWeight: "bold",
             fontSize: 12,
@@ -1386,6 +1428,7 @@ export default function UserManagementPage() {
           Apparence de l'application
         </div>
         <div
+          className="dark:text-gray-400"
           style={{
             fontSize: 10,
             color: "#555",
@@ -1415,6 +1458,7 @@ export default function UserManagementPage() {
               fontSize: 11,
               color: "#333",
             }}
+            className="dark:text-gray-200"
           >
             <input
               type="checkbox"
@@ -1435,6 +1479,7 @@ export default function UserManagementPage() {
               fontSize: 11,
               color: "#333",
             }}
+            className="dark:text-gray-200"
           >
             <input
               type="checkbox"
@@ -1446,7 +1491,7 @@ export default function UserManagementPage() {
             🌙 Mode Sombre
           </label>
         </div>
-        {/* Police orangée */}
+        {/* Couleur de police */}
         <div
           style={{
             marginTop: 14,
@@ -1454,39 +1499,91 @@ export default function UserManagementPage() {
             paddingTop: 12,
           }}
         >
-          <label
+          <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-              fontFamily: "Verdana, sans-serif",
+              fontWeight: "bold",
               fontSize: 11,
               color: "#333",
+              marginBottom: 8,
+              fontFamily: "Verdana, sans-serif",
             }}
           >
-            <input
-              type="checkbox"
-              checked={useOrangeFont}
-              onChange={(e) => setUseOrangeFont(e.target.checked)}
-              data-ocid="users.orange_font.checkbox"
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            🟠 Police orangée en mode sombre (rgb(226, 107, 10))
-          </label>
+            Couleur de la police d'écriture
+          </div>
           <div
             style={{
               fontSize: 10,
-              color: "#666",
-              marginTop: 6,
+              color: "#555",
+              marginBottom: 10,
               fontFamily: "Verdana, sans-serif",
               lineHeight: 1.5,
-              paddingLeft: 24,
             }}
           >
-            Quand cette option est activée, la couleur de toute la police
-            devient orangée pour une meilleure lisibilité en mode sombre.
-            Désélectionnez pour revenir à la couleur d'origine.
+            Choisissez une couleur visible sur tous les fonds (utile en mode
+            sombre). &quot;Défaut&quot; utilise la couleur d'origine.
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+            }}
+          >
+            {FONT_COLOR_OPTIONS.map((option) => (
+              <div
+                key={option.value}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <button
+                  type="button"
+                  data-ocid={`users.font_color.${option.label.toLowerCase().replace(" ", "_")}.button`}
+                  onClick={() => applyFontColor(option.value)}
+                  title={option.label}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    background: option.bg,
+                    border:
+                      selectedFontColor === option.value
+                        ? "3px solid #1a3a8a"
+                        : "2px solid #aaa",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    color: option.isDefault ? "#fff" : "transparent",
+                    boxShadow:
+                      selectedFontColor === option.value
+                        ? "0 0 0 2px #93c5fd"
+                        : "none",
+                    transition: "box-shadow 0.15s, border 0.15s",
+                  }}
+                >
+                  {option.isDefault ? "X" : ""}
+                </button>
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontFamily: "Verdana, sans-serif",
+                    color: "#555",
+                    textAlign: "center",
+                    maxWidth: 40,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {option.label}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1495,6 +1592,7 @@ export default function UserManagementPage() {
       {/* Sauvegarde et restauration des données */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div
+        className="dark:bg-gray-800 dark:border-gray-600"
         style={{
           marginTop: 16,
           padding: "16px 20px",
@@ -1504,6 +1602,7 @@ export default function UserManagementPage() {
         }}
       >
         <div
+          className="dark:text-green-400"
           style={{
             fontWeight: "bold",
             fontSize: 12,

@@ -41,7 +41,6 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { ClientRecord } from "../backend";
 import ClientPhotoField from "../components/ClientPhotoField";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useAddClientRecord,
   useDeleteClientRecord,
@@ -211,10 +210,22 @@ export default function ClientDatabasePage() {
     };
   }, [ficheClient, appointments]);
 
+  const generateClientRef = (): string => {
+    const year = new Date().getFullYear();
+    let n = clients.length + 1;
+    let ref = `CLI-${year}-${String(n).padStart(3, "0")}`;
+    const existingRefs = new Set(clients.map((c) => c.referenceClient));
+    while (existingRefs.has(ref)) {
+      n++;
+      ref = `CLI-${year}-${String(n).padStart(3, "0")}`;
+    }
+    return ref;
+  };
+
   const resetForm = () => {
     setFormData({
       clientName: "",
-      referenceClient: "",
+      referenceClient: generateClientRef(),
       phoneNumber: "",
       address: "",
       service: "",
@@ -248,8 +259,8 @@ export default function ClientDatabasePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.clientName || !formData.referenceClient) {
-      toast.error("Veuillez remplir le nom et la référence client");
+    if (!formData.referenceClient) {
+      toast.error("Veuillez remplir la référence client");
       return;
     }
 
@@ -284,7 +295,6 @@ export default function ClientDatabasePage() {
       }
       resetForm();
     } catch (error: any) {
-      console.error("Error saving client:", error);
       const errorMessage = error.message || String(error);
       if (
         errorMessage.includes("Non autorisé") ||
@@ -317,7 +327,6 @@ export default function ClientDatabasePage() {
         setPanelMode("form");
       }
     } catch (error: any) {
-      console.error("Error deleting client:", error);
       const errorMessage = error.message || String(error);
       if (
         errorMessage.includes("Non autorisé") ||
@@ -467,8 +476,7 @@ export default function ClientDatabasePage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Export HTML réussi");
-    } catch (error) {
-      console.error("Error exporting HTML:", error);
+    } catch {
       toast.error("Erreur lors de l'export HTML");
     }
   };
@@ -606,8 +614,7 @@ export default function ClientDatabasePage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Fiche client exportée en HTML");
-    } catch (error) {
-      console.error("Error exporting fiche HTML:", error);
+    } catch {
       toast.error("Erreur lors de l'export HTML");
     }
   };
@@ -639,8 +646,7 @@ export default function ClientDatabasePage() {
       ]);
       downloadCsv(csvContent, "clients-export.csv");
       toast.success("Export CSV réussi");
-    } catch (error) {
-      console.error("Error exporting CSV:", error);
+    } catch {
       toast.error("Erreur lors de l'export CSV");
     }
   };
@@ -1309,7 +1315,7 @@ export default function ClientDatabasePage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="clientName" className="table-header">
-              Nom du client *
+              Nom du client (optionnel)
             </Label>
             <Input
               id="clientName"
@@ -1317,7 +1323,6 @@ export default function ClientDatabasePage() {
               onChange={(e) =>
                 setFormData({ ...formData, clientName: e.target.value })
               }
-              required
               className="table-data"
               data-ocid="client.form_name.input"
             />
@@ -1346,23 +1351,29 @@ export default function ClientDatabasePage() {
             <Label htmlFor="referenceClient" className="table-header">
               Référence client *
             </Label>
-            <Input
-              id="referenceClient"
-              value={formData.referenceClient}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  referenceClient: e.target.value,
-                })
-              }
-              required
-              disabled={!!editingClientId}
-              className="table-data"
-              data-ocid="client.form_ref.input"
-            />
+            <div className="relative">
+              <Input
+                id="referenceClient"
+                value={formData.referenceClient}
+                onChange={(e) =>
+                  !editingClientId &&
+                  setFormData({
+                    ...formData,
+                    referenceClient: e.target.value,
+                  })
+                }
+                required
+                readOnly={!!editingClientId}
+                className={`table-data ${editingClientId ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
+                data-ocid="client.form_ref.input"
+              />
+            </div>
             {editingClientId && (
-              <p className="table-data text-muted-foreground mt-1">
-                La référence ne peut pas être modifiée
+              <p
+                className="table-data text-muted-foreground mt-1"
+                style={{ fontSize: 9 }}
+              >
+                🔒 La référence ne peut pas être modifiée après la création
               </p>
             )}
           </div>

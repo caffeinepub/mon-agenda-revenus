@@ -11,6 +11,8 @@ import { useMemo } from "react";
 import type { RendezVous } from "../backend";
 import {
   calculateMonthlyListingRow,
+  calculateRdvFaits,
+  calculateRevenusPlusAvances,
   calculateTotalRevenusFaitsEtPayes,
 } from "../utils/monthlyListing";
 
@@ -38,9 +40,13 @@ export default function MonthlySummarySection({
     "Décembre",
   ];
 
-  // Calculate "Revenus (Faits et Payés)" for each month using the same logic as Monthly Listing
   const monthlyRevenues = useMemo(() => {
-    const revenues: { month: string; revenue: bigint }[] = [];
+    const revenues: {
+      month: string;
+      revenue: bigint;
+      rdvFaits: bigint;
+      sommesRecues: bigint;
+    }[] = [];
 
     for (let month = 1; month <= 12; month++) {
       const monthStart =
@@ -70,9 +76,25 @@ export default function MonthlySummarySection({
 
       const monthRevenue = calculateTotalRevenusFaitsEtPayes(rows);
 
+      // RDV Faits (payé et impayés) = sum of rdvFaits across all clients for this month
+      const monthRdvFaits = Array.from(clientsInMonth.keys()).reduce(
+        (sum, ref) =>
+          sum + calculateRdvFaits(ref, allAppointments, year, month),
+        BigInt(0),
+      );
+
+      // Sommes reçus = sum of all montantPaye for this month
+      const monthSommesRecues = Array.from(clientsInMonth.keys()).reduce(
+        (sum, ref) =>
+          sum + calculateRevenusPlusAvances(ref, allAppointments, year, month),
+        BigInt(0),
+      );
+
       revenues.push({
         month: monthNames[month - 1],
         revenue: monthRevenue,
+        rdvFaits: monthRdvFaits,
+        sommesRecues: monthSommesRecues,
       });
     }
 
@@ -81,6 +103,20 @@ export default function MonthlySummarySection({
 
   const totalRevenue = useMemo(() => {
     return monthlyRevenues.reduce((sum, item) => sum + item.revenue, BigInt(0));
+  }, [monthlyRevenues]);
+
+  const totalRdvFaits = useMemo(() => {
+    return monthlyRevenues.reduce(
+      (sum, item) => sum + item.rdvFaits,
+      BigInt(0),
+    );
+  }, [monthlyRevenues]);
+
+  const totalSommesRecues = useMemo(() => {
+    return monthlyRevenues.reduce(
+      (sum, item) => sum + item.sommesRecues,
+      BigInt(0),
+    );
   }, [monthlyRevenues]);
 
   const formatNumber = (amount: bigint) => {
@@ -101,6 +137,12 @@ export default function MonthlySummarySection({
               <TableRow>
                 <TableHead className="table-header">Mois</TableHead>
                 <TableHead className="text-right table-header">
+                  RDV Faits (payé et impayés)
+                </TableHead>
+                <TableHead className="text-right table-header">
+                  Sommes reçus
+                </TableHead>
+                <TableHead className="text-right table-header">
                   Revenus (Faits et Payés)
                 </TableHead>
               </TableRow>
@@ -109,6 +151,12 @@ export default function MonthlySummarySection({
               {/* Total row moved to top, above January */}
               <TableRow className="bg-muted/50">
                 <TableCell className="table-header py-1">TOTAL</TableCell>
+                <TableCell className="text-right sum-total py-1">
+                  {formatNumber(totalRdvFaits)}
+                </TableCell>
+                <TableCell className="text-right sum-total py-1">
+                  {formatNumber(totalSommesRecues)}
+                </TableCell>
                 <TableCell className="text-right sum-total py-1">
                   {formatNumber(totalRevenue)}
                 </TableCell>
@@ -120,6 +168,12 @@ export default function MonthlySummarySection({
                 >
                   <TableCell className="table-data py-1">
                     {item.month}
+                  </TableCell>
+                  <TableCell className="text-right table-data py-1">
+                    {formatNumber(item.rdvFaits)}
+                  </TableCell>
+                  <TableCell className="text-right table-data py-1">
+                    {formatNumber(item.sommesRecues)}
                   </TableCell>
                   <TableCell className="text-right table-data py-1">
                     {formatNumber(item.revenue)}

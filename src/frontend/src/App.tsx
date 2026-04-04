@@ -89,20 +89,33 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({ routeTree });
 
-// Apply orange font on startup based on localStorage setting
-function OrangeFontInitializer() {
+// Apply custom font color on startup based on localStorage setting
+function FontColorInitializer() {
   useEffect(() => {
-    const applyOrangeFont = () => {
-      if (localStorage.getItem("agenda_orange_font") === "true") {
-        document.documentElement.classList.add("orange-font");
-      } else {
-        document.documentElement.classList.remove("orange-font");
+    const applyFontColor = () => {
+      // Backward compat: if old orange flag was set, treat as orange color
+      const oldOrange = localStorage.getItem("agenda_orange_font");
+      const fontColor =
+        oldOrange === "true"
+          ? "rgb(226, 107, 10)"
+          : (localStorage.getItem("agenda_font_color") ?? "");
+
+      document.documentElement.classList.remove("orange-font");
+      document.documentElement.classList.remove("custom-font-color");
+      document.documentElement.style.removeProperty("--custom-font-color");
+
+      if (fontColor) {
+        document.documentElement.style.setProperty(
+          "--custom-font-color",
+          fontColor,
+        );
+        document.documentElement.classList.add("custom-font-color");
       }
     };
-    applyOrangeFont();
+    applyFontColor();
     // React to storage changes from other tabs
-    window.addEventListener("storage", applyOrangeFont);
-    return () => window.removeEventListener("storage", applyOrangeFont);
+    window.addEventListener("storage", applyFontColor);
+    return () => window.removeEventListener("storage", applyFontColor);
   }, []);
   return null;
 }
@@ -204,7 +217,7 @@ function AppWithLocalAuth() {
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <OrangeFontInitializer />
+      <FontColorInitializer />
       <LocalAuthProvider>
         <AppWithLocalAuth />
       </LocalAuthProvider>

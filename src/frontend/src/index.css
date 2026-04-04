@@ -312,3 +312,9 @@
 .orange-font * {
   color: rgb(226, 107, 10) !important;
 }
+
+/* ─── Couleur de police personnalisée ──────────────────────────────────────── */
+/* Activé via le sélecteur de couleur dans la page Utilisateurs */
+.custom-font-color * {
+  color: var(--custom-font-color) !important;
+}
