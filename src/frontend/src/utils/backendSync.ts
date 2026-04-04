@@ -173,6 +173,30 @@ export function getExportJson(): string {
     users = [];
   }
 
+  const paymentDates = localStorage.getItem("weekly_payment_dates") || "{}";
+  const clientExtraFields =
+    localStorage.getItem("agenda_client_extra_fields") || "{}";
+  const dailyTimeRange = localStorage.getItem("daily_time_range") || "{}";
+
+  let paymentDatesObj: unknown = {};
+  let clientExtraFieldsObj: unknown = {};
+  let dailyTimeRangeObj: unknown = {};
+  try {
+    paymentDatesObj = JSON.parse(paymentDates);
+  } catch {
+    paymentDatesObj = {};
+  }
+  try {
+    clientExtraFieldsObj = JSON.parse(clientExtraFields);
+  } catch {
+    clientExtraFieldsObj = {};
+  }
+  try {
+    dailyTimeRangeObj = JSON.parse(dailyTimeRange);
+  } catch {
+    dailyTimeRangeObj = {};
+  }
+
   return JSON.stringify(
     {
       appointments,
@@ -180,8 +204,11 @@ export function getExportJson(): string {
       nextId,
       users,
       bypass,
+      paymentDates: paymentDatesObj,
+      clientExtraFields: clientExtraFieldsObj,
+      dailyTimeRange: dailyTimeRangeObj,
       exportedAt: new Date().toISOString(),
-      version: "195",
+      version: "201",
     },
     null,
     2,
@@ -364,6 +391,24 @@ export function restoreFromJson(jsonStr: string): {
     }
     if (data.bypass !== undefined) {
       localStorage.setItem(BYPASS_KEY, String(data.bypass));
+    }
+    if (data.paymentDates !== undefined) {
+      localStorage.setItem(
+        "weekly_payment_dates",
+        JSON.stringify(data.paymentDates),
+      );
+    }
+    if (data.clientExtraFields !== undefined) {
+      localStorage.setItem(
+        "agenda_client_extra_fields",
+        JSON.stringify(data.clientExtraFields),
+      );
+    }
+    if (data.dailyTimeRange !== undefined) {
+      localStorage.setItem(
+        "daily_time_range",
+        JSON.stringify(data.dailyTimeRange),
+      );
     }
     return { ok: true };
   } catch {

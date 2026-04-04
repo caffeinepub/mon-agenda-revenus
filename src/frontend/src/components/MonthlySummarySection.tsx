@@ -40,6 +40,10 @@ export default function MonthlySummarySection({
     "Décembre",
   ];
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-based
+
   const monthlyRevenues = useMemo(() => {
     const revenues: {
       month: string;
@@ -119,6 +123,36 @@ export default function MonthlySummarySection({
     );
   }, [monthlyRevenues]);
 
+  // Revenu Moy Mensuel: average revenue of completed months in current year with revenue > 0
+  const revenuMoyMensuel = useMemo(() => {
+    if (year !== currentYear) return null; // only relevant for current year
+    // Completed months = months strictly before current month
+    const completedMonthsWithRevenue = monthlyRevenues
+      .slice(0, currentMonth - 1)
+      .filter((item) => item.revenue > BigInt(0));
+    if (completedMonthsWithRevenue.length === 0) return BigInt(0);
+    const total = completedMonthsWithRevenue.reduce(
+      (sum, item) => sum + item.revenue,
+      BigInt(0),
+    );
+    return total / BigInt(completedMonthsWithRevenue.length);
+  }, [year, currentYear, currentMonth, monthlyRevenues]);
+
+  // Dû au jour courant: total owed across ALL appointments (fait + non annulé, cumulative credit negatif)
+  const duAujourdhui = useMemo(() => {
+    // Sum of (montantDu - montantPaye) for appointments fait + non annulé where montantDu > montantPaye
+    let totalDu = BigInt(0);
+    let totalPaye = BigInt(0);
+    for (const apt of allAppointments) {
+      if (apt.fait && !apt.annule) {
+        totalDu += apt.montantDu;
+        totalPaye += apt.montantPaye;
+      }
+    }
+    const diff = totalDu - totalPaye;
+    return diff > BigInt(0) ? diff : BigInt(0);
+  }, [allAppointments]);
+
   const formatNumber = (amount: bigint) => {
     return Number(amount).toLocaleString("fr-FR");
   };
@@ -145,6 +179,10 @@ export default function MonthlySummarySection({
                 <TableHead className="text-right table-header">
                   Revenus (Faits et Payés)
                 </TableHead>
+                <TableHead className="text-right table-header">
+                  Revenu Moy Mensuel
+                </TableHead>
+                <TableHead className="text-right table-header">Dû</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -159,6 +197,14 @@ export default function MonthlySummarySection({
                 </TableCell>
                 <TableCell className="text-right sum-total py-1">
                   {formatNumber(totalRevenue)}
+                </TableCell>
+                <TableCell className="text-right sum-total py-1">
+                  {revenuMoyMensuel !== null
+                    ? formatNumber(revenuMoyMensuel)
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-right sum-total py-1 text-orange-600 font-bold">
+                  {formatNumber(duAujourdhui)}
                 </TableCell>
               </TableRow>
               {monthlyRevenues.map((item, index) => (
@@ -177,6 +223,12 @@ export default function MonthlySummarySection({
                   </TableCell>
                   <TableCell className="text-right table-data py-1">
                     {formatNumber(item.revenue)}
+                  </TableCell>
+                  <TableCell className="text-right table-data py-1">
+                    {/* Revenu Moy Mensuel: only shown in total row */}
+                  </TableCell>
+                  <TableCell className="text-right table-data py-1">
+                    {/* Dû: only shown in total row */}
                   </TableCell>
                 </TableRow>
               ))}

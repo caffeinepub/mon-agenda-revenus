@@ -35,6 +35,7 @@ import {
   Save,
   Search,
   Trash2,
+  UserPlus,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -1578,6 +1579,18 @@ export default function ClientDatabasePage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => {
+                      setPanelMode("form");
+                    }}
+                    className="table-data bg-blue-50 border-blue-300"
+                    data-ocid="client.add_client.button"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Ajouter Un Client
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() =>
                       setPanelMode(panelMode === "search" ? "form" : "search")
                     }
@@ -1711,6 +1724,18 @@ export default function ClientDatabasePage() {
                         >
                           <TableCell className="table-data">
                             <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setPanelMode("form");
+                                }}
+                                className="table-data bg-blue-50 border-blue-300"
+                                data-ocid="client.add_client.button"
+                              >
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Ajouter Un Client
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
