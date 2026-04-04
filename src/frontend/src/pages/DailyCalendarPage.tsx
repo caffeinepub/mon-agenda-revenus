@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
 import { DemandeEdition } from "../backend";
 import AppointmentDialog from "../components/AppointmentDialog";
@@ -42,17 +42,6 @@ const MONTH_NAMES_FR = [
   "Décembre",
 ];
 
-// Generate all 15-min slots from 7h00 to 22h00
-const TIME_SLOTS: string[] = [];
-for (let h = 7; h <= 22; h++) {
-  for (let m = 0; m < 60; m += 15) {
-    if (h === 22 && m > 0) break;
-    TIME_SLOTS.push(
-      `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
-    );
-  }
-}
-
 // Column definitions — widths used for both header AND cells
 const COLS = [
   { label: "Heure", w: 47 },
@@ -81,12 +70,6 @@ function colStyle(w: number, last = false): React.CSSProperties {
     boxSizing: "border-box",
     fontSize: 12,
   };
-}
-
-// Helper: first slot index >= time (ceiling match)
-function findSlotIdxCeil(time: string): number {
-  const idx = TIME_SLOTS.findIndex((s) => s >= time);
-  return idx === -1 ? TIME_SLOTS.length : idx;
 }
 
 // ── ClientFicheModal ──────────────────────────────────────────────────────────
@@ -422,6 +405,83 @@ export default function DailyCalendarPage() {
   const [clientExtraFields, setClientExtraFields] = useState<
     Record<string, { prenom?: string }>
   >({});
+
+  // Day start/end hours — persisted in localStorage
+  const [dayStart, setDayStart] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem("daily_time_range");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.start === "number") return parsed.start;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 7;
+  });
+
+  const [dayEnd, setDayEnd] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem("daily_time_range");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.end === "number") return parsed.end;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 22;
+  });
+
+  // Dynamically computed time slots based on dayStart / dayEnd
+  const TIME_SLOTS = useMemo(() => {
+    const slots: string[] = [];
+    for (let h = dayStart; h <= dayEnd; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        if (h === dayEnd && m > 0) break;
+        slots.push(
+          `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+        );
+      }
+    }
+    return slots;
+  }, [dayStart, dayEnd]);
+
+  // Helper: first slot index >= time (ceiling match) — uses dynamic TIME_SLOTS
+  const findSlotIdxCeil = useCallback(
+    (time: string): number => {
+      const idx = TIME_SLOTS.findIndex((s) => s >= time);
+      return idx === -1 ? TIME_SLOTS.length : idx;
+    },
+    [TIME_SLOTS],
+  );
+
+  const persistTimeRange = useCallback((start: number, end: number) => {
+    localStorage.setItem("daily_time_range", JSON.stringify({ start, end }));
+  }, []);
+
+  const handleDayStartChange = useCallback(
+    (val: number) => {
+      const newStart = val;
+      let newEnd = dayEnd;
+      if (newEnd <= newStart) newEnd = newStart + 1;
+      setDayStart(newStart);
+      setDayEnd(newEnd);
+      persistTimeRange(newStart, newEnd);
+    },
+    [dayEnd, persistTimeRange],
+  );
+
+  const handleDayEndChange = useCallback(
+    (val: number) => {
+      let newEnd = val;
+      if (newEnd <= dayStart) newEnd = dayStart + 1;
+      setDayEnd(newEnd);
+      persistTimeRange(dayStart, newEnd);
+    },
+    [dayStart, persistTimeRange],
+  );
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem("agenda_client_extra_fields");
@@ -490,21 +550,24 @@ export default function DailyCalendarPage() {
     );
   });
 
-  const coverageMap = new Map<string, { apt: RendezVous; rowIdx: number }>();
-  const sortedDayApts = [...dayApts].sort((a, b) =>
-    a.heureDebut.localeCompare(b.heureDebut),
-  );
-  for (const apt of sortedDayApts) {
-    const startIdx = findSlotIdxCeil(apt.heureDebut);
-    const endIdx = findSlotIdxCeil(apt.heureFin);
-    let rowIdx = 0;
-    for (let i = startIdx; i < endIdx && i < TIME_SLOTS.length; i++) {
-      if (!coverageMap.has(TIME_SLOTS[i])) {
-        coverageMap.set(TIME_SLOTS[i], { apt, rowIdx });
-        rowIdx++;
+  const coverageMap = useMemo(() => {
+    const map = new Map<string, { apt: RendezVous; rowIdx: number }>();
+    const sortedDayApts = [...dayApts].sort((a, b) =>
+      a.heureDebut.localeCompare(b.heureDebut),
+    );
+    for (const apt of sortedDayApts) {
+      const startIdx = findSlotIdxCeil(apt.heureDebut);
+      const endIdx = findSlotIdxCeil(apt.heureFin);
+      let rowIdx = 0;
+      for (let i = startIdx; i < endIdx && i < TIME_SLOTS.length; i++) {
+        if (!map.has(TIME_SLOTS[i])) {
+          map.set(TIME_SLOTS[i], { apt, rowIdx });
+          rowIdx++;
+        }
       }
     }
-  }
+    return map;
+  }, [dayApts, TIME_SLOTS, findSlotIdxCeil]);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -575,6 +638,20 @@ export default function DailyCalendarPage() {
 
   const totalW = COLS.reduce((s, c) => s + c.w, 0);
 
+  // Build hour options 0–23
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
+
+  const selectStyle: React.CSSProperties = {
+    fontFamily: "Verdana, sans-serif",
+    fontSize: 11,
+    border: "1px solid #d1d5db",
+    borderRadius: 3,
+    padding: "1px 3px",
+    cursor: "pointer",
+    background: "#fff",
+    height: 20,
+  };
+
   return (
     <div
       style={{
@@ -596,14 +673,15 @@ export default function DailyCalendarPage() {
         Calendrier Journalier
       </h1>
 
-      {/* Navigation */}
+      {/* Navigation row 1 — date navigation */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: 8,
-          marginBottom: 8,
+          marginBottom: 4,
           flexWrap: "wrap",
+          justifyContent: "center",
         }}
       >
         <span style={{ fontSize: 11, color: "#666" }}>Page</span>
@@ -660,6 +738,48 @@ export default function DailyCalendarPage() {
         >
           <ChevronRight size={14} />
         </button>
+      </div>
+
+      {/* Navigation row 2 — time range selector */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          marginBottom: 8,
+          fontFamily: "Verdana, sans-serif",
+          fontSize: 11,
+          color: "#374151",
+        }}
+        data-ocid="daily.time_range.panel"
+      >
+        <span style={{ fontWeight: "bold" }}>Début :</span>
+        <select
+          value={dayStart}
+          onChange={(e) => handleDayStartChange(Number(e.target.value))}
+          style={selectStyle}
+          data-ocid="daily.start_hour.select"
+        >
+          {hourOptions.map((h) => (
+            <option key={h} value={h}>
+              {String(h).padStart(2, "0")}h
+            </option>
+          ))}
+        </select>
+        <span style={{ color: "#6b7280" }}>à</span>
+        <span style={{ fontWeight: "bold" }}>Fin :</span>
+        <select
+          value={dayEnd}
+          onChange={(e) => handleDayEndChange(Number(e.target.value))}
+          style={selectStyle}
+          data-ocid="daily.end_hour.select"
+        >
+          {hourOptions.map((h) => (
+            <option key={h} value={h}>
+              {String(h).padStart(2, "0")}h
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}

@@ -543,6 +543,99 @@ export default function RapportPDFPage() {
     );
   };
 
+  const handleExportCSV = () => {
+    const fmtNum = (v: bigint) => String(Number(v));
+    const fmtSigned = (v: bigint) => {
+      const n = Number(v);
+      return n >= 0 ? `+${n}` : String(n);
+    };
+
+    const totalNbRdv = calculatedRows.reduce(
+      (s, r) => s + r.nbRendezVousFaits,
+      0,
+    );
+    const totalRdvFaits = calculatedRows.reduce(
+      (s, r) => s + r.rdvFaits,
+      BigInt(0),
+    );
+    const totalRevFP = calculatedRows.reduce(
+      (s, r) => s + r.revenusFaitsEtPayes,
+      BigInt(0),
+    );
+    const totalRevPA = calculatedRows.reduce(
+      (s, r) => s + r.revenusPlusAvances,
+      BigInt(0),
+    );
+    const totalCreditPos = calculatedRows.reduce(
+      (s, r) => s + r.creditPositif,
+      BigInt(0),
+    );
+    const totalCreditNeg = calculatedRows.reduce(
+      (s, r) => s + r.creditNegatif,
+      BigInt(0),
+    );
+
+    const headers = [
+      "Réf",
+      "Nom",
+      "Nbr",
+      "Crédit du mois précédent",
+      "RDV Faits (Payés + impayés)",
+      "Revenus (Faits et Payés)",
+      "Revenus + Avances (RDV Payés + Avances)",
+      "Crédit Positif",
+      "Crédit Négatif",
+    ];
+
+    const totalRow = [
+      "TOTAL",
+      "",
+      String(totalNbRdv),
+      "-",
+      fmtNum(totalRdvFaits),
+      fmtNum(totalRevFP),
+      fmtNum(totalRevPA),
+      fmtSigned(totalCreditPos),
+      fmtSigned(totalCreditNeg),
+    ];
+
+    const dataRows = calculatedRows.map((row) => [
+      row.referenceClient,
+      row.nomClient,
+      String(row.nbRendezVousFaits),
+      fmtSigned(row.creditDuMoisPrecedent),
+      fmtNum(row.rdvFaits),
+      fmtNum(row.revenusFaitsEtPayes),
+      fmtNum(row.revenusPlusAvances),
+      row.creditPositif > BigInt(0) ? fmtSigned(row.creditPositif) : "0",
+      row.creditNegatif < BigInt(0) ? fmtSigned(row.creditNegatif) : "0",
+    ]);
+
+    const csvContent = [headers, totalRow, ...dataRows]
+      .map((r) => r.map((cell) => `"${cell}"`).join(";"))
+      .join("\n");
+
+    const blob = new Blob([`\uFEFF${csvContent}`], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    let filename: string;
+    if (reportType === "mensuel") {
+      filename = `rapport-mensuel-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.csv`;
+    } else if (reportType === "annuel") {
+      filename = `rapport-annuel-${annualYear}.csv`;
+    } else {
+      filename = `rapport-plage-${rangeStart}-au-${rangeEnd}.csv`;
+    }
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const previewTitle =
     reportType === "mensuel"
       ? `Aperçu du rapport - ${monthNames[selectedMonth - 1]} ${selectedYear}`
@@ -693,6 +786,16 @@ export default function RapportPDFPage() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Rapport PDF</h1>
           <div className="flex gap-2">
+            <Button
+              onClick={handleExportCSV}
+              className="gap-2"
+              disabled={!isRangeValid}
+              variant="outline"
+              data-ocid="rapport.export_csv.button"
+            >
+              <Download className="h-4 w-4" />
+              Exporter en CSV
+            </Button>
             <Button
               onClick={handleExportHTMLCombined}
               className="gap-2"
