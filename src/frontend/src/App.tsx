@@ -19,6 +19,7 @@ import { useGetCallerUserProfile } from "./hooks/useQueries";
 import ClientDatabasePage from "./pages/ClientDatabasePage";
 import DailyCalendarPage from "./pages/DailyCalendarPage";
 import Dashboard from "./pages/Dashboard";
+import LanguagesPage from "./pages/LanguagesPage";
 import LocalLoginPage from "./pages/LocalLoginPage";
 import MonthlyCalendarPage from "./pages/MonthlyCalendarPage";
 import RapportPDFPage from "./pages/RapportPDFPage";
@@ -76,6 +77,11 @@ const userManagementRoute = createRoute({
   path: "/users",
   component: UserManagementPage,
 });
+const languagesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/languages",
+  component: LanguagesPage,
+});
 
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
@@ -85,6 +91,7 @@ const routeTree = rootRoute.addChildren([
   rapportPDFRoute,
   clientDatabaseRoute,
   userManagementRoute,
+  languagesRoute,
 ]);
 
 const router = createRouter({ routeTree });

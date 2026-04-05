@@ -49,6 +49,7 @@ import {
   useGetAllClientRecords,
   useUpdateClientRecord,
 } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 import { arrayToCsv, downloadCsv } from "../utils/csvExport";
 import { photoToUrl } from "../utils/imageCrop";
 
@@ -99,6 +100,7 @@ function saveExtraFields(ref: string, fields: ClientExtraFields): void {
 type PanelMode = "form" | "search" | "fiche";
 
 export default function ClientDatabasePage() {
+  const { t } = useTranslation();
   const { data: clients = [], isLoading: clientsLoading } =
     useGetAllClientRecords();
   const { data: appointments = [] } = useGetAllAppointments();
@@ -261,7 +263,7 @@ export default function ClientDatabasePage() {
     e.preventDefault();
 
     if (!formData.referenceClient) {
-      toast.error("Veuillez remplir la référence client");
+      toast.error(t("client.errorRefRequired"));
       return;
     }
 
@@ -279,7 +281,7 @@ export default function ClientDatabasePage() {
         });
         saveExtraFields(formData.referenceClient, extraFields);
         reloadAllExtraFields();
-        toast.success("Client modifié avec succès");
+        toast.success(t("client.successUpdated"));
       } else {
         await addClient.mutateAsync({
           clientName: formData.clientName,
@@ -292,7 +294,7 @@ export default function ClientDatabasePage() {
         });
         saveExtraFields(formData.referenceClient, extraFields);
         reloadAllExtraFields();
-        toast.success("Client ajouté avec succès");
+        toast.success(t("client.successAdded"));
       }
       resetForm();
     } catch (error: any) {
@@ -319,7 +321,7 @@ export default function ClientDatabasePage() {
 
     try {
       await deleteClient.mutateAsync(clientToDelete);
-      toast.success("Client supprimé avec succès");
+      toast.success(t("client.successDeleted"));
       if (editingClientId === clientToDelete) {
         resetForm();
       }
@@ -374,7 +376,7 @@ export default function ClientDatabasePage() {
     const service = searchService.trim().toLowerCase();
 
     if (!name && !prenom && !ref && !phone && !service) {
-      toast.error("Veuillez saisir au moins un critère de recherche");
+      toast.error(t("client.errorSearchEmpty"));
       return;
     }
 
@@ -1560,7 +1562,7 @@ export default function ClientDatabasePage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
-        <h1 className="frame-title text-3xl mb-8">Base de données clients</h1>
+        <h1 className="frame-title text-3xl mb-8">{t("pages.clients")}</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* ── PANNEAU GAUCHE ── */}
@@ -1574,7 +1576,9 @@ export default function ClientDatabasePage() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="frame-title">Liste des clients</CardTitle>
+                <CardTitle className="frame-title">
+                  {t("client.listTitle")}
+                </CardTitle>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -1586,7 +1590,7 @@ export default function ClientDatabasePage() {
                     data-ocid="client.add_client.button"
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Ajouter Un Client
+                    {t("client.addButton")}
                   </Button>
                   <Button
                     variant="outline"
@@ -1619,7 +1623,7 @@ export default function ClientDatabasePage() {
                     data-ocid="client.export_csv.button"
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Export CSV
+                    {t("client.exportCsv")}
                   </Button>
                   <Button
                     variant="outline"
@@ -1630,7 +1634,7 @@ export default function ClientDatabasePage() {
                     data-ocid="client.export_html.button"
                   >
                     <FileCode className="h-4 w-4 mr-2" />
-                    Exporter en HTML
+                    {t("client.exportHtml")}
                   </Button>
                 </div>
               </div>
@@ -1734,7 +1738,7 @@ export default function ClientDatabasePage() {
                                 data-ocid="client.add_client.button"
                               >
                                 <UserPlus className="h-4 w-4 mr-2" />
-                                Ajouter Un Client
+                                {t("client.addButton")}
                               </Button>
                               <Button
                                 variant="outline"
@@ -1827,11 +1831,10 @@ export default function ClientDatabasePage() {
         <AlertDialogContent data-ocid="client.delete.dialog">
           <AlertDialogHeader>
             <AlertDialogTitle className="frame-title">
-              Confirmer la suppression
+              {t("client.confirmDelete")}
             </AlertDialogTitle>
             <AlertDialogDescription className="table-data">
-              Êtes-vous sûr de vouloir supprimer ce client ? Cette action est
-              irréversible.
+              {t("client.confirmDeleteDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1839,14 +1842,14 @@ export default function ClientDatabasePage() {
               className="table-data"
               data-ocid="client.delete.cancel_button"
             >
-              Annuler
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="table-data"
               data-ocid="client.delete.confirm_button"
             >
-              Supprimer
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

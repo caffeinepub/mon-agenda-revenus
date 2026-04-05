@@ -48,6 +48,7 @@ import {
   useGetAllClientRecords,
   useUpdateAppointment,
 } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -65,6 +66,7 @@ export default function AppointmentDialog({
   editMode,
 }: AppointmentDialogProps) {
   const { identity } = useInternetIdentity();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     date: "",
     heureDebut: "",
@@ -212,12 +214,12 @@ export default function AppointmentDialog({
 
     // Validate required fields
     if (!formData.referenceClient) {
-      toast.error("La référence client est obligatoire");
+      toast.error(t("appointment.errorRefRequired"));
       return;
     }
 
     if (!formData.nomClient) {
-      toast.error("Le nom du client est obligatoire");
+      toast.error(t("appointment.errorNameRequired"));
       return;
     }
 
@@ -270,7 +272,7 @@ export default function AppointmentDialog({
           demandeEdition: editMode,
           clientRef,
         });
-        toast.success("Rendez-vous modifié avec succès");
+        toast.success(t("appointment.successUpdated"));
       } else {
         await addAppointment.mutateAsync({
           dateHeure,
@@ -286,7 +288,7 @@ export default function AppointmentDialog({
           repetition,
           clientRef,
         });
-        toast.success("Rendez-vous ajouté avec succès");
+        toast.success(t("appointment.successAdded"));
       }
       onClose();
     } catch (error: any) {
@@ -304,9 +306,9 @@ export default function AppointmentDialog({
         errorMessage.includes("Non autorisé") ||
         errorMessage.includes("Unauthorized")
       ) {
-        toast.error("Non autorisé : Veuillez vous reconnecter et réessayer");
+        toast.error(t("appointment.errorUnauthorized"));
       } else {
-        toast.error(errorMessage || "Erreur lors de l'enregistrement");
+        toast.error(errorMessage || t("appointment.errorSave"));
       }
     }
   };
@@ -318,7 +320,7 @@ export default function AppointmentDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {appointment ? "Modifier le rendez-vous" : "Nouveau rendez-vous"}
+            {appointment ? t("appointment.edit") : t("appointment.new")}
           </DialogTitle>
           <DialogDescription>
             {appointment
@@ -330,7 +332,7 @@ export default function AppointmentDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Client Selection */}
           <div className="space-y-2">
-            <Label>Client *</Label>
+            <Label>{t("appointment.client")} *</Label>
             <Popover open={clientSelectOpen} onOpenChange={setClientSelectOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -397,7 +399,7 @@ export default function AppointmentDialog({
           {/* Date and Time */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="date">{t("appointment.date")} *</Label>
               <Input
                 id="date"
                 type="date"
@@ -410,7 +412,7 @@ export default function AppointmentDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="heureDebut">Heure début *</Label>
+              <Label htmlFor="heureDebut">{t("appointment.startTime")} *</Label>
               <Input
                 id="heureDebut"
                 type="time"
@@ -423,7 +425,7 @@ export default function AppointmentDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="heureFin">Heure fin *</Label>
+              <Label htmlFor="heureFin">{t("appointment.endTime")} *</Label>
               <Input
                 id="heureFin"
                 type="time"
@@ -440,7 +442,7 @@ export default function AppointmentDialog({
           {/* Client Details (read-only, populated by client selection) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nomClient">Nom du client *</Label>
+              <Label htmlFor="nomClient">{t("appointment.clientName")} *</Label>
               <Input
                 id="nomClient"
                 value={formData.nomClient}
@@ -451,7 +453,9 @@ export default function AppointmentDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="referenceClient">Référence client *</Label>
+              <Label htmlFor="referenceClient">
+                {t("appointment.clientRef")} *
+              </Label>
               <Input
                 id="referenceClient"
                 value={formData.referenceClient}
@@ -489,7 +493,7 @@ export default function AppointmentDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="service">Service</Label>
+            <Label htmlFor="service">{t("appointment.service")}</Label>
             <Input
               id="service"
               value={formData.service}
@@ -501,7 +505,7 @@ export default function AppointmentDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t("appointment.note")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
@@ -514,7 +518,7 @@ export default function AppointmentDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="montantDu">Montant dû</Label>
+            <Label htmlFor="montantDu">{t("appointment.amount")}</Label>
             <Input
               id="montantDu"
               type="number"
@@ -529,7 +533,7 @@ export default function AppointmentDialog({
 
           {/* Repetition */}
           <div className="space-y-2">
-            <Label htmlFor="repetition">Répétition</Label>
+            <Label htmlFor="repetition">{t("appointment.repeat")}</Label>
             <Select
               value={formData.repetitionType}
               onValueChange={(value: RepetitionType) =>
@@ -541,10 +545,18 @@ export default function AppointmentDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="aucune">Aucune</SelectItem>
-                <SelectItem value="hebdomadaire">Hebdomadaire</SelectItem>
-                <SelectItem value="mensuelle">Mensuelle</SelectItem>
-                <SelectItem value="annuelle">Annuelle</SelectItem>
+                <SelectItem value="aucune">
+                  {t("appointment.repeatNone")}
+                </SelectItem>
+                <SelectItem value="hebdomadaire">
+                  {t("appointment.repeatWeekly")}
+                </SelectItem>
+                <SelectItem value="mensuelle">
+                  {t("appointment.repeatMonthly")}
+                </SelectItem>
+                <SelectItem value="annuelle">
+                  {t("appointment.repeatDaily")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -579,13 +591,13 @@ export default function AppointmentDialog({
               onClick={onClose}
               disabled={isLoading}
             >
-              Annuler
+              {t("appointment.cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading
                 ? "Enregistrement..."
                 : appointment
-                  ? "Modifier"
+                  ? t("appointment.save")
                   : "Créer"}
             </Button>
           </DialogFooter>

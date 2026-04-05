@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "../hooks/useTranslation";
 import { cropImageTo35x45, photoToUrl } from "../utils/imageCrop";
 
 interface ClientPhotoFieldProps {
@@ -16,6 +17,7 @@ export default function ClientPhotoField({
   onChange,
   disabled,
 }: ClientPhotoFieldProps) {
+  const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     value ? photoToUrl(value) : null,
   );
@@ -26,38 +28,29 @@ export default function ClientPhotoField({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
-      toast.error("Veuillez sélectionner une image");
+      toast.error(t("photo.errorNoImage"));
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("L'image est trop grande (max 5MB)");
+      toast.error(t("photo.errorTooLarge"));
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // Crop and process the image
       const croppedPhoto = await cropImageTo35x45(file);
-
-      // Create preview URL
       const url = photoToUrl(croppedPhoto);
       setPreviewUrl(url);
-
-      // Update parent component
       onChange(croppedPhoto);
-
-      toast.success("Photo ajoutée avec succès");
+      toast.success(t("photo.successAdded"));
     } catch (error) {
       console.error("Error processing image:", error);
-      toast.error("Erreur lors du traitement de l'image");
+      toast.error(t("photo.errorProcess"));
     } finally {
       setIsProcessing(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -74,7 +67,7 @@ export default function ClientPhotoField({
 
   return (
     <div className="space-y-2">
-      <Label>Photo (35mm × 45mm)</Label>
+      <Label>{t("client.photo")} (35mm × 45mm)</Label>
 
       {previewUrl ? (
         <div className="relative inline-block">
@@ -113,9 +106,10 @@ export default function ClientPhotoField({
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || isProcessing}
             className="gap-2"
+            data-ocid="client.photo.upload_button"
           >
             <Upload className="h-4 w-4" />
-            {isProcessing ? "Traitement..." : "Choisir une photo"}
+            {isProcessing ? "Traitement..." : t("photo.add")}
           </Button>
           <p className="text-xs text-muted-foreground">
             Format portrait 35×45mm (recadrage automatique)

@@ -15,6 +15,7 @@ import {
   CalendarRange,
   Cloud,
   FileBarChart,
+  Globe,
   Grid3x3,
   LayoutDashboard,
   Loader2,
@@ -28,6 +29,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useLocalAuth } from "../context/LocalAuthContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import {
+  getActiveLanguageCode,
+  getAllLanguages,
+  setActiveLanguage,
+  useTranslation,
+} from "../hooks/useTranslation";
 import { getGoogleScriptUrl, syncToGoogle } from "../utils/backendSync";
 import AppointmentDialog from "./AppointmentDialog";
 
@@ -38,6 +45,7 @@ interface HeaderProps {
 export default function Header({ userName: _userName }: HeaderProps) {
   const { clear } = useInternetIdentity();
   const { session, logout } = useLocalAuth();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const routerState = useRouterState();
@@ -63,10 +71,10 @@ export default function Header({ userName: _userName }: HeaderProps) {
     setIsSyncing(true);
     try {
       await syncToGoogle();
-      toast.success("Données sauvegardées vers Google avec succès ✓");
+      toast.success(t("users.successSyncToGoogle"));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Erreur de synchronisation Google : ${msg}`, {
+      toast.error(`${t("users.errorSync")} : ${msg}`, {
         duration: 8000,
       });
     } finally {
@@ -76,10 +84,15 @@ export default function Header({ userName: _userName }: HeaderProps) {
 
   const roleLabel =
     session?.role === "admin"
-      ? "Administrateur"
+      ? t("nav.admin")
       : session?.role === "advanced"
-        ? "Utilisateur Avancé"
-        : "Lecteur";
+        ? t("nav.advanced")
+        : t("nav.reader");
+
+  // Language selector
+  const allLangs = getAllLanguages();
+  const activeLangCode = getActiveLanguageCode();
+  const activeLang = allLangs.find((l) => l.code === activeLangCode);
 
   return (
     <>
@@ -107,7 +120,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="nav.dashboard.link"
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  <span className="text-xs">Tableau de bord</span>
+                  <span className="text-xs">{t("nav.dashboard")}</span>
                 </Button>
                 <Button
                   variant={
@@ -119,7 +132,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="nav.monthly.link"
                 >
                   <Grid3x3 className="h-4 w-4" />
-                  <span className="text-xs">Cal. Mensuel</span>
+                  <span className="text-xs">{t("nav.monthly")}</span>
                 </Button>
                 <Button
                   variant={
@@ -131,7 +144,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="nav.weekly.link"
                 >
                   <CalendarDays className="h-4 w-4" />
-                  <span className="text-xs">Cal. Semaine</span>
+                  <span className="text-xs">{t("nav.weekly")}</span>
                 </Button>
                 <Button
                   variant={
@@ -145,7 +158,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="nav.daily.link"
                 >
                   <CalendarRange className="h-4 w-4" />
-                  <span className="text-xs">Cal. Journalier</span>
+                  <span className="text-xs">{t("nav.daily")}</span>
                 </Button>
                 <Button
                   variant={currentPath === "/rapport-pdf" ? "default" : "ghost"}
@@ -155,7 +168,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="nav.rapport.link"
                 >
                   <FileBarChart className="h-4 w-4" />
-                  <span className="text-xs">Rapport PDF</span>
+                  <span className="text-xs">{t("nav.rapport")}</span>
                 </Button>
                 <Button
                   variant={
@@ -167,7 +180,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="nav.clients.link"
                 >
                   <Users className="h-4 w-4" />
-                  <span className="text-xs">Base Client</span>
+                  <span className="text-xs">{t("nav.clients")}</span>
                 </Button>
                 {isAdmin && (
                   <Button
@@ -178,10 +191,58 @@ export default function Header({ userName: _userName }: HeaderProps) {
                     data-ocid="nav.users.link"
                   >
                     <ShieldCheck className="h-4 w-4" />
-                    <span className="text-xs">Utilisateurs</span>
+                    <span className="text-xs">{t("nav.users")}</span>
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Button
+                    variant={currentPath === "/languages" ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-1 px-2"
+                    onClick={() => navigate({ to: "/languages" })}
+                    data-ocid="nav.languages.link"
+                  >
+                    <Globe className="h-4 w-4" />
+                    <span className="text-xs">{t("nav.languages")}</span>
                   </Button>
                 )}
               </nav>
+
+              {/* Language selector */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 px-2"
+                    title="Changer de langue"
+                    data-ocid="header.language.select"
+                  >
+                    <span className="text-base leading-none">
+                      {activeLang?.flag ?? "🇳"}
+                    </span>
+                    <span className="hidden sm:inline text-xs uppercase">
+                      {activeLangCode}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Langue
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {allLangs.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang.code}
+                      onClick={() => setActiveLanguage(lang.code)}
+                      className={lang.code === activeLangCode ? "bg-muted" : ""}
+                    >
+                      <span className="mr-2 text-base">{lang.flag}</span>
+                      <span className="text-xs">{lang.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* Google Sync button — only if URL is configured */}
               {googleUrl && (
@@ -200,7 +261,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                     <Cloud className="h-4 w-4" />
                   )}
                   <span className="hidden sm:inline text-xs">
-                    {isSyncing ? "Sync..." : "Sync Google"}
+                    {isSyncing ? t("nav.syncing") : t("nav.syncGoogle")}
                   </span>
                 </Button>
               )}
@@ -214,7 +275,9 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   data-ocid="header.new_appointment.button"
                 >
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline text-xs">Nouveau RDV</span>
+                  <span className="hidden sm:inline text-xs">
+                    {t("nav.newRdv")}
+                  </span>
                 </Button>
               )}
 
@@ -255,47 +318,56 @@ export default function Header({ userName: _userName }: HeaderProps) {
                   <div className="md:hidden">
                     <DropdownMenuItem onClick={() => navigate({ to: "/" })}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Tableau de bord
+                      {t("nav.dashboard")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate({ to: "/calendrier-mensuel" })}
                       data-ocid="nav.monthly.mobile.link"
                     >
                       <Grid3x3 className="mr-2 h-4 w-4" />
-                      Calendrier Mensuel
+                      {t("monthly.title")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate({ to: "/calendrier-semaine" })}
                       data-ocid="nav.weekly.mobile.link"
                     >
                       <CalendarDays className="mr-2 h-4 w-4" />
-                      Calendrier Semaine
+                      {t("weekly.title")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate({ to: "/calendrier-journalier" })}
                       data-ocid="nav.daily.mobile.link"
                     >
                       <CalendarRange className="mr-2 h-4 w-4" />
-                      Calendrier Journalier
+                      {t("daily.title")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate({ to: "/rapport-pdf" })}
                     >
                       <FileBarChart className="mr-2 h-4 w-4" />
-                      Rapport PDF
+                      {t("nav.rapport")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => navigate({ to: "/client-database" })}
                     >
                       <Users className="mr-2 h-4 w-4" />
-                      Base Client
+                      {t("nav.clients")}
                     </DropdownMenuItem>
                     {isAdmin && (
                       <DropdownMenuItem
                         onClick={() => navigate({ to: "/users" })}
                       >
                         <ShieldCheck className="mr-2 h-4 w-4" />
-                        Utilisateurs
+                        {t("nav.users")}
+                      </DropdownMenuItem>
+                    )}
+                    {isAdmin && (
+                      <DropdownMenuItem
+                        onClick={() => navigate({ to: "/languages" })}
+                        data-ocid="nav.languages.mobile.link"
+                      >
+                        <Globe className="mr-2 h-4 w-4" />
+                        {t("nav.languages")}
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
@@ -306,7 +378,7 @@ export default function Header({ userName: _userName }: HeaderProps) {
                     data-ocid="header.logout.button"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Déconnexion
+                    {t("nav.logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -11,6 +11,7 @@ import {
   useUpdateAppointmentStatus,
   useUpdateMontantPaye,
 } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   calculateMonthlyListingRow,
   calculateTotalRevenusFaitsEtPayes,
@@ -658,6 +659,7 @@ function SummaryBox({
   weekDates,
   allAppointments,
 }: { weekDates: Date[]; allAppointments: RendezVous[] }) {
+  const { t } = useTranslation();
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -801,7 +803,7 @@ function SummaryBox({
           borderBottom: "1px solid #9ca3af",
         }}
       >
-        Résumé
+        {t("weekly.resume")}
       </div>
       <div
         style={{

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { useMemo } from "react";
 import type { RendezVous } from "../backend";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   calculateMonthlyListingRow,
   calculateRdvFaits,
@@ -25,6 +26,8 @@ export default function MonthlySummarySection({
   year,
   allAppointments,
 }: MonthlySummarySectionProps) {
+  const { t } = useTranslation();
+
   const monthNames = [
     "Janvier",
     "Février",
@@ -138,20 +141,9 @@ export default function MonthlySummarySection({
     return total / BigInt(completedMonthsWithRevenue.length);
   }, [year, currentYear, currentMonth, monthlyRevenues]);
 
-  // Dû au jour courant: total owed across ALL appointments (fait + non annulé, cumulative credit negatif)
-  const duAujourdhui = useMemo(() => {
-    // Sum of (montantDu - montantPaye) for appointments fait + non annulé where montantDu > montantPaye
-    let totalDu = BigInt(0);
-    let totalPaye = BigInt(0);
-    for (const apt of allAppointments) {
-      if (apt.fait && !apt.annule) {
-        totalDu += apt.montantDu;
-        totalPaye += apt.montantPaye;
-      }
-    }
-    const diff = totalDu - totalPaye;
-    return diff > BigInt(0) ? diff : BigInt(0);
-  }, [allAppointments]);
+  // Dû = total RDV Faits (payé et impayés) - total Revenus (Faits et Payés)
+  // This is always >= 0 by definition (rdvFaits >= revenus)
+  const duTotal = totalRdvFaits - totalRevenue;
 
   const formatNumber = (amount: bigint) => {
     return Number(amount).toLocaleString("fr-FR");
@@ -161,7 +153,7 @@ export default function MonthlySummarySection({
     <Card className="mb-0">
       <CardHeader>
         <CardTitle className="frame-title">
-          Résumé Mensuels (Année en Cours)
+          {t("dashboard.resumeMensuels")}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3 pb-3">
@@ -169,26 +161,32 @@ export default function MonthlySummarySection({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="table-header">Mois</TableHead>
-                <TableHead className="text-right table-header">
-                  RDV Faits (payé et impayés)
+                <TableHead className="table-header">
+                  {t("dashboard.mois")}
                 </TableHead>
                 <TableHead className="text-right table-header">
-                  Sommes reçus
+                  {t("dashboard.rdvFaits")}
                 </TableHead>
                 <TableHead className="text-right table-header">
-                  Revenus (Faits et Payés)
+                  {t("dashboard.sommesRecues")}
                 </TableHead>
                 <TableHead className="text-right table-header">
-                  Revenu Moy Mensuel
+                  {t("dashboard.revenusFaitsPayes")}
                 </TableHead>
-                <TableHead className="text-right table-header">Dû</TableHead>
+                <TableHead className="text-right table-header">
+                  {t("dashboard.revenuMoyMensuel")}
+                </TableHead>
+                <TableHead className="text-right table-header">
+                  {t("dashboard.du")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {/* Total row moved to top, above January */}
               <TableRow className="bg-muted/50">
-                <TableCell className="table-header py-1">TOTAL</TableCell>
+                <TableCell className="table-header py-1">
+                  {t("dashboard.total")}
+                </TableCell>
                 <TableCell className="text-right sum-total py-1">
                   {formatNumber(totalRdvFaits)}
                 </TableCell>
@@ -203,8 +201,8 @@ export default function MonthlySummarySection({
                     ? formatNumber(revenuMoyMensuel)
                     : "—"}
                 </TableCell>
-                <TableCell className="text-right sum-total py-1 text-orange-600 font-bold">
-                  {formatNumber(duAujourdhui)}
+                <TableCell className="text-right sum-total py-1 text-red-600 font-bold">
+                  {formatNumber(duTotal)}
                 </TableCell>
               </TableRow>
               {monthlyRevenues.map((item, index) => (

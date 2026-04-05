@@ -6,7 +6,9 @@ import {
   useGetAllAppointments,
   useGetMonthlyListing,
 } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 
+// MONTH_NAMES stays in French — used as data keys for calculations
 const MONTH_NAMES = [
   "janvier",
   "février",
@@ -23,6 +25,7 @@ const MONTH_NAMES = [
 ];
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(
@@ -66,7 +69,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-2 py-4 md:px-4 md:py-8">
         <h1 className="frame-title text-2xl md:text-3xl mb-4 md:mb-6">
-          Tableau de bord
+          {t("dashboard.title")}
         </h1>
 
         {/* ── TOP SECTION: Résumé Mensuels ── */}
@@ -75,7 +78,7 @@ export default function Dashboard() {
             className="text-center font-bold text-xl mb-3"
             style={{ fontFamily: "Verdana, sans-serif" }}
           >
-            ANNEE : {selectedYear}
+            {t("dashboard.annee")} : {selectedYear}
           </p>
           <MonthlySummarySection
             year={selectedYear}
@@ -88,15 +91,15 @@ export default function Dashboard() {
           <CardHeader>
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="frame-title">
-                Listing Mensuel — {MONTH_NAMES[selectedMonth - 1]}{" "}
-                {selectedYear}
+                {t("dashboard.listingMensuel")} —{" "}
+                {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
               </CardTitle>
               <div className="flex items-center gap-1 ml-auto">
                 <button
                   type="button"
                   onClick={goToPrevMonth}
                   className="p-1 rounded hover:bg-muted border border-border"
-                  title="Mois précédent"
+                  title={t("monthly.prevMonth")}
                 >
                   &#8249;
                 </button>
@@ -110,7 +113,7 @@ export default function Dashboard() {
                   type="button"
                   onClick={goToNextMonth}
                   className="p-1 rounded hover:bg-muted border border-border"
-                  title="Mois suivant"
+                  title={t("monthly.nextMonth")}
                 >
                   &#8250;
                 </button>
@@ -120,7 +123,7 @@ export default function Dashboard() {
                   className="ml-2 px-2 py-1 text-xs rounded border border-border hover:bg-muted"
                   style={{ fontFamily: "Verdana, sans-serif" }}
                 >
-                  Aujourd'hui
+                  {t("dashboard.today")}
                 </button>
               </div>
             </div>

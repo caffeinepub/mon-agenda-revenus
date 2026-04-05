@@ -9,6 +9,7 @@ import {
   useGetAllAppointments,
   useGetAllClientRecords,
 } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 
 const COL_W = 87;
 const ROW_H = 14;
@@ -384,6 +385,7 @@ function ClientFicheModal({
 
 // ── MonthlyCalendarPage ───────────────────────────────────────────────────────
 export default function MonthlyCalendarPage() {
+  const { t } = useTranslation();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -489,7 +491,7 @@ export default function MonthlyCalendarPage() {
           textAlign: "center",
         }}
       >
-        Calendrier Mensuel
+        {t("monthly.title")}
       </h1>
 
       {/* Navigation */}

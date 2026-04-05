@@ -11,6 +11,7 @@ import {
   useUpdateAppointmentStatus,
   useUpdateMontantPaye,
 } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 
 const ROW_H = 12;
 const VERDANA: React.CSSProperties = {
@@ -399,6 +400,7 @@ function ClientFicheModal({
 
 // ── DailyCalendarPage ─────────────────────────────────────────────────────────
 export default function DailyCalendarPage() {
+  const { t } = useTranslation();
   const { session } = useLocalAuth();
   const isReader = session?.role === "reader";
   const [dayOffset, setDayOffset] = useState(0);
@@ -670,7 +672,7 @@ export default function DailyCalendarPage() {
           marginBottom: 8,
         }}
       >
-        Calendrier Journalier
+        {t("daily.title")}
       </h1>
 
       {/* Navigation row 1 — date navigation */}

@@ -17,6 +17,7 @@ import {
   useGetAllClientRecords,
   useGetMonthlyListing,
 } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   type MonthlyListingRow,
   calculateMonthlyListingRow,
@@ -114,6 +115,7 @@ function tdStyleSynth(extra: React.CSSProperties = {}): React.CSSProperties {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function RapportPDFPage() {
+  const { t } = useTranslation();
   const [reportType, setReportType] = useState<ReportType>("mensuel");
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(1);
@@ -784,7 +786,7 @@ export default function RapportPDFPage() {
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Rapport PDF</h1>
+          <h1 className="text-3xl font-bold">{t("rapport.title")}</h1>
           <div className="flex gap-2">
             <Button
               onClick={handleExportCSV}

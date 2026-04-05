@@ -1,42 +1,96 @@
-# Mon Agenda Revenus
+src/frontend/src/i18n/ - système i18n créé avec fr.json, en.json, es.json, ru.json
+src/frontend/src/hooks/useTranslation.ts - hook useTranslation créé
 
-## Current State
+Tâches frontend à implémenter :
 
-- `MonthlySummarySection.tsx`: Tableau "Résumé Mensuels (Année en Cours)" avec 2 colonnes : Mois + Revenus (Faits et Payés). Calculs via `calculateMonthlyListingRow` et `calculateTotalRevenusFaitsEtPayes`.
-- `UserManagementPage.tsx`: Section apparence avec mode clair/sombre et option police orangée (une seule option checkbox). En mode sombre, certains fonds restent blancs et la police blanche devient illisible.
-- `ClientDatabasePage.tsx`: Formulaire "Ajouter un client" avec champ Nom obligatoire + champ Référence client éditable à tout moment (même après création). Pas de génération automatique de référence.
-- `monthlyListing.ts`: Utilitaire de calcul avec `calculateRevenusPlusAvances` (= sommes reçues = montantPaye de tous les RDV du mois).
+1. CORRECTION COLONNE "Dû" dans MonthlySummarySection.tsx :
+   - Remplacer le calcul `duAujourdhui` par : `totalRdvFaits - totalRevenue`
+   - Supprimer la dépendance à `allAppointments` dans ce calcul
+   - Afficher le résultat en ROUGE (text-red-600) — jamais en orange
+   - Le résultat est TOUJOURS positif ou nul (rdvFaits >= revenus par définition)
+   - Supprimer l'ancien calcul `duAujourdhui` basé sur les appointments individuels
+   - Nouveau code : `const duTotal = totalRdvFaits - totalRevenue;`
+   - Affichage uniquement dans la ligne TOTAL (pas dans les lignes mensuelles)
 
-## Requested Changes (Diff)
+2. SYSTÈME i18n — MIGRATION DES TEXTES VISIBLES :
+   Hook disponible : `import { useTranslation } from "../hooks/useTranslation";`
+   (ou `"../../hooks/useTranslation"` selon le chemin)
+   Utilisation : `const { t } = useTranslation();` puis `t("section.key")`
+   Fichier de référence des clés : src/frontend/src/i18n/fr.json
 
-### Add
-- Dans `MonthlySummarySection.tsx`: 2 nouvelles colonnes dans le tableau Résumé Mensuels:
-  1. "RDV Faits (payé et impayés)" — nombre total de RDV fait par mois (= `rdvFaits` de chaque client, somme)
-  2. "Sommes reçus" — total des sommes reçues par mois (= `calculateRevenusPlusAvances` = somme des `montantPaye` de tous RDV du mois, tous clients confondus)
-- Dans `UserManagementPage.tsx` section apparence: Remplacer la simple case à cocher police orangée par un sélecteur de couleurs de police avec plusieurs options prédéfinies visibles sur fond sombre ET fond clair.
-- Dans `ClientDatabasePage.tsx`: Génération automatique d'une référence client unique lors de la création (format ex: CLI-2026-001, incrémentée). Le champ référence est éditable uniquement à la création, verrouillé dès que le client est sauvegardé.
+   Appliquer useTranslation() dans ces fichiers :
+   - components/Header.tsx
+   - components/MonthlySummarySection.tsx
+   - components/AppointmentDialog.tsx
+   - components/AppointmentActionDialog.tsx
+   - components/AppointmentDeleteDialog.tsx
+   - components/ClientPhotoField.tsx
+   - pages/Dashboard.tsx
+   - pages/ClientDatabasePage.tsx
+   - pages/UserManagementPage.tsx
+   - pages/WeeklyCalendarPage.tsx
+   - pages/DailyCalendarPage.tsx
+   - pages/MonthlyCalendarPage.tsx
+   - pages/RapportPDFPage.tsx
 
-### Modify
-- Dans `UserManagementPage.tsx` et `index.css`: Corriger le mode sombre — s'assurer que tous les tableaux et fonds blancs/très clairs ont une couleur de fond sombre, ou que le texte qui passe en blanc est foncé suffisamment pour rester lisible sur fond clair.
-- Dans `ClientDatabasePage.tsx`: Le champ Nom client n'est plus obligatoire (validation `handleSubmit` à corriger : ne plus exiger `clientName`).
-- Dans `MonthlySummarySection.tsx`: Ligne de total en haut du tableau inclut les 2 nouvelles colonnes.
+   Éléments à migrer (PAS tout le texte, seulement les éléments VISIBLES) :
+   - Tous les titres de pages (h1, CardTitle)
+   - Tous les labels de colonnes de tableaux (TableHead)
+   - Tous les boutons (Button, texte des boutons)
+   - Tous les labels de formulaires (Label)
+   - Tous les messages toast (toast.success, toast.error)
+   - Les noms des éléments de navigation (Header)
+   - Les en-têtes de cartes (CardTitle)
+   - Les messages de confirmation de suppression
 
-### Remove
-- Dans `UserManagementPage.tsx`: Supprimer la simple checkbox "Police orangée" et la remplacer par le nouveau sélecteur multi-couleurs.
+   NE PAS migrer :
+   - Les constantes de données (MONTH_NAMES, DAY_NAMES utilisées pour les calculs)
+   - Le code logique, les valeurs de champs de formulaire
+   - Les chaînes utilisées dans des comparaisons
 
-## Implementation Plan
+3. SÉLECTEUR DE LANGUE dans Header.tsx :
+   - Ajouter un sélecteur de langue visible dans la barre de navigation
+   - Placer entre les boutons de navigation et le bouton Sync Google
+   - Afficher les drapeaux emoji + code langue : 🇫🇷 FR | 🇬🇧 EN | 🇪🇸 ES | 🇷🇺 RU
+   - Utiliser un DropdownMenu avec la liste de toutes les langues disponibles (getAllLanguages())
+   - Importez : `import { useTranslation, getAllLanguages, setActiveLanguage } from "../hooks/useTranslation";`
+   - Le changement est instantané (l'event agenda_lang_change déclenche re-render)
+   - Sur mobile : ajouter aussi dans le menu dropdown
 
-1. **MonthlySummarySection.tsx** — Ajouter le calcul de `rdvFaits` total par mois et `sommesRecues` total par mois. Ajouter 2 colonnes dans le TableHeader et les TableRow. Mettre à jour la ligne TOTAL en conséquence.
+4. PAGE LANGUES (nouveau fichier src/frontend/src/pages/LanguagesPage.tsx) :
+   Créer une nouvelle page complète avec :
+   a) Section "Langues disponibles" : tableau listant toutes les langues (code, nom, drapeau, intégré/personnalisé)
+      - Langue active est indiquée visuellement (badge ou fond coloré)
+      - Bouton "Activer" pour changer de langue
+      - Bouton "Supprimer" (uniquement pour les langues personnalisées, pas les intégrées)
+      - Bouton "Télécharger" pour exporter n'importe quelle langue
+   b) Section "Exporter un fichier de langue" :
+      - Sélecteur de langue à exporter (toutes les langues disponibles)
+      - Bouton Télécharger → génère un fichier JSON `{code}.json` à télécharger
+   c) Section "Importer un fichier de langue" :
+      - Champ upload fichier JSON
+      - Champ saisie code langue (ex: DE)
+      - Champ saisie nom affiché (ex: Deutsch)
+      - Champ optionnel emoji drapeau
+      - Bouton Importer → appelle saveCustomLanguage() et ajoute au sélecteur immédiatement
+      - Si le code existe déjà (même les intégrés), remplace sans confirmation
 
-2. **UserManagementPage.tsx** — Section apparence:
-   a. Remplacer checkbox "Police orangée" par une palette de 6 couleurs prédéfinies (ex: blanc, orange, jaune, vert pâle, cyan, gris clair) avec un swatch visuel cliquable. La couleur sélectionnée est stockée dans `localStorage` (clé `agenda_font_color`). Une option "Défaut" remet à la couleur native.
-   b. Identifier et corriger les fonds blancs en mode sombre : ajouter des classes dark: sur les divs inline-styled, ou forcer `bg-background` / `dark:bg-gray-800` sur les zones incriminées.
+   Imports pour la page :
+   ```ts
+   import { useTranslation, getAllLanguages, saveCustomLanguage, deleteCustomLanguage, setActiveLanguage, getActiveLanguageCode } from "../hooks/useTranslation";
+   ```
 
-3. **ClientDatabasePage.tsx** — Formulaire:
-   a. Générer automatiquement une référence au format `CLI-AAAA-NNN` (année courante + numéro séquentiel à partir du nombre de clients existants + 1) quand `editingClientId` est null et que la référence est vide.
-   b. Rendre le champ référence readOnly quand `editingClientId` n'est pas null (client existant).
-   c. Retirer `clientName` de la validation obligatoire dans `handleSubmit` — autoriser nom vide.
+5. ROUTE dans App.tsx :
+   - Ajouter route `/languages` → LanguagesPage
+   - Ajouter lien "Langues" dans la navigation Header (uniquement pour admin)
+     Icône : Languages (from lucide-react) ou Globe
+   - Ajouter aussi dans le menu mobile dropdown
 
-4. **index.css ou App.tsx** — Appliquer la couleur de police personnalisée depuis `localStorage` `agenda_font_color` dans la classe CSS `--font-color-custom` ou via un effet qui applique le style inline sur `document.documentElement`.
-
-5. **Code cleanup** — Supprimer imports inutilisés, console.log, variables inutilisées.
+CONTRAINTES IMPORTANTES :
+- Ne pas toucher aux formules de calcul (useGetMonthlyListing, calculateMonthlyListingRow, etc.)
+- Ne pas toucher aux structures de données, types TypeScript
+- Ne pas modifier les colonnes/dimensions des tableaux calendriers
+- Les MONTH_NAMES et DAY_NAMES pour les calculs restent en français (données)
+- Le hook useTranslation est déjà créé dans src/frontend/src/hooks/useTranslation.ts
+- Les fichiers i18n sont déjà créés dans src/frontend/src/i18n/
+- Valider avec typecheck et build après les modifications

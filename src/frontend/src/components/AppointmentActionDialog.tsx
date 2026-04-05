@@ -11,6 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DemandeEdition, type RendezVous } from "../backend";
 import { useDeleteAppointment } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 import AppointmentDeleteDialog from "./AppointmentDeleteDialog";
 import AppointmentDialog from "./AppointmentDialog";
 
@@ -27,6 +28,7 @@ export default function AppointmentActionDialog({
   onFullyDone,
   appointment,
 }: AppointmentActionDialogProps) {
+  const { t } = useTranslation();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editMode, setEditMode] = useState<DemandeEdition | null>(null);
@@ -52,11 +54,11 @@ export default function AppointmentActionDialog({
         id: appointment.id,
         mode: DemandeEdition.futursDuClient,
       });
-      toast.success("Tous les rendez-vous futurs ont été supprimés");
+      toast.success(t("appointment.successDeletedAll"));
       onClose();
       onFullyDone?.();
     } catch {
-      toast.error("Erreur lors de la suppression");
+      toast.error(t("appointment.errorDelete"));
     } finally {
       setDeletingFuture(false);
     }
@@ -86,7 +88,7 @@ export default function AppointmentActionDialog({
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground">
-                Modifier
+                {t("common.edit")}
               </h3>
               <div className="space-y-2">
                 <Button
@@ -98,7 +100,7 @@ export default function AppointmentActionDialog({
                   <User className="h-5 w-5 text-blue-600" />
                   <div className="text-left">
                     <div className="font-semibold">
-                      Uniquement ce rendez-vous
+                      {t("appointment.editThisOnly")}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Seul ce rendez-vous sera modifié
@@ -116,7 +118,7 @@ export default function AppointmentActionDialog({
                   <Users className="h-5 w-5 text-blue-600" />
                   <div className="text-left">
                     <div className="font-semibold">
-                      Tous les rendez-vous futurs du même client
+                      {t("appointment.editAllFuture")}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Inclut le rendez-vous actuel (aujourd'hui) et tous les
@@ -129,7 +131,7 @@ export default function AppointmentActionDialog({
 
             <div className="border-t pt-4">
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                Supprimer
+                {t("common.delete")}
               </h3>
               <div className="space-y-2">
                 <Button
@@ -141,7 +143,7 @@ export default function AppointmentActionDialog({
                   <Trash2 className="h-5 w-5 text-destructive" />
                   <div className="text-left">
                     <div className="font-semibold text-destructive">
-                      Supprimer ce rendez-vous
+                      {t("appointment.deleteThis")}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Supprime uniquement ce rendez-vous
@@ -160,7 +162,7 @@ export default function AppointmentActionDialog({
                     <div className="font-semibold text-destructive">
                       {deletingFuture
                         ? "Suppression en cours..."
-                        : "Supprimer tous les RDV futurs"}
+                        : t("appointment.deleteAllFuture")}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Supprime ce rendez-vous et tous les futurs du même client

@@ -33,6 +33,7 @@ import { useTheme } from "next-themes";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { type UserRole, useLocalAuth } from "../context/LocalAuthContext";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   clearAllData,
   downloadExportCsv,
@@ -121,6 +122,7 @@ function doPost(e) {
 }`;
 
 function GoogleSyncSection() {
+  const { t } = useTranslation();
   const [scriptUrl, setScriptUrlState] = useState<string>(() =>
     getGoogleScriptUrl(),
   );
@@ -133,19 +135,19 @@ function GoogleSyncSection() {
 
   const handleSaveUrl = () => {
     setGoogleScriptUrl(scriptUrl.trim());
-    toast.success("URL Google Apps Script enregistrée");
+    toast.success(t("users.successUrlSaved"));
   };
 
   const handleSaveSecret = () => {
     setGoogleSecret(secret.trim());
-    toast.success("Mot de passe enregistré");
+    toast.success(t("users.successSecretSaved"));
   };
 
   const handleSyncToGoogle = async () => {
     setSaving(true);
     try {
       await syncToGoogle();
-      toast.success("Données sauvegardées vers Google Drive ✓");
+      toast.success(t("users.successSyncToGoogle"));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(`Erreur : ${msg}`, { duration: 8000 });
@@ -159,7 +161,7 @@ function GoogleSyncSection() {
     try {
       const result = await syncFromGoogle();
       if (result.ok) {
-        toast.success("Données chargées depuis Google Drive. Rechargement...");
+        toast.success(t("users.successLoadFromGoogle"));
         setTimeout(() => window.location.reload(), 1500);
       } else {
         toast.error(`Erreur : ${result.error ?? "Inconnu"}`, {
@@ -539,6 +541,7 @@ function GoogleSyncSection() {
 }
 
 export default function UserManagementPage() {
+  const { t } = useTranslation();
   const {
     users,
     session,
@@ -616,13 +619,13 @@ export default function UserManagementPage() {
   const handleExportBeforeReset = () => {
     handleExport();
     setExportedBeforeReset(true);
-    toast.success("Sauvegarde JSON téléchargée");
+    toast.success(t("users.successExportJson"));
   };
 
   const handleExportCsvBeforeReset = () => {
     downloadExportCsv();
     setExportedBeforeReset(true);
-    toast.success("Sauvegarde CSV téléchargée (rendez-vous + clients)");
+    toast.success(t("users.successExportCsv"));
   };
 
   const handleResetConfirm = async () => {
@@ -635,7 +638,7 @@ export default function UserManagementPage() {
       setShowResetDialog(false);
       setTimeout(() => window.location.reload(), 1200);
     } catch {
-      toast.error("Erreur lors de la réinitialisation");
+      toast.error(t("users.errorReset"));
     } finally {
       setResetLoading(false);
     }
@@ -652,7 +655,7 @@ export default function UserManagementPage() {
         toast.error(result.error ?? "Erreur lors de l'importation");
         return;
       }
-      toast.success("Données importées avec succès. Rechargement...");
+      toast.success(t("users.successImport"));
       setTimeout(() => window.location.reload(), 1500);
     } finally {
       setImportLoading(false);
@@ -695,7 +698,7 @@ export default function UserManagementPage() {
     const result = await addUserAsync(newUsername.trim(), newPassword, newRole);
     setAddLoading(false);
     if (result.ok) {
-      toast.success(`Utilisateur "${newUsername.trim()}" ajouté`);
+      toast.success(t("users.successUserAdded"));
       setNewUsername("");
       setNewPassword("");
       setNewRole("reader");
@@ -725,7 +728,7 @@ export default function UserManagementPage() {
     );
     setEditLoading(false);
     if (result.ok) {
-      toast.success("Utilisateur mis à jour");
+      toast.success(t("users.successUserUpdated"));
       setEditingUsername(null);
     } else {
       setEditError(result.error ?? "Erreur");
@@ -736,7 +739,7 @@ export default function UserManagementPage() {
     if (!deleteUsername) return;
     const result = removeUser(deleteUsername);
     if (result.ok) {
-      toast.success(`Utilisateur "${deleteUsername}" supprimé`);
+      toast.success(t("users.successUserDeleted"));
     } else {
       toast.error(result.error ?? "Erreur");
     }

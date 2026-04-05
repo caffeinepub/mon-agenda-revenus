@@ -1,6 +1,5 @@
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -13,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DemandeEdition, type RendezVous } from "../backend";
 import { useDeleteAppointment } from "../hooks/useQueries";
+import { useTranslation } from "../hooks/useTranslation";
 
 interface AppointmentDeleteDialogProps {
   open: boolean;
@@ -25,6 +25,7 @@ export default function AppointmentDeleteDialog({
   onClose,
   appointment,
 }: AppointmentDeleteDialogProps) {
+  const { t } = useTranslation();
   const [deleteMode, setDeleteMode] = useState<DemandeEdition | null>(null);
   const deleteAppointment = useDeleteAppointment();
 
@@ -36,12 +37,12 @@ export default function AppointmentDeleteDialog({
       await deleteAppointment.mutateAsync({ id: appointment.id, mode });
       toast.success(
         mode === DemandeEdition.unique
-          ? "Rendez-vous supprimé avec succès"
-          : "Rendez-vous futurs supprimés avec succès",
+          ? t("appointment.successDeleted")
+          : t("appointment.successDeletedAll"),
       );
       onClose();
     } catch (error) {
-      toast.error("Erreur lors de la suppression");
+      toast.error(t("appointment.errorDelete"));
       console.error(error);
     } finally {
       setDeleteMode(null);
@@ -52,9 +53,9 @@ export default function AppointmentDeleteDialog({
     <AlertDialog open={open} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Supprimer le rendez-vous</AlertDialogTitle>
+          <AlertDialogTitle>{t("appointment.confirmDelete")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Choisissez comment vous souhaitez supprimer ce rendez-vous.
+            {t("appointment.confirmDeleteDesc")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-3 py-4">
@@ -70,7 +71,7 @@ export default function AppointmentDeleteDialog({
               )}
               <div>
                 <div className="font-semibold">
-                  Supprimer uniquement ce rendez-vous
+                  {t("appointment.deleteThis")}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Seul ce rendez-vous sera supprimé
@@ -90,7 +91,7 @@ export default function AppointmentDeleteDialog({
               )}
               <div>
                 <div className="font-semibold">
-                  Supprimer tous les rendez-vous futurs du même client
+                  {t("appointment.deleteAllFuture")}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Tous les rendez-vous futurs de ce client seront supprimés
@@ -101,7 +102,7 @@ export default function AppointmentDeleteDialog({
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleteAppointment.isPending}>
-            Annuler
+            {t("common.cancel")}
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
