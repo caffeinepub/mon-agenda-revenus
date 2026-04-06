@@ -8,24 +8,24 @@ import {
 } from "../hooks/useQueries";
 import { useTranslation } from "../hooks/useTranslation";
 
-// MONTH_NAMES stays in French — used as data keys for calculations
-const MONTH_NAMES = [
-  "janvier",
-  "février",
-  "mars",
-  "avril",
-  "mai",
-  "juin",
-  "juillet",
-  "août",
-  "septembre",
-  "octobre",
-  "novembre",
-  "décembre",
-];
+// MONTH_NAMES defined inside component
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const MONTH_NAMES = [
+    t("months.janvier"),
+    t("months.fevrier"),
+    t("months.mars"),
+    t("months.avril"),
+    t("months.mai"),
+    t("months.juin"),
+    t("months.juillet"),
+    t("months.aout"),
+    t("months.septembre"),
+    t("months.octobre"),
+    t("months.novembre"),
+    t("months.decembre"),
+  ];
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(

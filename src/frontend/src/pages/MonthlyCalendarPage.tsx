@@ -19,22 +19,6 @@ const VERDANA10: React.CSSProperties = {
   fontWeight: "normal",
 };
 
-const MONTH_NAMES_FR = [
-  "Janvier",
-  "Février",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Septembre",
-  "Octobre",
-  "Novembre",
-  "Décembre",
-];
-const DAY_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
 // Returns Monday-based calendar weeks for a given month
 function getCalendarWeeks(year: number, month: number): Date[][] {
   const firstDay = new Date(year, month, 1);
@@ -74,6 +58,7 @@ function ClientFicheModal({
   appointments: allApts,
   onClose,
 }: ClientFicheModalProps) {
+  const { t } = useTranslation();
   const client = clients.find((c) => c.referenceClient === referenceClient);
   const currentYear = new Date().getFullYear();
   const now = BigInt(Date.now()) * BigInt(1_000_000);
@@ -162,7 +147,7 @@ function ClientFicheModal({
           }}
         >
           <span style={{ fontWeight: "bold", fontSize: 13 }}>
-            Fiche client — {clientName}
+            {t("monthly.ficheClientTitle")} — {clientName}
           </span>
           <button
             type="button"
@@ -181,17 +166,17 @@ function ClientFicheModal({
           <div style={{ marginBottom: 12 }}>
             {client.phoneNumber && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Tél :</strong> {client.phoneNumber}
+                <strong>{t("monthly.tel")} :</strong> {client.phoneNumber}
               </p>
             )}
             {client.address && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Adresse :</strong> {client.address}
+                <strong>{t("monthly.adresse")} :</strong> {client.address}
               </p>
             )}
             {client.service && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Service :</strong> {client.service}
+                <strong>{t("client.service")} :</strong> {client.service}
               </p>
             )}
           </div>
@@ -206,7 +191,7 @@ function ClientFicheModal({
           }}
         >
           <p style={{ fontWeight: "bold", marginBottom: 6 }}>
-            Résumé {currentYear}
+            {t("monthly.resumeAnnee")} {currentYear}
           </p>
           <div
             style={{
@@ -215,11 +200,11 @@ function ClientFicheModal({
               gap: "2px 8px",
             }}
           >
-            <span>Nb RDV faits</span>
+            <span>{t("monthly.nbRdvFaits")}</span>
             <span style={{ textAlign: "right", fontWeight: "bold" }}>
               {clientAptsAscending.filter((a) => a.fait).length}
             </span>
-            <span>Total payé</span>
+            <span>{t("monthly.totalPaye")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -229,7 +214,7 @@ function ClientFicheModal({
             >
               {totalPaye.toLocaleString("fr-FR")}
             </span>
-            <span>Total dû</span>
+            <span>{t("monthly.totalDu")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -239,7 +224,7 @@ function ClientFicheModal({
             >
               {totalDu.toLocaleString("fr-FR")}
             </span>
-            <span>Crédit</span>
+            <span>{t("monthly.credit")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -252,7 +237,7 @@ function ClientFicheModal({
           </div>
         </div>
         <p style={{ fontWeight: "bold", marginBottom: 6 }}>
-          Rendez-vous {currentYear}
+          {t("client.rdvSummary")} {currentYear}
         </p>
         <table
           style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}
@@ -260,14 +245,14 @@ function ClientFicheModal({
           <thead>
             <tr style={{ background: "#e8e8e8" }}>
               {[
-                "Date",
-                "Heure",
-                "Dû",
-                "Payé",
-                "Date",
-                "Note",
-                "Crédit",
-                "Fait",
+                t("monthly.dateCol"),
+                t("monthly.heureCol"),
+                t("monthly.duCol"),
+                t("monthly.payeCol"),
+                t("monthly.dateCol"),
+                t("monthly.noteCol"),
+                t("monthly.creditCol"),
+                t("monthly.faitCol"),
               ].map((h) => (
                 <th
                   key={h}
@@ -371,7 +356,7 @@ function ClientFicheModal({
                       fontStyle: apt.annule ? "italic" : "normal",
                     }}
                   >
-                    {apt.annule ? "Annulé" : apt.fait ? "✓" : "-"}
+                    {apt.annule ? t("monthly.annule") : apt.fait ? "✓" : "-"}
                   </td>
                 </tr>
               );
@@ -386,6 +371,29 @@ function ClientFicheModal({
 // ── MonthlyCalendarPage ───────────────────────────────────────────────────────
 export default function MonthlyCalendarPage() {
   const { t } = useTranslation();
+  const MONTH_NAMES_FR = [
+    t("months.janvier"),
+    t("months.fevrier"),
+    t("months.mars"),
+    t("months.avril"),
+    t("months.mai"),
+    t("months.juin"),
+    t("months.juillet"),
+    t("months.aout"),
+    t("months.septembre"),
+    t("months.octobre"),
+    t("months.novembre"),
+    t("months.decembre"),
+  ];
+  const DAY_SHORT = [
+    t("monthly.lun"),
+    t("monthly.mar"),
+    t("monthly.mer"),
+    t("monthly.jeu"),
+    t("monthly.ven"),
+    t("monthly.sam"),
+    t("monthly.dim"),
+  ];
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -504,7 +512,7 @@ export default function MonthlyCalendarPage() {
           marginBottom: 10,
         }}
       >
-        <span style={{ fontSize: 10, color: "#666" }}>Page</span>
+        <span style={{ fontSize: 10, color: "#666" }}>{t("monthly.page")}</span>
         <button
           type="button"
           onClick={prevMonth}
@@ -568,7 +576,7 @@ export default function MonthlyCalendarPage() {
             border: "1px solid #d1d5db",
           }}
         >
-          Non traité
+          {t("monthly.nonTraite")}
         </span>
         <span
           style={{
@@ -578,7 +586,7 @@ export default function MonthlyCalendarPage() {
             border: "1px solid #86efac",
           }}
         >
-          Fait
+          {t("monthly.fait")}
         </span>
         <span
           style={{
@@ -588,7 +596,7 @@ export default function MonthlyCalendarPage() {
             border: "1px solid #f9a8d4",
           }}
         >
-          Annulé
+          {t("monthly.annule")}
         </span>
         <span
           style={{
@@ -598,7 +606,7 @@ export default function MonthlyCalendarPage() {
             border: "1px solid #fde047",
           }}
         >
-          Aujourd'hui
+          {t("monthly.aujourdhui")}
         </span>
       </div>
 
@@ -870,7 +878,7 @@ export default function MonthlyCalendarPage() {
                   setContextMenu(null);
                 }}
               >
-                ✏️ Modifier ce RDV
+                {t("monthly.modifierCeRdv")}
               </button>
               <button
                 type="button"
@@ -890,7 +898,7 @@ export default function MonthlyCalendarPage() {
                   setContextMenu(null);
                 }}
               >
-                📅 Modifier tous les futurs RDV
+                {t("monthly.modifierTousFuturs")}
               </button>
               <button
                 type="button"
@@ -909,7 +917,7 @@ export default function MonthlyCalendarPage() {
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Supprimer le RDV de ${contextMenu.apt.nomClient} ?`,
+                      `${t("monthly.confirmDeleteRdv")} ${contextMenu.apt.nomClient} ?`,
                     )
                   ) {
                     deleteApt.mutate({
@@ -920,7 +928,7 @@ export default function MonthlyCalendarPage() {
                   setContextMenu(null);
                 }}
               >
-                🗑️ Supprimer ce RDV
+                {t("monthly.supprimerCeRdv")}
               </button>
               <button
                 type="button"
@@ -939,7 +947,7 @@ export default function MonthlyCalendarPage() {
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Supprimer TOUS les RDV futurs de ${contextMenu.apt.nomClient} ?`,
+                      `${t("monthly.confirmDeleteAllFuture")} ${contextMenu.apt.nomClient} ?`,
                     )
                   ) {
                     deleteApt.mutate({
@@ -950,7 +958,7 @@ export default function MonthlyCalendarPage() {
                   setContextMenu(null);
                 }}
               >
-                🗑️ Supprimer tous les RDV futurs
+                {t("monthly.supprimerTousFuturs")}
               </button>
               <div style={{ borderTop: "1px solid #e5e7eb" }} />
             </>
@@ -976,7 +984,7 @@ export default function MonthlyCalendarPage() {
               setContextMenu(null);
             }}
           >
-            👤 Voir la fiche client
+            {t("monthly.voirFicheClient")}
           </button>
         </div>
       )}

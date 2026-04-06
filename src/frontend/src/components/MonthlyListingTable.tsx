@@ -13,6 +13,7 @@ import type {
   RendezVous,
   TotauxListingMensuel,
 } from "../backend";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   type MonthlyListingRow,
   calculateMonthlyListingRow,
@@ -37,6 +38,7 @@ export default function MonthlyListingTable({
   year,
   month,
 }: MonthlyListingTableProps) {
+  const { t } = useTranslation();
   // State for manual January credit overrides (per client)
   const [januaryCredits, setJanuaryCredits] = useState<Record<string, bigint>>(
     {},
@@ -126,26 +128,28 @@ export default function MonthlyListingTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="table-header">Réf</TableHead>
-            <TableHead className="table-header">Nom</TableHead>
+            <TableHead className="table-header">{t("client.ref")}</TableHead>
+            <TableHead className="table-header">
+              {t("dashboard.nomCol")}
+            </TableHead>
             <TableHead className="text-right table-header">Nbr</TableHead>
             <TableHead className="text-right table-header">
-              Crédit du mois précédent
+              {t("dashboard.creditMoisPrecedent")}
             </TableHead>
             <TableHead className="text-right table-header">
-              RDV Faits (Payés + impayés)
+              {t("dashboard.rdvFaitsPaysImpays")}
             </TableHead>
             <TableHead className="text-right table-header">
-              Revenus (Faits et Payés)
+              {t("dashboard.revenusFaitsPayesFull")}
             </TableHead>
             <TableHead className="text-right table-header">
-              Revenus + Avances (RDV Payés + Avances)
+              {t("dashboard.revenusPlusAvances")}
             </TableHead>
             <TableHead className="text-right table-header">
-              Crédit Positif
+              {t("dashboard.creditPositif")}
             </TableHead>
             <TableHead className="text-right table-header">
-              Crédit Négatif
+              {t("dashboard.creditNegatif")}
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -153,7 +157,7 @@ export default function MonthlyListingTable({
           {/* Total Row */}
           <TableRow className="bg-muted/50">
             <TableCell colSpan={2} className="table-header">
-              TOTAL
+              {t("dashboard.total")}
             </TableCell>
             <TableCell className="text-right sum-total">{totalNbRdv}</TableCell>
             <TableCell className="text-right sum-total">-</TableCell>

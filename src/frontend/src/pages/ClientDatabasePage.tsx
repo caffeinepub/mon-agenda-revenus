@@ -97,10 +97,11 @@ function saveExtraFields(ref: string, fields: ClientExtraFields): void {
 }
 
 // ── Mode du panneau gauche ──────────────────────────────────────────
-type PanelMode = "form" | "search" | "fiche";
+type PanelMode = "form" | "search" | "fiche" | null;
 
 export default function ClientDatabasePage() {
   const { t } = useTranslation();
+  const currentYear = new Date().getFullYear();
   const { data: clients = [], isLoading: clientsLoading } =
     useGetAllClientRecords();
   const { data: appointments = [] } = useGetAllAppointments();
@@ -109,7 +110,7 @@ export default function ClientDatabasePage() {
   const deleteClient = useDeleteClientRecord();
 
   // ── Mode panneau gauche ──
-  const [panelMode, setPanelMode] = useState<PanelMode>("form");
+  const [panelMode, setPanelMode] = useState<PanelMode>(null);
 
   // ── Formulaire ──
   const [formData, setFormData] = useState({
@@ -417,7 +418,7 @@ export default function ClientDatabasePage() {
   // ── Export HTML ──
   const handleExportHtml = () => {
     if (sortedClients.length === 0) {
-      toast.error("Aucun client à exporter");
+      toast.error(t("client.noClientToExport"));
       return;
     }
     try {
@@ -457,12 +458,12 @@ export default function ClientDatabasePage() {
   <table>
     <thead>
       <tr>
-        <th>Référence</th>
+        <th>{t("client.refLabel")}</th>
         <th>Nom</th>
-        <th>Téléphone</th>
+        <th>{t("client.telephoneLabel")}</th>
         <th>Adresse</th>
-        <th>Service</th>
-        <th>Notes</th>
+        <th>{t("client.serviceLabel")}</th>
+        <th>{t("client.notesLabel")}</th>
         <th>Payé en ${currentYear}</th>
       </tr>
     </thead>
@@ -478,16 +479,16 @@ export default function ClientDatabasePage() {
       a.download = `clients-export-${currentYear}.html`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Export HTML réussi");
+      toast.success(t("client.exportHtmlSuccess"));
     } catch {
-      toast.error("Erreur lors de l'export HTML");
+      toast.error(t("client.exportHtmlError"));
     }
   };
 
   // ── Export HTML Fiche Client ──
   const handleExportFicheHtml = () => {
     if (!ficheClient || !ficheStats) {
-      toast.error("Aucune fiche client à exporter");
+      toast.error(t("client.noFicheToExport"));
       return;
     }
     try {
@@ -618,14 +619,14 @@ export default function ClientDatabasePage() {
       URL.revokeObjectURL(url);
       toast.success("Fiche client exportée en HTML");
     } catch {
-      toast.error("Erreur lors de l'export HTML");
+      toast.error(t("client.exportHtmlError"));
     }
   };
 
   // ── Export CSV ──
   const handleExportCsv = () => {
     if (sortedClients.length === 0) {
-      toast.error("Aucun client à exporter");
+      toast.error(t("client.noClientToExport"));
       return;
     }
     try {
@@ -639,13 +640,16 @@ export default function ClientDatabasePage() {
         paidThisYear: calculatePaidThisYear(client.referenceClient),
       }));
       const csvContent = arrayToCsv(exportData, [
-        { key: "referenceClient", label: "Référence" },
+        { key: "referenceClient", label: t("client.refLabel") },
         { key: "clientName", label: "Nom" },
-        { key: "phoneNumber", label: "Téléphone" },
+        { key: "phoneNumber", label: t("client.telephoneLabel") },
         { key: "address", label: "Adresse" },
-        { key: "service", label: "Service" },
-        { key: "notes", label: "Notes" },
-        { key: "paidThisYear", label: "Payé en 2026" },
+        { key: "service", label: t("client.serviceLabel") },
+        { key: "notes", label: t("client.notesLabel") },
+        {
+          key: "paidThisYear",
+          label: `${t("client.payeEnLabel")} ${new Date().getFullYear()}`,
+        },
       ]);
       downloadCsv(csvContent, "clients-export.csv");
       toast.success("Export CSV réussi");
@@ -680,7 +684,9 @@ export default function ClientDatabasePage() {
       <Card className="lg:col-span-1">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="frame-title">Fiche client</CardTitle>
+            <CardTitle className="frame-title">
+              {t("client.ficheTitle")}
+            </CardTitle>
             <div className="flex gap-2 flex-wrap">
               <Button
                 variant="outline"
@@ -690,7 +696,7 @@ export default function ClientDatabasePage() {
                 data-ocid="client.fiche.export_html.button"
               >
                 <FileCode className="h-4 w-4 mr-1" />
-                Exporter en HTML
+                {t("client.exportHtml")}
               </Button>
               <Button
                 variant="outline"
@@ -700,14 +706,14 @@ export default function ClientDatabasePage() {
                 data-ocid="client.fiche.edit_button"
               >
                 <Edit className="h-4 w-4 mr-1" />
-                Modifier
+                {t("client.editClient")}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setFicheClient(null);
-                  setPanelMode("form");
+                  setPanelMode(null);
                 }}
                 className="table-data"
                 data-ocid="client.fiche.close_button"
@@ -736,7 +742,7 @@ export default function ClientDatabasePage() {
               className="table-header font-bold"
               style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
             >
-              Nom
+              {t("client.name")}
             </p>
             <p className="table-data">{ficheClient.clientName}</p>
           </div>
@@ -751,7 +757,7 @@ export default function ClientDatabasePage() {
                     fontSize: "12px",
                   }}
                 >
-                  Prénom
+                  {t("client.firstName")}
                 </p>
                 <p className="table-data">{extras.prenom}</p>
               </div>
@@ -762,7 +768,7 @@ export default function ClientDatabasePage() {
               className="table-header font-bold"
               style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
             >
-              Référence
+              {t("client.ref")}
             </p>
             <p className="table-data">{ficheClient.referenceClient}</p>
           </div>
@@ -772,7 +778,7 @@ export default function ClientDatabasePage() {
                 className="table-header font-bold"
                 style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
               >
-                Téléphone
+                {t("client.telephoneLabel")}
               </p>
               <p className="table-data">{ficheClient.phoneNumber}</p>
             </div>
@@ -783,7 +789,7 @@ export default function ClientDatabasePage() {
                 className="table-header font-bold"
                 style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
               >
-                Adresse
+                {t("client.adresse")}
               </p>
               <p className="table-data">{ficheClient.address}</p>
             </div>
@@ -794,7 +800,7 @@ export default function ClientDatabasePage() {
                 className="table-header font-bold"
                 style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
               >
-                Service
+                {t("client.serviceLabel")}
               </p>
               <p className="table-data">{ficheClient.service}</p>
             </div>
@@ -805,7 +811,7 @@ export default function ClientDatabasePage() {
                 className="table-header font-bold"
                 style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
               >
-                Notes
+                {t("client.notesLabel")}
               </p>
               <p className="table-data">{ficheClient.notes}</p>
             </div>
@@ -825,7 +831,7 @@ export default function ClientDatabasePage() {
                         fontSize: "12px",
                       }}
                     >
-                      Courriel 1
+                      {t("client.courriel1")}
                     </p>
                     <p className="table-data">{extras.courriel1}</p>
                   </div>
@@ -839,7 +845,7 @@ export default function ClientDatabasePage() {
                         fontSize: "12px",
                       }}
                     >
-                      Courriel 2
+                      {t("client.courriel2")}
                     </p>
                     <p className="table-data">{extras.courriel2}</p>
                   </div>
@@ -853,7 +859,7 @@ export default function ClientDatabasePage() {
                         fontSize: "12px",
                       }}
                     >
-                      Date de naissance
+                      {t("client.dateNaissance")}
                     </p>
                     <p className="table-data">{extras.dateNaissance}</p>
                   </div>
@@ -867,7 +873,7 @@ export default function ClientDatabasePage() {
                         fontSize: "12px",
                       }}
                     >
-                      Nom Second contact
+                      {t("client.nomSecondContact")}
                     </p>
                     <p className="table-data">{extras.nomSecondContact}</p>
                   </div>
@@ -881,7 +887,7 @@ export default function ClientDatabasePage() {
                         fontSize: "12px",
                       }}
                     >
-                      Téléphone second contact
+                      {t("client.telephoneSecondContact")}
                     </p>
                     <p className="table-data">
                       {extras.telephoneSecondContact}
@@ -901,27 +907,33 @@ export default function ClientDatabasePage() {
               className="font-bold mb-2"
               style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
             >
-              Résumé {currentYear}
+              {t("client.resumeAnnee")} {currentYear}
             </p>
             <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-              <p className="table-data text-muted-foreground">Nb de RDV</p>
+              <p className="table-data text-muted-foreground">
+                {t("client.nbRdvFaits")}
+              </p>
               <p className="table-data font-bold text-right">
                 {ficheStats.totalRdv}
               </p>
 
-              <p className="table-data text-muted-foreground">Total payé</p>
+              <p className="table-data text-muted-foreground">
+                {t("client.totalPaye")}
+              </p>
               <p className="table-data font-bold text-right text-green-700">
                 {ficheStats.totalPaye.toLocaleString("fr-FR")}
               </p>
 
               <p className="table-data text-muted-foreground">
-                Total dû (faits)
+                {t("client.totalDu")}
               </p>
               <p className="table-data font-bold text-right text-blue-700">
                 {ficheStats.totalDu.toLocaleString("fr-FR")}
               </p>
 
-              <p className="table-data text-muted-foreground">Montant impayé</p>
+              <p className="table-data text-muted-foreground">
+                {t("client.totalImpaye")}
+              </p>
               <p
                 className="table-data font-bold text-right"
                 style={{
@@ -940,7 +952,7 @@ export default function ClientDatabasePage() {
                 className="font-bold mb-1"
                 style={{ fontFamily: "Verdana, sans-serif", fontSize: "12px" }}
               >
-                Rendez-vous {currentYear}
+                {t("client.rdvSummary")} {currentYear}
               </p>
               <div className="overflow-y-auto" style={{ maxHeight: "200px" }}>
                 <table
@@ -971,7 +983,7 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
-                        Dû
+                        {t("client.duCol")}
                       </th>
                       <th
                         style={{
@@ -981,7 +993,7 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
-                        Payé
+                        {t("client.payeCol")}
                       </th>
                       <th
                         style={{
@@ -1001,7 +1013,7 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
-                        Note
+                        {t("client.noteCol")}
                       </th>
                       <th
                         style={{
@@ -1011,7 +1023,7 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
-                        Fait
+                        {t("client.faitCol")}
                       </th>
                       <th
                         style={{
@@ -1021,7 +1033,7 @@ export default function ClientDatabasePage() {
                           fontSize: "10px",
                         }}
                       >
-                        Crédit
+                        {t("client.creditCol")}
                       </th>
                     </tr>
                   </thead>
@@ -1029,7 +1041,7 @@ export default function ClientDatabasePage() {
                     {/* Ligne de total en haut, juste sous les en-têtes */}
                     <tr style={{ background: "#d8eaff", fontWeight: "bold" }}>
                       <td style={{ padding: "2px 4px", fontSize: "9px" }}>
-                        Total
+                        {t("client.totalLabel")}
                       </td>
                       <td
                         style={{
@@ -1170,12 +1182,14 @@ export default function ClientDatabasePage() {
     <Card className="lg:col-span-1">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="frame-title">Rechercher un client</CardTitle>
+          <CardTitle className="frame-title">
+            {t("client.searchTitle")}
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              setPanelMode("form");
+              setPanelMode(null);
               handleResetSearch();
             }}
             className="table-data"
@@ -1185,60 +1199,60 @@ export default function ClientDatabasePage() {
           </Button>
         </div>
         <CardDescription className="table-data">
-          Renseignez un ou plusieurs critères
+          {t("client.searchCriteria")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
-          <Label className="table-header">Nom</Label>
+          <Label className="table-header">{t("client.name")}</Label>
           <Input
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            placeholder="Rechercher par nom..."
+            placeholder={t("client.searchByName")}
             className="table-data"
             data-ocid="client.search_name.input"
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
         <div>
-          <Label className="table-header">Prénom</Label>
+          <Label className="table-header">{t("client.firstName")}</Label>
           <Input
             value={searchPrenom}
             onChange={(e) => setSearchPrenom(e.target.value)}
-            placeholder="Rechercher par prénom..."
+            placeholder={t("client.searchByPrenom")}
             className="table-data"
             data-ocid="client.search_prenom.input"
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
         <div>
-          <Label className="table-header">Référence</Label>
+          <Label className="table-header">{t("client.ref")}</Label>
           <Input
             value={searchRef}
             onChange={(e) => setSearchRef(e.target.value)}
-            placeholder="Référence client..."
+            placeholder={t("client.searchByRef")}
             className="table-data"
             data-ocid="client.search_ref.input"
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
         <div>
-          <Label className="table-header">Téléphone</Label>
+          <Label className="table-header">{t("client.telephoneLabel")}</Label>
           <Input
             value={searchPhone}
             onChange={(e) => setSearchPhone(e.target.value)}
-            placeholder="Numéro de téléphone..."
+            placeholder={t("client.searchByPhone")}
             className="table-data"
             data-ocid="client.search_phone.input"
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
         <div>
-          <Label className="table-header">Service</Label>
+          <Label className="table-header">{t("client.serviceLabel")}</Label>
           <Input
             value={searchService}
             onChange={(e) => setSearchService(e.target.value)}
-            placeholder="Service..."
+            placeholder={t("client.searchByService")}
             className="table-data"
             data-ocid="client.search_service.input"
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -1251,7 +1265,7 @@ export default function ClientDatabasePage() {
             data-ocid="client.search.button"
           >
             <Search className="h-4 w-4 mr-2" />
-            Rechercher
+            {t("client.search")}
           </Button>
           {searchResults !== null && (
             <Button
@@ -1270,8 +1284,8 @@ export default function ClientDatabasePage() {
           <div className="mt-2">
             <p className="table-header font-bold mb-2">
               {searchResults.length === 0
-                ? "Aucun résultat"
-                : `${searchResults.length} client(s) trouvé(s)`}
+                ? t("client.noResults")
+                : `${searchResults.length} ${t("client.clientsFound")}`}
             </p>
             <div className="space-y-1">
               {searchResults.map((c) => (
@@ -1306,19 +1320,17 @@ export default function ClientDatabasePage() {
     <Card className="lg:col-span-1">
       <CardHeader>
         <CardTitle className="frame-title">
-          {editingClientId ? "Modifier le client" : "Ajouter un client"}
+          {editingClientId ? t("client.editTitle") : t("client.addTitle")}
         </CardTitle>
         <CardDescription className="table-data">
-          {editingClientId
-            ? "Modifiez les informations du client sélectionné"
-            : "Remplissez le formulaire pour ajouter un nouveau client"}
+          {editingClientId ? t("client.editDesc") : t("client.addDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="clientName" className="table-header">
-              Nom du client (optionnel)
+              {t("client.nameOptional")}
             </Label>
             <Input
               id="clientName"
@@ -1336,7 +1348,7 @@ export default function ClientDatabasePage() {
               htmlFor="addPrenom"
               style={{ fontFamily: "Verdana, sans-serif", fontSize: 12 }}
             >
-              Prénom (optionnel)
+              {t("client.firstNameOptional")}
             </Label>
             <Input
               id="addPrenom"
@@ -1344,7 +1356,7 @@ export default function ClientDatabasePage() {
               onChange={(e) =>
                 setExtraFields({ ...extraFields, prenom: e.target.value })
               }
-              placeholder="Prénom du client"
+              placeholder={t("client.firstNamePlaceholder")}
               style={{ fontFamily: "Verdana, sans-serif", fontSize: 12 }}
               data-ocid="client.form_prenom.input"
             />
@@ -1352,7 +1364,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="referenceClient" className="table-header">
-              Référence client *
+              {t("client.refRequired")}
             </Label>
             <div className="relative">
               <Input
@@ -1376,14 +1388,14 @@ export default function ClientDatabasePage() {
                 className="table-data text-muted-foreground mt-1"
                 style={{ fontSize: 9 }}
               >
-                🔒 La référence ne peut pas être modifiée après la création
+                {t("client.refLocked")}
               </p>
             )}
           </div>
 
           <div>
             <Label htmlFor="phoneNumber" className="table-header">
-              Téléphone
+              {t("client.telephoneLabel")}
             </Label>
             <Input
               id="phoneNumber"
@@ -1398,7 +1410,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="address" className="table-header">
-              Adresse
+              {t("client.adresse")}
             </Label>
             <Input
               id="address"
@@ -1413,7 +1425,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="service" className="table-header">
-              Service
+              {t("client.serviceLabel")}
             </Label>
             <Input
               id="service"
@@ -1428,7 +1440,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="notes" className="table-header">
-              Notes
+              {t("client.notesLabel")}
             </Label>
             <Textarea
               id="notes"
@@ -1444,7 +1456,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="courriel1" className="table-header">
-              Courriel 1
+              {t("client.courriel1")}
             </Label>
             <Input
               id="courriel1"
@@ -1459,7 +1471,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="courriel2" className="table-header">
-              Courriel 2
+              {t("client.courriel2")}
             </Label>
             <Input
               id="courriel2"
@@ -1474,7 +1486,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="dateNaissance" className="table-header">
-              Date de naissance
+              {t("client.dateNaissance")}
             </Label>
             <Input
               id="dateNaissance"
@@ -1493,7 +1505,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="nomSecondContact" className="table-header">
-              Nom Second contact
+              {t("client.nomSecondContact")}
             </Label>
             <Input
               id="nomSecondContact"
@@ -1511,7 +1523,7 @@ export default function ClientDatabasePage() {
 
           <div>
             <Label htmlFor="telephoneSecondContact" className="table-header">
-              Téléphone second contact
+              {t("client.telephoneSecondContact")}
             </Label>
             <Input
               id="telephoneSecondContact"
@@ -1539,18 +1551,23 @@ export default function ClientDatabasePage() {
               data-ocid="client.form.submit_button"
             >
               <Save className="h-4 w-4 mr-2" />
-              {editingClientId ? "Mettre à jour" : "Ajouter"}
+              {editingClientId
+                ? t("client.updateButton")
+                : t("client.submitButton")}
             </Button>
             {editingClientId && (
               <Button
                 type="button"
                 variant="outline"
-                onClick={resetForm}
+                onClick={() => {
+                  resetForm();
+                  setPanelMode(null);
+                }}
                 className="table-data"
                 data-ocid="client.form.cancel_button"
               >
                 <X className="h-4 w-4 mr-2" />
-                Annuler
+                {t("common.cancel")}
               </Button>
             )}
           </div>
@@ -1565,15 +1582,18 @@ export default function ClientDatabasePage() {
         <h1 className="frame-title text-3xl mb-8">{t("pages.clients")}</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ── PANNEAU GAUCHE ── */}
-          {panelMode === "fiche"
-            ? renderFichePanel()
-            : panelMode === "search"
-              ? renderSearchPanel()
-              : renderFormPanel()}
+          {/* ── PANNEAU GAUCHE ── only show when panelMode is not null */}
+          {panelMode !== null &&
+            (panelMode === "fiche"
+              ? renderFichePanel()
+              : panelMode === "search"
+                ? renderSearchPanel()
+                : renderFormPanel())}
 
           {/* ── LISTE DES CLIENTS ── */}
-          <Card className="lg:col-span-2">
+          <Card
+            className={panelMode !== null ? "lg:col-span-2" : "lg:col-span-3"}
+          >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="frame-title">
@@ -1584,6 +1604,7 @@ export default function ClientDatabasePage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      resetForm();
                       setPanelMode("form");
                     }}
                     className="table-data bg-blue-50 border-blue-300"
@@ -1596,13 +1617,13 @@ export default function ClientDatabasePage() {
                     variant="outline"
                     size="sm"
                     onClick={() =>
-                      setPanelMode(panelMode === "search" ? "form" : "search")
+                      setPanelMode(panelMode === "search" ? null : "search")
                     }
                     className="table-data"
                     data-ocid="client.search_toggle.button"
                   >
                     <Search className="h-4 w-4 mr-2" />
-                    Rechercher
+                    {t("client.search")}
                   </Button>
                   <Button
                     variant="outline"
@@ -1612,7 +1633,9 @@ export default function ClientDatabasePage() {
                     data-ocid="client.sort.toggle"
                   >
                     <ArrowUpDown className="h-4 w-4 mr-2" />
-                    {sortAlphabetically ? "Ordre original" : "Tri A-Z"}
+                    {sortAlphabetically
+                      ? t("client.sortOriginal")
+                      : t("client.sortAlpha")}
                   </Button>
                   <Button
                     variant="outline"
@@ -1651,55 +1674,55 @@ export default function ClientDatabasePage() {
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Actions
+                        {t("users.actionsCol")}
                       </TableHead>
                       <TableHead
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Photo
+                        {t("client.photo")}
                       </TableHead>
                       <TableHead
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Nom
+                        {t("client.nomLabel")}
                       </TableHead>
                       <TableHead
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Référence
+                        {t("client.refLabel")}
                       </TableHead>
                       <TableHead
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Téléphone
+                        {t("client.telephoneLabel")}
                       </TableHead>
                       <TableHead
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Adresse
+                        {t("client.adresse")}
                       </TableHead>
                       <TableHead
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Service
+                        {t("client.serviceLabel")}
                       </TableHead>
                       <TableHead
                         className="table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Notes
+                        {t("client.notesLabel")}
                       </TableHead>
                       <TableHead
                         className="text-right table-header"
                         style={{ whiteSpace: "nowrap", padding: "4px 6px" }}
                       >
-                        Payé en 2026
+                        {`${t("client.payeEnLabel")} ${currentYear}`}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1711,7 +1734,7 @@ export default function ClientDatabasePage() {
                           className="text-center table-data text-muted-foreground"
                           data-ocid="client.table.empty_state"
                         >
-                          Aucun client enregistré
+                          {t("client.noClients")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -1731,23 +1754,11 @@ export default function ClientDatabasePage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                  setPanelMode("form");
-                                }}
-                                className="table-data bg-blue-50 border-blue-300"
-                                data-ocid="client.add_client.button"
-                              >
-                                <UserPlus className="h-4 w-4 mr-2" />
-                                {t("client.addButton")}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
                                 onClick={() => handleViewFiche(client)}
                                 className="table-data"
                                 data-ocid={`client.view_fiche.button.${idx + 1}`}
                               >
-                                Fiche
+                                {t("client.ficheBouton")}
                               </Button>
                               <Button
                                 variant="outline"
@@ -1756,7 +1767,7 @@ export default function ClientDatabasePage() {
                                 className="table-data"
                                 data-ocid={`client.edit.button.${idx + 1}`}
                               >
-                                Modifier
+                                {t("client.editClient")}
                               </Button>
                               <Button
                                 variant="destructive"

@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
 import { DemandeEdition } from "../backend";
@@ -19,42 +20,7 @@ const VERDANA: React.CSSProperties = {
   fontSize: 12,
 };
 
-const DAY_NAMES_FR = [
-  "Dimanche",
-  "Lundi",
-  "Mardi",
-  "Mercredi",
-  "Jeudi",
-  "Vendredi",
-  "Samedi",
-];
-const MONTH_NAMES_FR = [
-  "Janvier",
-  "Février",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Septembre",
-  "Octobre",
-  "Novembre",
-  "Décembre",
-];
-
-// Column definitions — widths used for both header AND cells
-const COLS = [
-  { label: "Heure", w: 47 },
-  { label: "Nom", w: 88 },
-  { label: "Réf", w: 51 },
-  { label: "F", w: 24 },
-  { label: "A", w: 24 },
-  { label: "Dû", w: 44 },
-  { label: "Payé", w: 44 },
-  { label: "Date", w: 44 },
-  { label: "Note", w: 74 },
-];
+// COLS defined inside component
 
 function colStyle(w: number, last = false): React.CSSProperties {
   return {
@@ -73,6 +39,42 @@ function colStyle(w: number, last = false): React.CSSProperties {
   };
 }
 
+// ── NoteCell — local state to avoid keystroke loss ───────────────────────────
+function NoteCell({
+  initialValue,
+  disabled,
+  onSave,
+  style,
+}: {
+  initialValue: string;
+  disabled: boolean;
+  onSave: (val: string) => void;
+  style?: React.CSSProperties;
+}) {
+  const [localValue, setLocalValue] = useState(initialValue);
+
+  useEffect(() => {
+    setLocalValue(initialValue);
+  }, [initialValue]);
+
+  return (
+    <input
+      type="text"
+      value={localValue}
+      disabled={disabled}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={() => onSave(localValue)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          onSave(localValue);
+          e.currentTarget.blur();
+        }
+      }}
+      style={style}
+    />
+  );
+}
+
 // ── ClientFicheModal ──────────────────────────────────────────────────────────
 interface ClientFicheModalProps {
   referenceClient: string;
@@ -89,6 +91,7 @@ function ClientFicheModal({
   appointments: allApts,
   onClose,
 }: ClientFicheModalProps) {
+  const { t } = useTranslation();
   const client = clients.find((c) => c.referenceClient === referenceClient);
   const currentYear = new Date().getFullYear();
   const now = BigInt(Date.now()) * BigInt(1_000_000);
@@ -177,7 +180,7 @@ function ClientFicheModal({
           }}
         >
           <span style={{ fontWeight: "bold", fontSize: 13 }}>
-            Fiche client — {clientName}
+            {t("daily.ficheClientTitle")} — {clientName}
           </span>
           <button
             type="button"
@@ -196,17 +199,17 @@ function ClientFicheModal({
           <div style={{ marginBottom: 12 }}>
             {client.phoneNumber && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Tél :</strong> {client.phoneNumber}
+                <strong>{t("daily.tel")} :</strong> {client.phoneNumber}
               </p>
             )}
             {client.address && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Adresse :</strong> {client.address}
+                <strong>{t("daily.adresse")} :</strong> {client.address}
               </p>
             )}
             {client.service && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Service :</strong> {client.service}
+                <strong>{t("client.service")} :</strong> {client.service}
               </p>
             )}
           </div>
@@ -221,7 +224,7 @@ function ClientFicheModal({
           }}
         >
           <p style={{ fontWeight: "bold", marginBottom: 6 }}>
-            Résumé {currentYear}
+            {t("daily.resumeAnnee")} {currentYear}
           </p>
           <div
             style={{
@@ -230,11 +233,11 @@ function ClientFicheModal({
               gap: "2px 8px",
             }}
           >
-            <span>Nb RDV faits</span>
+            <span>{t("daily.nbRdvFaits")}</span>
             <span style={{ textAlign: "right", fontWeight: "bold" }}>
               {clientAptsAscending.filter((a) => a.fait).length}
             </span>
-            <span>Total payé</span>
+            <span>{t("daily.totalPaye")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -244,7 +247,7 @@ function ClientFicheModal({
             >
               {totalPaye.toLocaleString("fr-FR")}
             </span>
-            <span>Total dû</span>
+            <span>{t("daily.totalDu")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -254,7 +257,7 @@ function ClientFicheModal({
             >
               {totalDu.toLocaleString("fr-FR")}
             </span>
-            <span>Crédit</span>
+            <span>{t("daily.credit")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -267,7 +270,7 @@ function ClientFicheModal({
           </div>
         </div>
         <p style={{ fontWeight: "bold", marginBottom: 6 }}>
-          Rendez-vous {currentYear}
+          {t("client.rdvSummary")} {currentYear}
         </p>
         <table
           style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}
@@ -275,14 +278,14 @@ function ClientFicheModal({
           <thead>
             <tr style={{ background: "#e8e8e8" }}>
               {[
-                "Date",
-                "Heure",
-                "Dû",
-                "Payé",
-                "Date",
-                "Note",
-                "Crédit",
-                "Fait",
+                t("monthly.dateCol"),
+                t("daily.heure"),
+                t("daily.du"),
+                t("daily.paye"),
+                t("daily.date"),
+                t("daily.note"),
+                t("daily.credit"),
+                t("daily.fait"),
               ].map((h) => (
                 <th
                   key={h}
@@ -386,7 +389,11 @@ function ClientFicheModal({
                       fontStyle: apt.annule ? "italic" : "normal",
                     }}
                   >
-                    {apt.annule ? "Annulé" : apt.fait ? "✓" : "-"}
+                    {apt.annule
+                      ? t("daily.annule_label")
+                      : apt.fait
+                        ? "✓"
+                        : "-"}
                   </td>
                 </tr>
               );
@@ -401,6 +408,40 @@ function ClientFicheModal({
 // ── DailyCalendarPage ─────────────────────────────────────────────────────────
 export default function DailyCalendarPage() {
   const { t } = useTranslation();
+  const DAY_NAMES = [
+    t("months.dimanche"),
+    t("months.lundi"),
+    t("months.mardi"),
+    t("months.mercredi"),
+    t("months.jeudi"),
+    t("months.vendredi"),
+    t("months.samedi"),
+  ];
+  const MONTH_NAMES = [
+    t("months.janvier"),
+    t("months.fevrier"),
+    t("months.mars"),
+    t("months.avril"),
+    t("months.mai"),
+    t("months.juin"),
+    t("months.juillet"),
+    t("months.aout"),
+    t("months.septembre"),
+    t("months.octobre"),
+    t("months.novembre"),
+    t("months.decembre"),
+  ];
+  const COLS = [
+    { label: t("daily.heure"), w: 47 },
+    { label: t("daily.nom"), w: 88 },
+    { label: t("daily.ref"), w: 51 },
+    { label: t("daily.f"), w: 24 },
+    { label: t("daily.a_col"), w: 24 },
+    { label: t("daily.du"), w: 44 },
+    { label: t("daily.paye"), w: 44 },
+    { label: t("daily.date"), w: 44 },
+    { label: t("daily.note"), w: 74 },
+  ];
   const { session } = useLocalAuth();
   const isReader = session?.role === "reader";
   const [dayOffset, setDayOffset] = useState(0);
@@ -540,8 +581,8 @@ export default function DailyCalendarPage() {
   currentDay.setDate(today.getDate() + dayOffset);
   currentDay.setHours(0, 0, 0, 0);
 
-  const dayName = DAY_NAMES_FR[currentDay.getDay()];
-  const dayLabel = `${dayName} ${currentDay.getDate()} ${MONTH_NAMES_FR[currentDay.getMonth()]} ${currentDay.getFullYear()}`;
+  const dayName = DAY_NAMES[currentDay.getDay()];
+  const dayLabel = `${dayName} ${currentDay.getDate()} ${MONTH_NAMES[currentDay.getMonth()]} ${currentDay.getFullYear()}`;
 
   const dayApts = appointments.filter((apt) => {
     const d = new Date(Number(apt.dateHeure) / 1_000_000);
@@ -686,7 +727,7 @@ export default function DailyCalendarPage() {
           justifyContent: "center",
         }}
       >
-        <span style={{ fontSize: 11, color: "#666" }}>Page</span>
+        <span style={{ fontSize: 11, color: "#666" }}>{t("daily.page")}</span>
         <button
           type="button"
           onClick={() => setDayOffset((o) => o - 1)}
@@ -716,7 +757,7 @@ export default function DailyCalendarPage() {
           }}
           data-ocid="daily.today.button"
         >
-          Aujourd&apos;hui
+          {t("daily.aujourdhui")}
         </button>
         <span
           style={{ fontWeight: "bold", fontSize: 12 }}
@@ -755,7 +796,7 @@ export default function DailyCalendarPage() {
         }}
         data-ocid="daily.time_range.panel"
       >
-        <span style={{ fontWeight: "bold" }}>Début :</span>
+        <span style={{ fontWeight: "bold" }}>{t("daily.debutLabel")} :</span>
         <select
           value={dayStart}
           onChange={(e) => handleDayStartChange(Number(e.target.value))}
@@ -768,8 +809,8 @@ export default function DailyCalendarPage() {
             </option>
           ))}
         </select>
-        <span style={{ color: "#6b7280" }}>à</span>
-        <span style={{ fontWeight: "bold" }}>Fin :</span>
+        <span style={{ color: "#6b7280" }}>{t("daily.a")}</span>
+        <span style={{ fontWeight: "bold" }}>{t("daily.finLabel")} :</span>
         <select
           value={dayEnd}
           onChange={(e) => handleDayEndChange(Number(e.target.value))}
@@ -1103,17 +1144,10 @@ export default function DailyCalendarPage() {
                   {/* Note */}
                   <div style={{ ...colStyle(74, true), padding: 0 }}>
                     {apt && rowIdx === 0 && (
-                      <input
-                        type="text"
-                        value={apt.commentaireManuel ?? ""}
+                      <NoteCell
+                        initialValue={apt.commentaireManuel ?? ""}
                         disabled={isReader}
-                        onChange={(e) => handleNote(apt, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleNote(apt, e.currentTarget.value);
-                            e.currentTarget.blur();
-                          }
-                        }}
+                        onSave={(val) => handleNote(apt, val)}
                         style={{
                           border: "none",
                           background: "transparent",
@@ -1154,30 +1188,30 @@ export default function DailyCalendarPage() {
         >
           {[
             {
-              label: "Modifier ce RDV",
+              label: t("daily.modifierCeRdv"),
               action: () => {
                 setEditForm({ apt: contextMenu.apt, mode: "unique" });
                 setContextMenu(null);
               },
             },
             {
-              label: "Modifier tous les futurs RDV",
+              label: t("daily.modifierTousFuturs"),
               action: () => {
                 setEditForm({ apt: contextMenu.apt, mode: "futurs" });
                 setContextMenu(null);
               },
             },
             {
-              label: "Supprimer ce RDV",
+              label: t("daily.supprimerCeRdv"),
               action: () => handleDelete(contextMenu.apt),
               danger: true,
             },
             {
-              label: "Supprimer tous les RDV futurs",
+              label: t("daily.supprimerTousFuturs"),
               action: () => {
                 if (
                   window.confirm(
-                    `Supprimer TOUS les RDV futurs de ${contextMenu.apt.nomClient} ?`,
+                    `${t("daily.confirmDeleteAllFuture")} ${contextMenu.apt.nomClient} ?`,
                   )
                 ) {
                   deleteApt.mutate({
@@ -1190,7 +1224,7 @@ export default function DailyCalendarPage() {
               danger: true,
             },
             {
-              label: "Voir la fiche client",
+              label: t("daily.voirFicheClient"),
               action: () => {
                 setFicheClientRef({
                   ref: contextMenu.apt.referenceClient,

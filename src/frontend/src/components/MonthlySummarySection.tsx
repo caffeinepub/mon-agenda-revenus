@@ -28,20 +28,23 @@ export default function MonthlySummarySection({
 }: MonthlySummarySectionProps) {
   const { t } = useTranslation();
 
-  const monthNames = [
-    "Janvier",
-    "Février",
-    "Mars",
-    "Avril",
-    "Mai",
-    "Juin",
-    "Juillet",
-    "Août",
-    "Septembre",
-    "Octobre",
-    "Novembre",
-    "Décembre",
-  ];
+  const monthNames = useMemo(
+    () => [
+      t("months.janvier"),
+      t("months.fevrier"),
+      t("months.mars"),
+      t("months.avril"),
+      t("months.mai"),
+      t("months.juin"),
+      t("months.juillet"),
+      t("months.aout"),
+      t("months.septembre"),
+      t("months.octobre"),
+      t("months.novembre"),
+      t("months.decembre"),
+    ],
+    [t],
+  );
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -106,7 +109,7 @@ export default function MonthlySummarySection({
     }
 
     return revenues;
-  }, [year, allAppointments]);
+  }, [year, allAppointments, monthNames]);
 
   const totalRevenue = useMemo(() => {
     return monthlyRevenues.reduce((sum, item) => sum + item.revenue, BigInt(0));

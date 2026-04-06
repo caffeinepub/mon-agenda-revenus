@@ -28,37 +28,11 @@ type ReportType = "mensuel" | "annuel" | "plage";
 
 const AVAILABLE_YEARS = [2022, 2023, 2024, 2025, 2026];
 
-const monthNames = [
-  "Janvier",
-  "Février",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Septembre",
-  "Octobre",
-  "Novembre",
-  "Décembre",
-];
+// monthNames defined inside component
 
 // ── Synthèse helpers ──────────────────────────────────────────────────────────
 
-const MONTH_LABELS = [
-  "Janv",
-  "Fév",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Sept",
-  "Oct",
-  "Nov",
-  "Déc",
-];
+// MONTH_LABELS defined inside component
 
 function formatSyntheseAmount(value: bigint): string {
   if (value === BigInt(0)) return "";
@@ -116,6 +90,34 @@ function tdStyleSynth(extra: React.CSSProperties = {}): React.CSSProperties {
 
 export default function RapportPDFPage() {
   const { t } = useTranslation();
+  const monthNames = [
+    t("months.janvier"),
+    t("months.fevrier"),
+    t("months.mars"),
+    t("months.avril"),
+    t("months.mai"),
+    t("months.juin"),
+    t("months.juillet"),
+    t("months.aout"),
+    t("months.septembre"),
+    t("months.octobre"),
+    t("months.novembre"),
+    t("months.decembre"),
+  ];
+  const MONTH_LABELS = [
+    t("months.janv"),
+    t("months.fev"),
+    t("months.mars"),
+    t("months.avril"),
+    t("months.mai"),
+    t("months.juin"),
+    t("months.juil"),
+    t("months.aout"),
+    t("months.sept"),
+    t("months.oct"),
+    t("months.nov"),
+    t("months.dec"),
+  ];
   const [reportType, setReportType] = useState<ReportType>("mensuel");
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(1);
@@ -796,7 +798,7 @@ export default function RapportPDFPage() {
               data-ocid="rapport.export_csv.button"
             >
               <Download className="h-4 w-4" />
-              Exporter en CSV
+              {t("rapport.exportCsv")}
             </Button>
             <Button
               onClick={handleExportHTMLCombined}
@@ -805,7 +807,7 @@ export default function RapportPDFPage() {
               data-ocid="rapport.export_html.button"
             >
               <Download className="h-4 w-4" />
-              Exporter en HTML
+              {t("rapport.exportHtml")}
             </Button>
           </div>
         </div>
@@ -813,7 +815,7 @@ export default function RapportPDFPage() {
         {/* Report type selector */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Type de rapport</CardTitle>
+            <CardTitle>{t("rapport.typeRapport")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-6">
@@ -826,7 +828,9 @@ export default function RapportPDFPage() {
                   onChange={() => setReportType("mensuel")}
                   className="accent-primary w-4 h-4"
                 />
-                <span className="font-medium">Rapport Mensuel</span>
+                <span className="font-medium">
+                  {t("rapport.rapportMensuel")}
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -837,7 +841,9 @@ export default function RapportPDFPage() {
                   onChange={() => setReportType("annuel")}
                   className="accent-primary w-4 h-4"
                 />
-                <span className="font-medium">Rapport Annuel</span>
+                <span className="font-medium">
+                  {t("rapport.rapportAnnuel")}
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -848,7 +854,7 @@ export default function RapportPDFPage() {
                   onChange={() => setReportType("plage")}
                   className="accent-primary w-4 h-4"
                 />
-                <span className="font-medium">Plage de dates</span>
+                <span className="font-medium">{t("rapport.plageDates")}</span>
               </label>
             </div>
           </CardContent>
@@ -857,7 +863,7 @@ export default function RapportPDFPage() {
         {/* Period selector */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Sélectionner la période</CardTitle>
+            <CardTitle>{t("rapport.selectPeriode")}</CardTitle>
           </CardHeader>
           <CardContent>
             {reportType === "mensuel" && (
@@ -921,7 +927,7 @@ export default function RapportPDFPage() {
             {reportType === "plage" && (
               <div className="flex flex-wrap items-end gap-4">
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="range-start">Date de début</Label>
+                  <Label htmlFor="range-start">{t("rapport.dateDebut")}</Label>
                   <Input
                     id="range-start"
                     type="date"
@@ -931,7 +937,7 @@ export default function RapportPDFPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="range-end">Date de fin</Label>
+                  <Label htmlFor="range-end">{t("rapport.dateFin")}</Label>
                   <Input
                     id="range-end"
                     type="date"
@@ -965,29 +971,37 @@ export default function RapportPDFPage() {
               >
                 <thead>
                   <tr className="bg-muted">
-                    <th className="border p-2 text-left">Réf</th>
-                    <th className="border p-2 text-left">Nom</th>
-                    <th className="border p-2 text-right">Nbr</th>
-                    <th className="border p-2 text-right">
-                      Crédit du mois précédent
+                    <th className="border p-2 text-left">{t("client.ref")}</th>
+                    <th className="border p-2 text-left">
+                      {t("dashboard.nomCol")}
                     </th>
                     <th className="border p-2 text-right">
-                      RDV Faits (Payés + impayés)
+                      {t("rapport.nbRdv")}
                     </th>
                     <th className="border p-2 text-right">
-                      Revenus (Faits et Payés)
+                      {t("dashboard.creditMoisPrecedent")}
                     </th>
                     <th className="border p-2 text-right">
-                      Revenus + Avances (RDV Payés + Avances)
+                      {t("dashboard.rdvFaitsPaysImpays")}
                     </th>
-                    <th className="border p-2 text-right">Crédit Positif</th>
-                    <th className="border p-2 text-right">Crédit Négatif</th>
+                    <th className="border p-2 text-right">
+                      {t("dashboard.revenusFaitsPayesFull")}
+                    </th>
+                    <th className="border p-2 text-right">
+                      {t("dashboard.revenusPlusAvances")}
+                    </th>
+                    <th className="border p-2 text-right">
+                      {t("dashboard.creditPositif")}
+                    </th>
+                    <th className="border p-2 text-right">
+                      {t("dashboard.creditNegatif")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="bg-muted/50 font-bold">
                     <td colSpan={2} className="border p-2">
-                      TOTAL
+                      {t("dashboard.total")}
                     </td>
                     <td className="border p-2 text-right">
                       {calculatedRows.reduce(
@@ -1075,8 +1089,8 @@ export default function RapportPDFPage() {
                         className="border p-4 text-center text-muted-foreground"
                       >
                         {reportType === "plage" && !isRangeValid
-                          ? "Veuillez sélectionner une plage de dates valide."
-                          : "Aucune donnée pour cette période."}
+                          ? t("rapport.plageValide")
+                          : t("rapport.aucuneDonnee")}
                       </td>
                     </tr>
                   )}
@@ -1105,7 +1119,7 @@ export default function RapportPDFPage() {
               }}
               className="text-foreground"
             >
-              Année de départ de la synthèse :
+              {t("rapport.anneeDePartSynthese")}
             </label>
             <input
               id="synthStartYearRapport"
@@ -1141,7 +1155,7 @@ export default function RapportPDFPage() {
               }}
               className="text-muted-foreground"
             >
-              Période affichée : {synthStartYear} → {currentYear}
+              {t("rapport.periodeAffichee")} {synthStartYear} → {currentYear}
             </span>
 
             {/* Export button */}
@@ -1167,7 +1181,7 @@ export default function RapportPDFPage() {
                   opacity: isSynthLoading || yearRows.length === 0 ? 0.5 : 1,
                 }}
               >
-                ↓ Exporter CSV
+                ↓ {t("rapport.exportSyntheseCsv")}
               </button>
             </div>
           </div>
@@ -1184,7 +1198,7 @@ export default function RapportPDFPage() {
               }}
               className="text-foreground"
             >
-              Synthèse Annuelle et Mensuelle
+              {t("rapport.synthese")}
             </h2>
 
             {isSynthLoading ? (
@@ -1197,7 +1211,7 @@ export default function RapportPDFPage() {
                   }}
                   className="ml-3 text-muted-foreground"
                 >
-                  Chargement des données...
+                  {t("rapport.chargementDonnees")}
                 </span>
               </div>
             ) : (
@@ -1220,19 +1234,13 @@ export default function RapportPDFPage() {
                         </th>
                       ))}
                       <th style={thStyleSynth({ width: "90px" })}>
-                        Total
-                        <br />
-                        Année
+                        {t("rapport.totalAnnee")}
                       </th>
                       <th style={thStyleSynth({ width: "90px" })}>
-                        Moyenne
-                        <br />
-                        Mensuelle
+                        {t("rapport.moyenneMensuelle")}
                       </th>
                       <th style={thStyleSynth({ width: "90px" })}>
-                        Moyenne
-                        <br />
-                        Annuelle
+                        {t("rapport.moyenneAnnuelle")}
                       </th>
                     </tr>
                   </thead>
@@ -1250,7 +1258,7 @@ export default function RapportPDFPage() {
                             border: "1px solid #ccc",
                           }}
                         >
-                          Aucune donnée à afficher
+                          {t("rapport.aucuneDonneeAfficher")}
                         </td>
                       </tr>
                     ) : (
@@ -1330,18 +1338,9 @@ export default function RapportPDFPage() {
             }}
             className="mt-4 text-muted-foreground"
           >
-            <p>
-              * Les montants correspondent aux « Revenus (Faits et Payés) » du
-              Listing Mensuel.
-            </p>
-            <p>
-              * Moyenne Mensuelle : pour l'année en cours, seuls les mois
-              terminés (avant le mois actuel) sont pris en compte.
-            </p>
-            <p>
-              * Moyenne Annuelle : somme des montants de la colonne « Total
-              Année » divisée par le nombre d'années ayant un montant.
-            </p>
+            <p>{t("rapport.noteMontants")}</p>
+            <p>{t("rapport.noteMoyenneMensuelle")}</p>
+            <p>{t("rapport.noteMoyenneAnnuelle")}</p>
           </div>
         </div>
       </main>

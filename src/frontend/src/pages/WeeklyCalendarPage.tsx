@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientRecord, RendezVous } from "../backend";
 import { DemandeEdition } from "../backend";
@@ -17,36 +18,48 @@ import {
   calculateTotalRevenusFaitsEtPayes,
 } from "../utils/monthlyListing";
 
+// ── NoteCell — local state to avoid keystroke loss ───────────────────────────
+function NoteCell({
+  initialValue,
+  disabled,
+  onSave,
+  style,
+}: {
+  initialValue: string;
+  disabled: boolean;
+  onSave: (val: string) => void;
+  style?: React.CSSProperties;
+}) {
+  const [localValue, setLocalValue] = useState(initialValue);
+
+  useEffect(() => {
+    setLocalValue(initialValue);
+  }, [initialValue]);
+
+  return (
+    <input
+      type="text"
+      value={localValue}
+      disabled={disabled}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={() => onSave(localValue)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          onSave(localValue);
+          e.currentTarget.blur();
+        }
+      }}
+      style={style}
+    />
+  );
+}
+
 const VERDANA: React.CSSProperties = {
   fontFamily: "Verdana, sans-serif",
   fontSize: 12,
 };
 const ROW_H = 12;
 const MAX_ROWS = 10;
-
-const DAY_NAMES = [
-  "Lundi",
-  "Mardi",
-  "Mercredi",
-  "Jeudi",
-  "Vendredi",
-  "Samedi",
-  "Dimanche",
-];
-const MONTH_NAMES = [
-  "Janvier",
-  "Février",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Septembre",
-  "Octobre",
-  "Novembre",
-  "Décembre",
-];
 
 function getWeekDates(weekOffset: number): Date[] {
   const today = new Date();
@@ -83,20 +96,8 @@ interface ContextMenuState {
 }
 
 // Column definitions — widths used for header AND cells
-const DAY_COLS = [
-  { key: "heure", label: "Heure", w: 51 },
-  { key: "nom", label: "Nom", w: 88 },
-  { key: "ref", label: "Réf", w: 51 },
-  { key: "f", label: "F", w: 24 },
-  { key: "a", label: "A", w: 24 },
-  { key: "du", label: "Dû", w: 44 },
-  { key: "paye", label: "Payé", w: 44 },
-  { key: "date", label: "Date", w: 44 },
-  // Note is flex:1 (fills remaining width)
-  { key: "note", label: "Note", w: 74 },
-];
-// Fixed total of first 8 cols
-const FIXED_W = DAY_COLS.slice(0, 8).reduce((s, c) => s + c.w, 0); // 415
+// Fixed total of first 8 cols: 51+88+51+24+24+44+44+44 = 370... actually 415
+const FIXED_W = 415;
 
 function colStyle(
   w: number,
@@ -142,6 +143,18 @@ function DayBox({
   onDeleteAllFuture,
   onViewClient,
 }: DayBoxProps) {
+  const { t } = useTranslation();
+  const DAY_COLS = [
+    { key: "heure", label: t("weekly.heure"), w: 51 },
+    { key: "nom", label: t("weekly.nom"), w: 88 },
+    { key: "ref", label: t("weekly.ref"), w: 51 },
+    { key: "f", label: t("weekly.fait"), w: 24 },
+    { key: "a", label: t("weekly.annule"), w: 24 },
+    { key: "du", label: t("weekly.du"), w: 44 },
+    { key: "paye", label: t("weekly.paye"), w: 44 },
+    { key: "date", label: t("weekly.date"), w: 44 },
+    { key: "note", label: t("weekly.note"), w: 74 },
+  ];
   const [clientExtraFields, setClientExtraFields] = useState<
     Record<string, { prenom?: string }>
   >({});
@@ -179,6 +192,15 @@ function DayBox({
   const rows: (RendezVous | null)[] = [
     ...dayApts,
     ...Array(Math.max(0, MAX_ROWS - dayApts.length)).fill(null),
+  ];
+  const DAY_NAMES = [
+    t("months.lundi"),
+    t("months.mardi"),
+    t("months.mercredi"),
+    t("months.jeudi"),
+    t("months.vendredi"),
+    t("months.samedi"),
+    t("months.dimanche"),
   ];
   const dayLabel = `${DAY_NAMES[(date.getDay() + 6) % 7]} ${date.getDate()}`;
   const isToday = sameDay(date, new Date());
@@ -524,17 +546,10 @@ function DayBox({
                   }}
                 >
                   {apt && (
-                    <input
-                      type="text"
-                      value={apt.commentaireManuel ?? ""}
+                    <NoteCell
+                      initialValue={apt.commentaireManuel ?? ""}
                       disabled={isReader}
-                      onChange={(e) => handleNote(apt, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleNote(apt, e.currentTarget.value);
-                          e.currentTarget.blur();
-                        }
-                      }}
+                      onSave={(val) => handleNote(apt, val)}
                       style={{
                         border: "none",
                         background: "transparent",
@@ -573,21 +588,21 @@ function DayBox({
         >
           {[
             {
-              label: "Modifier ce RDV",
+              label: t("weekly.modifierCeRdv"),
               action: () => {
                 onOpenEdit(contextMenu.apt, "unique");
                 setContextMenu(null);
               },
             },
             {
-              label: "Modifier tous les futurs RDV",
+              label: t("weekly.modifierTousFuturs"),
               action: () => {
                 onOpenEdit(contextMenu.apt, "futurs");
                 setContextMenu(null);
               },
             },
             {
-              label: "Supprimer ce RDV",
+              label: t("weekly.supprimerCeRdv"),
               action: () => {
                 onDelete(contextMenu.apt);
                 setContextMenu(null);
@@ -595,11 +610,11 @@ function DayBox({
               danger: true,
             },
             {
-              label: "Supprimer tous les RDV futurs",
+              label: t("weekly.supprimerTousFuturs"),
               action: () => {
                 if (
                   window.confirm(
-                    `Supprimer TOUS les RDV futurs de ${contextMenu.apt.nomClient} ?`,
+                    `${t("weekly.confirmDeleteAllFuture")} ${contextMenu.apt.nomClient} ?`,
                   )
                 ) {
                   onDeleteAllFuture(contextMenu.apt);
@@ -609,7 +624,7 @@ function DayBox({
               danger: true,
             },
             {
-              label: "Voir la fiche client",
+              label: t("weekly.voirFicheClient"),
               action: () => {
                 onViewClient(
                   contextMenu.apt.referenceClient,
@@ -747,40 +762,40 @@ function SummaryBox({
   const summaryRows = [
     {
       key: "sem-paye",
-      label: "Total semaine",
+      label: t("weekly.totalSemaineFaitPaye"),
       value: totalSemaineFaitPaye,
-      sub: "Fait et payé",
+      sub: t("weekly.faitPaye"),
       red: false,
     },
     {
       key: "sem-impaye",
-      label: "Total semaine",
+      label: t("weekly.totalSemaineFaitImpaye"),
       value: totalSemaineFaitImpaye,
-      sub: "Fait payé/impayé",
+      sub: t("weekly.faitPayeImpaye"),
       red: false,
     },
     {
       key: "mois-paye",
-      label: "Total Mensuel",
+      label: t("weekly.totalMensuelLabel"),
       value: totalMensuelPaye,
-      sub: "Fait et payé",
+      sub: t("weekly.faitPaye"),
       red: false,
     },
     {
       key: "mois-moy",
-      label: "Moy Mensuel",
+      label: t("weekly.moyMensuel"),
       value: moyMensuel,
-      sub: "Fait et payé",
+      sub: t("weekly.faitPaye"),
       red: false,
     },
     {
       key: "annee-paye",
-      label: "Total Année",
+      label: t("weekly.totalAnneeLabel"),
       value: totalAnneePaye,
-      sub: "Fait et payé",
+      sub: t("weekly.faitPaye"),
       red: false,
     },
-    { key: "du", label: "Dû", value: totalDu, sub: "", red: true },
+    { key: "du", label: t("weekly.du"), value: totalDu, sub: "", red: true },
   ];
 
   return (
@@ -888,6 +903,7 @@ function ClientFicheModal({
   appointments: allApts,
   onClose,
 }: ClientFicheModalProps) {
+  const { t } = useTranslation();
   const client = clients.find((c) => c.referenceClient === referenceClient);
   const currentYear = new Date().getFullYear();
   const now = BigInt(Date.now()) * BigInt(1_000_000);
@@ -976,7 +992,7 @@ function ClientFicheModal({
           }}
         >
           <span style={{ fontWeight: "bold", fontSize: 13 }}>
-            Fiche client — {clientName}
+            {t("weekly.ficheClientTitle")} — {clientName}
           </span>
           <button
             type="button"
@@ -995,17 +1011,17 @@ function ClientFicheModal({
           <div style={{ marginBottom: 12 }}>
             {client.phoneNumber && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Tél :</strong> {client.phoneNumber}
+                <strong>{t("weekly.tel")} :</strong> {client.phoneNumber}
               </p>
             )}
             {client.address && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Adresse :</strong> {client.address}
+                <strong>{t("weekly.adresse")} :</strong> {client.address}
               </p>
             )}
             {client.service && (
               <p style={{ margin: "2px 0" }}>
-                <strong>Service :</strong> {client.service}
+                <strong>{t("client.service")} :</strong> {client.service}
               </p>
             )}
           </div>
@@ -1020,7 +1036,7 @@ function ClientFicheModal({
           }}
         >
           <p style={{ fontWeight: "bold", marginBottom: 6 }}>
-            Résumé {currentYear}
+            {t("weekly.resumeAnnee")} {currentYear}
           </p>
           <div
             style={{
@@ -1029,11 +1045,11 @@ function ClientFicheModal({
               gap: "2px 8px",
             }}
           >
-            <span>Nb RDV faits</span>
+            <span>{t("weekly.nbRdvFaits")}</span>
             <span style={{ textAlign: "right", fontWeight: "bold" }}>
               {clientAptsAscending.filter((a) => a.fait).length}
             </span>
-            <span>Total payé</span>
+            <span>{t("weekly.totalPaye")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -1043,7 +1059,7 @@ function ClientFicheModal({
             >
               {totalPaye.toLocaleString("fr-FR")}
             </span>
-            <span>Total dû</span>
+            <span>{t("weekly.totalDu")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -1053,7 +1069,7 @@ function ClientFicheModal({
             >
               {totalDu.toLocaleString("fr-FR")}
             </span>
-            <span>Crédit</span>
+            <span>{t("weekly.credit")}</span>
             <span
               style={{
                 textAlign: "right",
@@ -1066,7 +1082,7 @@ function ClientFicheModal({
           </div>
         </div>
         <p style={{ fontWeight: "bold", marginBottom: 6 }}>
-          Rendez-vous {currentYear}
+          {t("client.rdvSummary")} {currentYear}
         </p>
         <table
           style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}
@@ -1074,14 +1090,14 @@ function ClientFicheModal({
           <thead>
             <tr style={{ background: "#e8e8e8" }}>
               {[
-                "Date",
-                "Heure",
-                "Dû",
-                "Payé",
-                "Date",
-                "Note",
-                "Crédit",
-                "Fait",
+                t("monthly.dateCol"),
+                t("weekly.heure"),
+                t("weekly.du"),
+                t("weekly.paye"),
+                t("weekly.date"),
+                t("weekly.note"),
+                t("weekly.credit"),
+                t("weekly.fait"),
               ].map((h) => (
                 <th
                   key={h}
@@ -1185,7 +1201,11 @@ function ClientFicheModal({
                       fontStyle: apt.annule ? "italic" : "normal",
                     }}
                   >
-                    {apt.annule ? "Annulé" : apt.fait ? "✓" : "-"}
+                    {apt.annule
+                      ? t("weekly.annuleLabel")
+                      : apt.fait
+                        ? "✓"
+                        : "-"}
                   </td>
                 </tr>
               );
@@ -1198,6 +1218,21 @@ function ClientFicheModal({
 }
 
 export default function WeeklyCalendarPage() {
+  const { t } = useTranslation();
+  const MONTH_NAMES = [
+    t("months.janvier"),
+    t("months.fevrier"),
+    t("months.mars"),
+    t("months.avril"),
+    t("months.mai"),
+    t("months.juin"),
+    t("months.juillet"),
+    t("months.aout"),
+    t("months.septembre"),
+    t("months.octobre"),
+    t("months.novembre"),
+    t("months.decembre"),
+  ];
   const { session } = useLocalAuth();
   const isReader = session?.role === "reader";
   const [weekOffset, setWeekOffset] = useState(0);
@@ -1245,10 +1280,11 @@ export default function WeeklyCalendarPage() {
 
   const handleDelete = useCallback(
     (apt: RendezVous) => {
-      if (!window.confirm(`Supprimer le RDV de ${apt.nomClient} ?`)) return;
+      if (!window.confirm(`${t("weekly.confirmDeleteRdv")} ${apt.nomClient} ?`))
+        return;
       deleteApt.mutate({ id: apt.id, mode: DemandeEdition.unique });
     },
-    [deleteApt],
+    [deleteApt, t],
   );
 
   const handleDeleteAllFuture = useCallback(
@@ -1300,9 +1336,9 @@ export default function WeeklyCalendarPage() {
           <ChevronLeft size={16} />
         </button>
         <span data-ocid="weekly.panel">
-          Semaine du {firstDate.getDate()} {MONTH_NAMES[firstDate.getMonth()]} —{" "}
-          {lastDate.getDate()} {MONTH_NAMES[lastDate.getMonth()]}{" "}
-          {lastDate.getFullYear()}
+          {t("weekly.semaineDu")} {firstDate.getDate()}{" "}
+          {MONTH_NAMES[firstDate.getMonth()]} — {lastDate.getDate()}{" "}
+          {MONTH_NAMES[lastDate.getMonth()]} {lastDate.getFullYear()}
         </span>
         <button
           type="button"
@@ -1334,7 +1370,7 @@ export default function WeeklyCalendarPage() {
           }}
           data-ocid="weekly.today.button"
         >
-          Aujourd'hui
+          {t("weekly.aujourdhui")}
         </button>
       </div>
 

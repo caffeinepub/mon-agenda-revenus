@@ -47,11 +47,7 @@ import {
   syncToGoogle,
 } from "../utils/backendSync";
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Administrateur",
-  advanced: "Utilisateur Avancé",
-  reader: "Utilisateur Lecteur",
-};
+// ROLE_LABELS defined inside component
 
 const ROLE_COLORS: Record<UserRole, string> = {
   admin: "#1a5276",
@@ -65,14 +61,7 @@ const ROLE_BG: Record<UserRole, string> = {
   reader: "#fdebd0",
 };
 
-const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  admin:
-    "Tous les droits, gestion des utilisateurs, ajout/modification/suppression de rendez-vous",
-  advanced:
-    "Ajout, modification et suppression de rendez-vous. Pas accès à la gestion des utilisateurs",
-  reader:
-    "Lecture seule. Peut consulter les rendez-vous et la comptabilité. Aucune modification possible",
-};
+// ROLE_DESCRIPTIONS defined inside component
 
 const GOOGLE_APPS_SCRIPT_CODE = `// ============================================================
 // IMPORTANT : Remplacez MON_MOT_DE_PASSE_SECRET par votre mot de passe
@@ -150,7 +139,7 @@ function GoogleSyncSection() {
       toast.success(t("users.successSyncToGoogle"));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Erreur : ${msg}`, { duration: 8000 });
+      toast.error(`${t("users.errorSync2")} ${msg}`, { duration: 8000 });
     } finally {
       setSaving(false);
     }
@@ -164,9 +153,12 @@ function GoogleSyncSection() {
         toast.success(t("users.successLoadFromGoogle"));
         setTimeout(() => window.location.reload(), 1500);
       } else {
-        toast.error(`Erreur : ${result.error ?? "Inconnu"}`, {
-          duration: 8000,
-        });
+        toast.error(
+          `${t("users.errorSync2")} ${result.error ?? t("common.error")}`,
+          {
+            duration: 8000,
+          },
+        );
       }
     } finally {
       setLoading(false);
@@ -203,7 +195,7 @@ function GoogleSyncSection() {
         }}
       >
         <Cloud size={14} />
-        Synchronisation Google Drive
+        {t("users.googleSyncTitle")}
       </div>
       <div
         style={{
@@ -214,10 +206,7 @@ function GoogleSyncSection() {
           lineHeight: 1.6,
         }}
       >
-        Connectez l'application à un fichier sur votre Google Drive pour
-        synchroniser vos données entre tous vos appareils. Le bouton "Sync
-        Google" apparaîtra dans la barre de navigation une fois l'URL
-        configurée.
+        {t("users.googleSyncDesc")}
       </div>
 
       {/* URL input + save */}
@@ -233,7 +222,7 @@ function GoogleSyncSection() {
             fontFamily: "Verdana, sans-serif",
           }}
         >
-          URL Google Apps Script
+          {t("users.googleScriptUrlLabel")}
         </label>
         <div style={{ display: "flex", gap: 8 }}>
           <input
@@ -270,7 +259,7 @@ function GoogleSyncSection() {
               whiteSpace: "nowrap",
             }}
           >
-            <Save size={12} /> Enregistrer l'URL
+            <Save size={12} /> {t("users.googleSaveUrlButton")}
           </Button>
         </div>
       </div>
@@ -288,7 +277,7 @@ function GoogleSyncSection() {
             fontFamily: "Verdana, sans-serif",
           }}
         >
-          Mot de passe secret (doit correspondre au script)
+          {t("users.googleSecretLabel")}
         </label>
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ position: "relative", flex: 1 }}>
@@ -300,7 +289,7 @@ function GoogleSyncSection() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSaveSecret();
               }}
-              placeholder="Entrez votre mot de passe secret"
+              placeholder={t("users.googleSecretPlaceholder")}
               data-ocid="users.google_secret.input"
               style={{
                 width: "100%",
@@ -330,7 +319,9 @@ function GoogleSyncSection() {
                 color: "#4b5563",
                 fontSize: 12,
               }}
-              title={showSecret ? "Masquer" : "Afficher"}
+              title={
+                showSecret ? t("users.hidePassword") : t("users.showPassword")
+              }
             >
               {showSecret ? "🙈" : "👁"}
             </button>
@@ -350,7 +341,7 @@ function GoogleSyncSection() {
               whiteSpace: "nowrap",
             }}
           >
-            <Save size={12} /> Enregistrer le mot de passe
+            <Save size={12} /> {t("users.googleSaveSecretButton")}
           </Button>
         </div>
         <div
@@ -361,8 +352,7 @@ function GoogleSyncSection() {
             fontFamily: "Verdana, sans-serif",
           }}
         >
-          Ce mot de passe doit être identique à la valeur de SECRET_KEY dans
-          votre script Google.
+          {t("users.secretMatchNote")}
         </div>
       </div>
 
@@ -390,7 +380,7 @@ function GoogleSyncSection() {
           ) : (
             <Upload size={12} />
           )}
-          {saving ? "Sauvegarde..." : "Sauvegarder vers Google"}
+          {saving ? t("users.sauvegarde") : t("users.googleSaveToGoogleButton")}
         </Button>
         <Button
           onClick={handleSyncFromGoogle}
@@ -412,7 +402,9 @@ function GoogleSyncSection() {
           ) : (
             <Download size={12} />
           )}
-          {loading ? "Chargement..." : "Charger depuis Google"}
+          {loading
+            ? t("common.loading")
+            : t("users.googleLoadFromGoogleButton")}
         </Button>
       </div>
 
@@ -434,7 +426,7 @@ function GoogleSyncSection() {
           marginBottom: showInstructions ? 10 : 0,
         }}
       >
-        {showInstructions ? "▼" : "▶"} Instructions de configuration
+        {showInstructions ? "▼" : "▶"} {t("users.googleInstructionsToggle")}
       </button>
 
       {showInstructions && (
@@ -455,7 +447,7 @@ function GoogleSyncSection() {
               marginBottom: 8,
             }}
           >
-            Configuration en 4 étapes (à faire une seule fois)
+            {t("users.configEnEtapes")}
           </div>
           <ol
             style={{
@@ -467,18 +459,10 @@ function GoogleSyncSection() {
               lineHeight: 2,
             }}
           >
-            <li>
-              Aller sur <strong>script.google.com</strong> → "Nouveau projet"
-            </li>
-            <li>
-              Remplacer tout le code par le script ci-dessous, puis cliquer
-              "Enregistrer"
-            </li>
-            <li>
-              Cliquer "Déployer" → "Nouveau déploiement" → Type : "Application
-              Web" → Accès : "Tout le monde" → Déployer
-            </li>
-            <li>Copier l'URL générée et la coller dans le champ ci-dessus</li>
+            <li>{t("users.step1")}</li>
+            <li>{t("users.step2")}</li>
+            <li>{t("users.step3")}</li>
+            <li>{t("users.step4")}</li>
           </ol>
           <div style={{ marginTop: 10 }}>
             <div
@@ -497,7 +481,7 @@ function GoogleSyncSection() {
                   color: "#1e3a8a",
                 }}
               >
-                Script Google Apps Script :
+                {t("users.scriptLabel")}
               </span>
               <Button
                 onClick={handleCopyScript}
@@ -513,7 +497,7 @@ function GoogleSyncSection() {
                   gap: 4,
                 }}
               >
-                {copied ? "✓ Copié !" : "Copier le script"}
+                {copied ? t("users.copiedButton") : t("users.copyButton")}
               </Button>
             </div>
             <textarea
@@ -542,6 +526,16 @@ function GoogleSyncSection() {
 
 export default function UserManagementPage() {
   const { t } = useTranslation();
+  const ROLE_LABELS: Record<UserRole, string> = {
+    admin: t("users.adminRole"),
+    advanced: t("users.advancedRole"),
+    reader: t("users.readerRole"),
+  };
+  const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+    admin: t("users.roleDescAdmin"),
+    advanced: t("users.roleDescAdvanced"),
+    reader: t("users.roleDescReader"),
+  };
   const {
     users,
     session,
@@ -568,17 +562,37 @@ export default function UserManagementPage() {
   );
 
   const FONT_COLOR_OPTIONS = [
-    { label: "Défaut", value: "", bg: "#888", isDefault: true },
-    { label: "Orange", value: "rgb(226, 107, 10)", bg: "rgb(226, 107, 10)" },
-    { label: "Jaune", value: "rgb(230, 210, 50)", bg: "rgb(230, 210, 50)" },
+    { label: t("users.defaut"), value: "", bg: "#888", isDefault: true },
     {
-      label: "Vert clair",
+      label: t("users.orange"),
+      value: "rgb(226, 107, 10)",
+      bg: "rgb(226, 107, 10)",
+    },
+    {
+      label: t("users.jaune"),
+      value: "rgb(230, 210, 50)",
+      bg: "rgb(230, 210, 50)",
+    },
+    {
+      label: t("users.vertClair"),
       value: "rgb(80, 200, 120)",
       bg: "rgb(80, 200, 120)",
     },
-    { label: "Cyan", value: "rgb(80, 200, 220)", bg: "rgb(80, 200, 220)" },
-    { label: "Rose", value: "rgb(240, 140, 180)", bg: "rgb(240, 140, 180)" },
-    { label: "Blanc", value: "rgb(255, 255, 255)", bg: "rgb(255, 255, 255)" },
+    {
+      label: t("users.cyan"),
+      value: "rgb(80, 200, 220)",
+      bg: "rgb(80, 200, 220)",
+    },
+    {
+      label: t("users.rose"),
+      value: "rgb(240, 140, 180)",
+      bg: "rgb(240, 140, 180)",
+    },
+    {
+      label: t("users.blanc"),
+      value: "rgb(255, 255, 255)",
+      bg: "rgb(255, 255, 255)",
+    },
   ];
 
   const applyFontColor = (colorValue: string) => {
@@ -613,7 +627,7 @@ export default function UserManagementPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("Données exportées avec succès");
+    toast.success(t("users.successExportJson"));
   };
 
   const handleExportBeforeReset = () => {
@@ -632,9 +646,7 @@ export default function UserManagementPage() {
     setResetLoading(true);
     try {
       await clearAllData();
-      toast.success(
-        "Toutes les données (rendez-vous et clients) ont été effacées.",
-      );
+      toast.success(t("users.successReset"));
       setShowResetDialog(false);
       setTimeout(() => window.location.reload(), 1200);
     } catch {
@@ -652,7 +664,7 @@ export default function UserManagementPage() {
       const text = await file.text();
       const result = restoreFromJson(text);
       if (!result.ok) {
-        toast.error(result.error ?? "Erreur lors de l'importation");
+        toast.error(result.error ?? t("users.errorImport"));
         return;
       }
       toast.success(t("users.successImport"));
@@ -686,11 +698,11 @@ export default function UserManagementPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername.trim()) {
-      setAddError("L'identifiant est obligatoire");
+      setAddError(t("users.identifiantReq"));
       return;
     }
     if (!newPassword) {
-      setAddError("Le mot de passe est obligatoire");
+      setAddError(t("users.motDePasseReq"));
       return;
     }
     setAddLoading(true);
@@ -704,7 +716,7 @@ export default function UserManagementPage() {
       setNewRole("reader");
       setShowAddForm(false);
     } else {
-      setAddError(result.error ?? "Erreur");
+      setAddError(t("common.error"));
     }
   };
 
@@ -731,7 +743,7 @@ export default function UserManagementPage() {
       toast.success(t("users.successUserUpdated"));
       setEditingUsername(null);
     } else {
-      setEditError(result.error ?? "Erreur");
+      setEditError(t("common.error"));
     }
   };
 
@@ -741,7 +753,7 @@ export default function UserManagementPage() {
     if (result.ok) {
       toast.success(t("users.successUserDeleted"));
     } else {
-      toast.error(result.error ?? "Erreur");
+      toast.error(t("common.error"));
     }
     setDeleteUsername(null);
   };
@@ -772,10 +784,10 @@ export default function UserManagementPage() {
       >
         <ShieldCheck size={22} />
         <span style={{ fontSize: 16, fontWeight: "bold" }}>
-          Gestion des Utilisateurs
+          {t("users.gestionUtilisateurs")}
         </span>
         <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
-          Connecté : {session?.username} (
+          {t("users.connecte")} {session?.username} (
           {session?.role ? ROLE_LABELS[session.role] : ""})
         </span>
       </div>
@@ -843,7 +855,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                Identifiant
+                {t("users.identifiant")}
               </th>
               <th
                 style={{
@@ -853,7 +865,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                Rôle
+                {t("users.roleCol")}
               </th>
               <th
                 style={{
@@ -863,7 +875,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                Créé le
+                {t("users.creeLe")}
               </th>
               <th
                 style={{
@@ -873,7 +885,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                Actions
+                {t("users.actionsCol")}
               </th>
             </tr>
           </thead>
@@ -958,7 +970,8 @@ export default function UserManagementPage() {
                           padding: "0 10px",
                         }}
                       >
-                        <Edit size={12} className="mr-1" /> Modifier
+                        <Edit size={12} className="mr-1" />{" "}
+                        {t("users.modifier")}
                       </Button>
                       <Button
                         size="sm"
@@ -973,7 +986,8 @@ export default function UserManagementPage() {
                           padding: "0 10px",
                         }}
                       >
-                        <Trash2 size={12} className="mr-1" /> Supprimer
+                        <Trash2 size={12} className="mr-1" />{" "}
+                        {t("users.supprimer")}
                       </Button>
                     </div>
                   </td>
@@ -1000,8 +1014,7 @@ export default function UserManagementPage() {
                               fontFamily: "Verdana, sans-serif",
                             }}
                           >
-                            Nouveau mot de passe (laisser vide pour ne pas
-                            changer)
+                            {t("users.nouveauMotDePasse")}
                           </Label>
                           <div
                             style={{
@@ -1014,7 +1027,7 @@ export default function UserManagementPage() {
                               type={showEditPassword ? "text" : "password"}
                               value={editPassword}
                               onChange={(e) => setEditPassword(e.target.value)}
-                              placeholder="Nouveau mot de passe"
+                              placeholder={t("users.nouveauMotDePasse")}
                               data-ocid="users.edit_password.input"
                               style={{
                                 width: 220,
@@ -1078,9 +1091,15 @@ export default function UserManagementPage() {
                               fontFamily: "Verdana, sans-serif",
                             }}
                           >
-                            <option value="admin">Administrateur</option>
-                            <option value="advanced">Utilisateur Avancé</option>
-                            <option value="reader">Utilisateur Lecteur</option>
+                            <option value="admin">
+                              {t("users.adminRole")}
+                            </option>
+                            <option value="advanced">
+                              {t("users.advancedRole")}
+                            </option>
+                            <option value="reader">
+                              {t("users.readerRole")}
+                            </option>
                           </select>
                         </div>
                         {editError && (
@@ -1108,7 +1127,8 @@ export default function UserManagementPage() {
                               fontFamily: "Verdana, sans-serif",
                             }}
                           >
-                            <Save size={12} className="mr-1" /> Enregistrer
+                            <Save size={12} className="mr-1" />{" "}
+                            {t("users.save")}
                           </Button>
                           <Button
                             size="sm"
@@ -1121,7 +1141,8 @@ export default function UserManagementPage() {
                               fontFamily: "Verdana, sans-serif",
                             }}
                           >
-                            <X size={12} className="mr-1" /> Annuler
+                            <X size={12} className="mr-1" />{" "}
+                            {t("users.annuler")}
                           </Button>
                         </div>
                       </div>
@@ -1142,7 +1163,7 @@ export default function UserManagementPage() {
                     fontFamily: "Verdana, sans-serif",
                   }}
                 >
-                  Aucun utilisateur
+                  {t("users.aucunUtilisateur")}
                 </td>
               </tr>
             )}
@@ -1163,7 +1184,7 @@ export default function UserManagementPage() {
             height: 36,
           }}
         >
-          <Plus size={14} className="mr-1" /> Ajouter un utilisateur
+          <Plus size={14} className="mr-1" /> {t("users.addUser")}
         </Button>
       ) : (
         <form
@@ -1184,7 +1205,7 @@ export default function UserManagementPage() {
               fontFamily: "Verdana, sans-serif",
             }}
           >
-            Nouvel utilisateur
+            {t("users.nouveauUtilisateur")}
           </div>
           <div
             style={{
@@ -1202,12 +1223,12 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                Identifiant *
+                {t("users.identifiantReq")}
               </Label>
               <Input
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
-                placeholder="Identifiant"
+                placeholder={t("users.identifiant")}
                 data-ocid="users.add_username.input"
                 style={{
                   width: 180,
@@ -1226,7 +1247,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                Mot de passe *
+                {t("users.motDePasseReq")}
               </Label>
               <div
                 style={{
@@ -1239,7 +1260,7 @@ export default function UserManagementPage() {
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Mot de passe"
+                  placeholder={t("users.password")}
                   data-ocid="users.add_password.input"
                   style={{
                     width: 180,
@@ -1278,7 +1299,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                Rôle
+                {t("users.roleLabel")}
               </Label>
               <select
                 value={newRole}
@@ -1295,9 +1316,9 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                <option value="admin">Administrateur</option>
-                <option value="advanced">Utilisateur Avancé</option>
-                <option value="reader">Utilisateur Lecteur</option>
+                <option value="admin">{t("users.adminRole")}</option>
+                <option value="advanced">{t("users.advancedRole")}</option>
+                <option value="reader">{t("users.readerRole")}</option>
               </select>
             </div>
             {addError && (
@@ -1325,7 +1346,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                <UserCheck size={12} className="mr-1" /> Ajouter
+                <UserCheck size={12} className="mr-1" /> {t("users.ajouter")}
               </Button>
               <Button
                 type="button"
@@ -1341,7 +1362,7 @@ export default function UserManagementPage() {
                   fontFamily: "Verdana, sans-serif",
                 }}
               >
-                <UserX size={12} className="mr-1" /> Annuler
+                <UserX size={12} className="mr-1" /> {t("users.annuler")}
               </Button>
             </div>
           </div>
@@ -1381,9 +1402,7 @@ export default function UserManagementPage() {
               const enabled = !!checked;
               setBypass(enabled);
               toast.success(
-                enabled
-                  ? "Ouverture automatique activée : l'application s'ouvrira sans demander de connexion"
-                  : "Ouverture automatique désactivée : le login sera demandé à la prochaine ouverture",
+                enabled ? t("users.noPassword") : t("users.noPassword"),
               );
             }}
             data-ocid="users.bypass.checkbox"
@@ -1399,8 +1418,7 @@ export default function UserManagementPage() {
               userSelect: "none",
             }}
           >
-            Accéder sans mot de passe (l'application s'ouvrira automatiquement
-            sans demander de connexion)
+            {t("users.noPasswordLabel")}
           </label>
         </div>
       </div>
@@ -1440,8 +1458,7 @@ export default function UserManagementPage() {
             lineHeight: 1.6,
           }}
         >
-          Choisissez entre le mode clair et le mode sombre pour toute
-          l'application.
+          {t("users.choisirTheme")}
         </div>
         <div
           style={{
@@ -1470,7 +1487,7 @@ export default function UserManagementPage() {
               data-ocid="users.theme_light.checkbox"
               style={{ width: 16, height: 16, cursor: "pointer" }}
             />
-            ☀️ Mode Clair
+            {t("users.modeClair")}
           </label>
           <label
             style={{
@@ -1491,7 +1508,7 @@ export default function UserManagementPage() {
               data-ocid="users.theme_dark.checkbox"
               style={{ width: 16, height: 16, cursor: "pointer" }}
             />
-            🌙 Mode Sombre
+            {t("users.modeSombre")}
           </label>
         </div>
         {/* Couleur de police */}
@@ -1522,8 +1539,7 @@ export default function UserManagementPage() {
               lineHeight: 1.5,
             }}
           >
-            Choisissez une couleur visible sur tous les fonds (utile en mode
-            sombre). &quot;Défaut&quot; utilise la couleur d'origine.
+            {t("users.couleurPoliceDesc")}
           </div>
           <div
             style={{

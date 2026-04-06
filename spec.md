@@ -1,96 +1,72 @@
-src/frontend/src/i18n/ - système i18n créé avec fr.json, en.json, es.json, ru.json
-src/frontend/src/hooks/useTranslation.ts - hook useTranslation créé
+# Mon Agenda Revenus
 
-Tâches frontend à implémenter :
+## Current State
 
-1. CORRECTION COLONNE "Dû" dans MonthlySummarySection.tsx :
-   - Remplacer le calcul `duAujourdhui` par : `totalRdvFaits - totalRevenue`
-   - Supprimer la dépendance à `allAppointments` dans ce calcul
-   - Afficher le résultat en ROUGE (text-red-600) — jamais en orange
-   - Le résultat est TOUJOURS positif ou nul (rdvFaits >= revenus par définition)
-   - Supprimer l'ancien calcul `duAujourdhui` basé sur les appointments individuels
-   - Nouveau code : `const duTotal = totalRdvFaits - totalRevenue;`
-   - Affichage uniquement dans la ligne TOTAL (pas dans les lignes mensuelles)
+L'application est une application multi-pages de gestion d'agenda pour indépendants. Les pages concernées par ce diff sont :
+- `WeeklyCalendarPage.tsx` : Calendrier Semaine avec champs Note éditables dans chaque ligne
+- `DailyCalendarPage.tsx` : Calendrier Journalier avec champs Note éditables
+- `MonthlyCalendarPage.tsx` : Calendrier Mensuel (pas de champ Note éditable dans la grille, seulement la fiche client en lecture seule)
+- `ClientDatabasePage.tsx` : Base Client avec panneau gauche toujours visible (mode `panelMode` géré mais initialisé à `"form"`) et bouton "Ajouter un Client" dupliqué dans chaque ligne
+- `UserManagementPage.tsx` : Page Utilisateurs avec quelques textes en dur
+- `i18n/fr.json` + autres langues : système i18n existant
 
-2. SYSTÈME i18n — MIGRATION DES TEXTES VISIBLES :
-   Hook disponible : `import { useTranslation } from "../hooks/useTranslation";`
-   (ou `"../../hooks/useTranslation"` selon le chemin)
-   Utilisation : `const { t } = useTranslation();` puis `t("section.key")`
-   Fichier de référence des clés : src/frontend/src/i18n/fr.json
+## Requested Changes (Diff)
 
-   Appliquer useTranslation() dans ces fichiers :
-   - components/Header.tsx
-   - components/MonthlySummarySection.tsx
-   - components/AppointmentDialog.tsx
-   - components/AppointmentActionDialog.tsx
-   - components/AppointmentDeleteDialog.tsx
-   - components/ClientPhotoField.tsx
-   - pages/Dashboard.tsx
-   - pages/ClientDatabasePage.tsx
-   - pages/UserManagementPage.tsx
-   - pages/WeeklyCalendarPage.tsx
-   - pages/DailyCalendarPage.tsx
-   - pages/MonthlyCalendarPage.tsx
-   - pages/RapportPDFPage.tsx
+### Add
+- Composant local `NoteCell` (ou hook) dans WeeklyCalendarPage et DailyCalendarPage : état local pour la valeur saisie, sauvegarde uniquement au `onBlur` ou touche `Enter`
+- Nouvelles clés i18n dans `fr.json`, `en.json`, `ru.json`, `es.json` pour les textes manquants
 
-   Éléments à migrer (PAS tout le texte, seulement les éléments VISIBLES) :
-   - Tous les titres de pages (h1, CardTitle)
-   - Tous les labels de colonnes de tableaux (TableHead)
-   - Tous les boutons (Button, texte des boutons)
-   - Tous les labels de formulaires (Label)
-   - Tous les messages toast (toast.success, toast.error)
-   - Les noms des éléments de navigation (Header)
-   - Les en-têtes de cartes (CardTitle)
-   - Les messages de confirmation de suppression
+### Modify
 
-   NE PAS migrer :
-   - Les constantes de données (MONTH_NAMES, DAY_NAMES utilisées pour les calculs)
-   - Le code logique, les valeurs de champs de formulaire
-   - Les chaînes utilisées dans des comparaisons
+**Fix 1 — Saisie Note trop lente (WeeklyCalendarPage + DailyCalendarPage) :**
+Le champ Note est contrôlé (`value={apt.commentaireManuel}`) et appelle `updateStatus.mutate()` à chaque `onChange`, ce qui provoque un re-render et perd les frappes rapides. Solution : créer un composant `NoteCell` React avec son propre `useState(initialValue)`, binding local sur `onChange`, et sauvegarde vers le backend uniquement sur `onBlur` ou `Enter`. La valeur locale doit se réinitialiser si `apt.commentaireManuel` change depuis l'extérieur (utiliser `useEffect` avec comparaison).
 
-3. SÉLECTEUR DE LANGUE dans Header.tsx :
-   - Ajouter un sélecteur de langue visible dans la barre de navigation
-   - Placer entre les boutons de navigation et le bouton Sync Google
-   - Afficher les drapeaux emoji + code langue : 🇫🇷 FR | 🇬🇧 EN | 🇪🇸 ES | 🇷🇺 RU
-   - Utiliser un DropdownMenu avec la liste de toutes les langues disponibles (getAllLanguages())
-   - Importez : `import { useTranslation, getAllLanguages, setActiveLanguage } from "../hooks/useTranslation";`
-   - Le changement est instantané (l'event agenda_lang_change déclenche re-render)
-   - Sur mobile : ajouter aussi dans le menu dropdown
+**Fix 2 — Bouton "Ajouter un Client" dans chaque ligne (ClientDatabasePage) :**
+Dans le `TableBody`, chaque `TableRow` contient un bouton "Ajouter un Client" (UserPlus) qui est incorrect. Supprimer ce bouton dans les lignes client — seul le bouton en haut du tableau (dans `CardHeader`) doit rester.
 
-4. PAGE LANGUES (nouveau fichier src/frontend/src/pages/LanguagesPage.tsx) :
-   Créer une nouvelle page complète avec :
-   a) Section "Langues disponibles" : tableau listant toutes les langues (code, nom, drapeau, intégré/personnalisé)
-      - Langue active est indiquée visuellement (badge ou fond coloré)
-      - Bouton "Activer" pour changer de langue
-      - Bouton "Supprimer" (uniquement pour les langues personnalisées, pas les intégrées)
-      - Bouton "Télécharger" pour exporter n'importe quelle langue
-   b) Section "Exporter un fichier de langue" :
-      - Sélecteur de langue à exporter (toutes les langues disponibles)
-      - Bouton Télécharger → génère un fichier JSON `{code}.json` à télécharger
-   c) Section "Importer un fichier de langue" :
-      - Champ upload fichier JSON
-      - Champ saisie code langue (ex: DE)
-      - Champ saisie nom affiché (ex: Deutsch)
-      - Champ optionnel emoji drapeau
-      - Bouton Importer → appelle saveCustomLanguage() et ajoute au sélecteur immédiatement
-      - Si le code existe déjà (même les intégrés), remplace sans confirmation
+**Fix 3 — Panneau gauche caché par défaut (ClientDatabasePage) :**
+- Changer `useState<PanelMode>("form")` → `useState<PanelMode | null>(null)` (ou une valeur sentinelle `"hidden"`)
+- En temps normal (state `null`/`"hidden"`), le panneau gauche n'est PAS rendu → le tableau "Liste des clients" prend toute la largeur (`lg:col-span-3` ou full width)
+- Cliquer sur "Ajouter un Client" → `setPanelMode("form")` ET `resetForm()` (pour générer une nouvelle référence auto)
+- Cliquer sur "Modifier" dans une ligne → `setPanelMode("form")` + remplir le formulaire (comportement actuel `handleClientSelect`)
+- Cliquer sur "Fiche" dans une ligne → `setPanelMode("fiche")` (comportement actuel)
+- Fermer le panneau (croix X dans la fiche ou annulation formulaire) → `setPanelMode(null)` pour le masquer
+- Quand panelMode est non-null, la grille est `grid-cols-1 lg:grid-cols-3` avec le panneau gauche en `lg:col-span-1` et la liste en `lg:col-span-2`
+- Quand panelMode est null, pas de panneau gauche et la liste prend toute la largeur
 
-   Imports pour la page :
-   ```ts
-   import { useTranslation, getAllLanguages, saveCustomLanguage, deleteCustomLanguage, setActiveLanguage, getActiveLanguageCode } from "../hooks/useTranslation";
-   ```
+**Fix 4 — Textes en dur restants :**
+- `ClientDatabasePage.tsx` : remplacer tous les textes visibles en dur par `t("...")` :
+  - Titres du formulaire : "Modifier le client" / "Ajouter un client"
+  - Descriptions du formulaire
+  - Labels : "Nom du client (optionnel)", "Prénom (optionnel)", "Référence client *", "Téléphone", "Adresse", "Service", "Notes", "Courriel 1", "Courriel 2", "Date de naissance", "Nom Second contact", "Téléphone second contact"
+  - Bouton submit : "Mettre à jour" / "Ajouter"
+  - Bouton annuler : "Annuler"
+  - Placeolders : "Prénom du client", "Référence client...", etc.
+  - Dans la fiche client : "Fiche client", "Exporter en HTML", "Modifier", "Nom", "Prénom", "Référence", "Téléphone", "Adresse", "Service", "Notes", "Courriel 1", "Courriel 2", "Date de naissance", "Nom Second contact", "Téléphone second contact", "Résumé", "Nb de RDV", "Total payé", "Montant impayé", "Date", "Note", "Fait", "Crédit", "Total"
+  - Dans le panneau recherche : "Rechercher un client", labels "Nom", "Référence", "Téléphone", "Service", placeholders
+  - Dans le tableau : "Actions", "Photo", "Nom", "Référence", "Téléphone", "Adresse", "Service", "Notes", "Payé en 2026" → `Payé en {year}`, "Fiche", "Modifier", "Aucun client enregistré", "Rechercher", "Ordre original", "Tri A-Z"
+  - Messages d'erreur : "Non autorisé : ...", "Chargement..."
+  - "Fiche client exportée en HTML"
+- `UserManagementPage.tsx` : remplacer :
+  - `"Copier l'URL générée et la coller dans le champ ci-dessus"` → `t("users.step4")`
+  - placeholder `"Entrez votre mot de passe secret"` → `t("users.googleSecretPlaceholder")`
+  - placeholder `"Nouveau mot de passe"` → `t("users.nouveauMotDePasse")` (déjà dans fr.json)
+  - placeholder `"Identifiant"` → `t("users.identifiant")`
+  - placeholder `"Mot de passe"` → `t("users.password")`
+  - `title={showSecret ? "Masquer" : "Afficher"}` → `t("users.hidePassword")` / `t("users.showPassword")`
+  - erreur fallback `"Erreur"` → `t("common.error")`
 
-5. ROUTE dans App.tsx :
-   - Ajouter route `/languages` → LanguagesPage
-   - Ajouter lien "Langues" dans la navigation Header (uniquement pour admin)
-     Icône : Languages (from lucide-react) ou Globe
-   - Ajouter aussi dans le menu mobile dropdown
+### Remove
+- Bouton "Ajouter un Client" dans chaque ligne du tableau Base Client
+- Panneau gauche affiché par défaut au chargement de la page Base Client
 
-CONTRAINTES IMPORTANTES :
-- Ne pas toucher aux formules de calcul (useGetMonthlyListing, calculateMonthlyListingRow, etc.)
-- Ne pas toucher aux structures de données, types TypeScript
-- Ne pas modifier les colonnes/dimensions des tableaux calendriers
-- Les MONTH_NAMES et DAY_NAMES pour les calculs restent en français (données)
-- Le hook useTranslation est déjà créé dans src/frontend/src/hooks/useTranslation.ts
-- Les fichiers i18n sont déjà créés dans src/frontend/src/i18n/
-- Valider avec typecheck et build après les modifications
+## Implementation Plan
+
+1. Créer composant `NoteCell` dans WeeklyCalendarPage et DailyCalendarPage (état local + sauvegarde onBlur/Enter)
+2. Modifier ClientDatabasePage :
+   a. `panelMode` initialisé à `null` au lieu de `"form"`
+   b. Supprimer le bouton "Ajouter un Client" dans les lignes
+   c. Adapter le rendu : panneau gauche conditionnel, liste pleine largeur quand null
+   d. Remplacer tous les textes en dur par `t("...")`
+3. Modifier UserManagementPage : remplacer les 5-6 textes en dur restants
+4. Ajouter les clés manquantes dans fr.json et les traduire dans en.json, ru.json, es.json
