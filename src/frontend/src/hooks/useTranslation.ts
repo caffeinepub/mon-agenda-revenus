@@ -1,176 +1,170 @@
 import { useCallback, useEffect, useState } from "react";
-import enTranslations from "../i18n/en.json";
-import esTranslations from "../i18n/es.json";
-import frTranslations from "../i18n/fr.json";
-import ruTranslations from "../i18n/ru.json";
+import enJson from "../i18n/en.json";
+import esJson from "../i18n/es.json";
+import frJson from "../i18n/fr.json";
+import ruJson from "../i18n/ru.json";
 
-export type TranslationDict = Record<string, Record<string, string>>;
+const LANG_KEY = "revenueplanner_lang";
+const CUSTOM_LANGS_KEY = "revenueplanner_custom_langs";
 
-const STORAGE_KEY_LANG = "agenda_language";
-const STORAGE_KEY_CUSTOM = "agenda_custom_languages";
+type TranslationLeaf = string | string[];
+type TranslationValue = TranslationLeaf | { [key: string]: TranslationValue };
+type TranslationDict = Record<string, TranslationValue>;
 
-// Built-in languages
-const BUILT_IN_LANGUAGES: Record<
-  string,
-  { name: string; flag: string; dict: TranslationDict }
-> = {
-  fr: {
-    name: "Français",
-    flag: "🇫🇷",
-    dict: frTranslations as unknown as TranslationDict,
-  },
-  en: {
-    name: "English",
-    flag: "🇬🇧",
-    dict: enTranslations as unknown as TranslationDict,
-  },
-  es: {
-    name: "Español",
-    flag: "🇪🇸",
-    dict: esTranslations as unknown as TranslationDict,
-  },
-  ru: {
-    name: "Русский",
-    flag: "🇷🇺",
-    dict: ruTranslations as unknown as TranslationDict,
-  },
+const BUILT_IN: Record<string, TranslationDict> = {
+  fr: frJson as TranslationDict,
+  en: enJson as TranslationDict,
+  es: esJson as TranslationDict,
+  ru: ruJson as TranslationDict,
 };
 
-export interface LangEntry {
-  code: string;
-  name: string;
-  flag: string;
-  builtIn: boolean;
-  dict: TranslationDict;
-}
-
-function loadCustomLanguages(): Record<
-  string,
-  { name: string; flag: string; dict: TranslationDict }
-> {
+function getCustomLangs(): Record<string, TranslationDict> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_CUSTOM);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(CUSTOM_LANGS_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
 }
 
-export function saveCustomLanguage(
+function getAllLangs(): Record<string, TranslationDict> {
+  return { ...BUILT_IN, ...getCustomLangs() };
+}
+
+function resolvePath(
+  obj: TranslationDict,
+  path: string,
+): TranslationValue | undefined {
+  const parts = path.split(".");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let cur: any = obj;
+  for (const p of parts) {
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = cur[p];
+  }
+  return cur;
+}
+
+function t(
+  dict: TranslationDict,
+  fallback: TranslationDict,
+  key: string,
+): string {
+  const val = resolvePath(dict, key);
+  if (val !== undefined && typeof val === "string") return val;
+  const fb = resolvePath(fallback, key);
+  if (fb !== undefined && typeof fb === "string") return fb;
+  return key;
+}
+
+function tArr(
+  dict: TranslationDict,
+  fallback: TranslationDict,
+  key: string,
+): string[] {
+  const val = resolvePath(dict, key);
+  if (Array.isArray(val)) return val as string[];
+  const fb = resolvePath(fallback, key);
+  if (Array.isArray(fb)) return fb as string[];
+  return [];
+}
+
+const LANG_CHANGE_EVENT = "revenueplanner_lang_change";
+
+export function setAppLanguage(code: string) {
+  localStorage.setItem(LANG_KEY, code);
+  window.dispatchEvent(new CustomEvent(LANG_CHANGE_EVENT, { detail: code }));
+}
+
+export function getAppLanguage(): string {
+  return localStorage.getItem(LANG_KEY) ?? "fr";
+}
+
+export function addCustomLanguage(
   code: string,
   name: string,
   flag: string,
   dict: TranslationDict,
-): void {
-  const customs = loadCustomLanguages();
-  customs[code.toLowerCase()] = { name, flag, dict };
-  localStorage.setItem(STORAGE_KEY_CUSTOM, JSON.stringify(customs));
-  window.dispatchEvent(new CustomEvent("agenda_lang_change"));
+) {
+  const existing = getCustomLangs();
+  existing[code] = dict;
+  localStorage.setItem(CUSTOM_LANGS_KEY, JSON.stringify(existing));
+  const metaKey = "revenueplanner_lang_meta";
+  const meta = JSON.parse(localStorage.getItem(metaKey) ?? "{}");
+  meta[code] = { name, flag };
+  localStorage.setItem(metaKey, JSON.stringify(meta));
 }
 
-export function deleteCustomLanguage(code: string): void {
-  const customs = loadCustomLanguages();
-  delete customs[code.toLowerCase()];
-  localStorage.setItem(STORAGE_KEY_CUSTOM, JSON.stringify(customs));
-  // If active language was deleted, fall back to fr
-  if (localStorage.getItem(STORAGE_KEY_LANG) === code.toLowerCase()) {
-    localStorage.setItem(STORAGE_KEY_LANG, "fr");
+export function getLanguageMeta(): Record<
+  string,
+  { name: string; flag: string }
+> {
+  const base: Record<string, { name: string; flag: string }> = {
+    fr: { name: "Français", flag: "🇫🇷" },
+    en: { name: "English", flag: "🇬🇧" },
+    es: { name: "Español", flag: "🇪🇸" },
+    ru: { name: "Русский", flag: "🇷🇺" },
+  };
+  try {
+    const meta = JSON.parse(
+      localStorage.getItem("revenueplanner_lang_meta") ?? "{}",
+    );
+    return { ...base, ...meta };
+  } catch {
+    return base;
   }
-  window.dispatchEvent(new CustomEvent("agenda_lang_change"));
 }
 
-export function getAllLanguages(): LangEntry[] {
-  const customs = loadCustomLanguages();
-  const result: LangEntry[] = [];
-  for (const [code, data] of Object.entries(BUILT_IN_LANGUAGES)) {
-    result.push({
-      code,
-      name: data.name,
-      flag: data.flag,
-      builtIn: true,
-      dict: data.dict,
-    });
-  }
-  for (const [code, data] of Object.entries(customs)) {
-    // Custom can override built-in only if not in built-in list
-    if (!BUILT_IN_LANGUAGES[code]) {
-      result.push({
-        code,
-        name: data.name,
-        flag: data.flag,
-        builtIn: false,
-        dict: data.dict,
-      });
-    } else {
-      // Replace built-in with custom override
-      const idx = result.findIndex((l) => l.code === code);
-      if (idx >= 0)
-        result[idx] = {
-          code,
-          name: data.name,
-          flag: data.flag,
-          builtIn: false,
-          dict: data.dict,
-        };
-    }
-  }
-  return result;
+export function removeCustomLanguage(code: string) {
+  const existing = getCustomLangs();
+  delete existing[code];
+  localStorage.setItem(CUSTOM_LANGS_KEY, JSON.stringify(existing));
+  const metaKey = "revenueplanner_lang_meta";
+  const meta = JSON.parse(localStorage.getItem(metaKey) ?? "{}");
+  delete meta[code];
+  localStorage.setItem(metaKey, JSON.stringify(meta));
 }
 
-export function getActiveLanguageCode(): string {
-  return localStorage.getItem(STORAGE_KEY_LANG) ?? "fr";
-}
-
-export function setActiveLanguage(code: string): void {
-  localStorage.setItem(STORAGE_KEY_LANG, code);
-  window.dispatchEvent(new CustomEvent("agenda_lang_change"));
-}
-
-function getDictForCode(code: string): TranslationDict {
-  // Check custom first (allows overriding built-ins)
-  const customs = loadCustomLanguages();
-  if (customs[code]) return customs[code].dict;
-  if (BUILT_IN_LANGUAGES[code])
-    return BUILT_IN_LANGUAGES[code].dict as TranslationDict;
-  return BUILT_IN_LANGUAGES.fr.dict as TranslationDict;
-}
-
-const frDict = BUILT_IN_LANGUAGES.fr.dict as TranslationDict;
-
-/**
- * Returns t("section.key") function that translates using active language,
- * falling back to French if key is missing.
- */
 export function useTranslation() {
-  const [langCode, setLangCode] = useState<string>(() =>
-    getActiveLanguageCode(),
-  );
+  const [lang, setLang] = useState<string>(getAppLanguage);
 
   useEffect(() => {
-    const handler = () => setLangCode(getActiveLanguageCode());
-    window.addEventListener("agenda_lang_change", handler);
-    window.addEventListener("storage", handler);
-    return () => {
-      window.removeEventListener("agenda_lang_change", handler);
-      window.removeEventListener("storage", handler);
+    const handler = (e: Event) => {
+      setLang((e as CustomEvent<string>).detail);
     };
+    window.addEventListener(LANG_CHANGE_EVENT, handler);
+    return () => window.removeEventListener(LANG_CHANGE_EVENT, handler);
   }, []);
 
-  const t = useCallback(
+  const translate = useCallback(
     (key: string): string => {
-      const [section, ...rest] = key.split(".");
-      const subKey = rest.join(".");
-      const dict = getDictForCode(langCode);
-      const sectionDict = dict[section];
-      if (sectionDict && subKey in sectionDict) return sectionDict[subKey];
-      // Fallback to French
-      const frSection = frDict[section];
-      if (frSection && subKey in frSection) return frSection[subKey];
-      return key;
+      const allLangs = getAllLangs();
+      const fr = BUILT_IN.fr;
+      const dict = allLangs[lang] ?? fr;
+      return t(dict, fr, key);
     },
-    [langCode],
+    [lang],
   );
 
-  return { t, langCode, setLang: setActiveLanguage };
+  const translateArr = useCallback(
+    (key: string): string[] => {
+      const allLangs = getAllLangs();
+      const fr = BUILT_IN.fr;
+      const dict = allLangs[lang] ?? fr;
+      return tArr(dict, fr, key);
+    },
+    [lang],
+  );
+
+  return { t: translate, tArr: translateArr, lang };
+}
+
+export function getBuiltInLangData(code: string): TranslationDict | null {
+  return BUILT_IN[code] ?? null;
+}
+
+export function getCurrentLangData(): TranslationDict {
+  const lang = getAppLanguage();
+  const allLangs = getAllLangs();
+  return allLangs[lang] ?? BUILT_IN.fr;
 }

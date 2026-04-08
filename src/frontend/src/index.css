@@ -4,317 +4,121 @@
 
 @layer base {
   :root {
-    --radius: 0.625rem;
-    --background: 0.98 0 0;
-    --foreground: 0.145 0 0;
-    --card: 1 0 0;
-    --card-foreground: 0.145 0 0;
-    --popover: 1 0 0;
-    --popover-foreground: 0.145 0 0;
-    --primary: 0.55 0.18 240;
-    --primary-foreground: 0.99 0 0;
-    --secondary: 0.96 0.01 240;
-    --secondary-foreground: 0.145 0 0;
-    --muted: 0.96 0.01 240;
-    --muted-foreground: 0.5 0.01 240;
-    --accent: 0.65 0.2 160;
-    --accent-foreground: 0.99 0 0;
-    --destructive: 0.577 0.245 27.325;
-    --destructive-foreground: 0.985 0 0;
-    --border: 0.92 0.01 240;
-    --input: 0.92 0.01 240;
-    --ring: 0.55 0.18 240;
-    --chart-1: 0.55 0.18 240;
-    --chart-2: 0.65 0.2 160;
-    --chart-3: 0.7 0.15 200;
-    --chart-4: 0.6 0.22 280;
-    --chart-5: 0.75 0.18 140;
-    --sidebar: 0.985 0 0;
-    --sidebar-foreground: 0.145 0 0;
-    --sidebar-primary: 0.55 0.18 240;
-    --sidebar-primary-foreground: 0.99 0 0;
-    --sidebar-accent: 0.96 0.01 240;
-    --sidebar-accent-foreground: 0.145 0 0;
-    --sidebar-border: 0.92 0.01 240;
-    --sidebar-ring: 0.55 0.18 240;
-    --sunday-pink: 0.85 0.12 350;
-    --sunday-pink-light: 0.95 0.08 350;
-    --today-blue: 0.92 0.06 220;
-    --today-blue-header: 0.85 0.1 220;
-    /* Pale pink for full-hour separators and hour cell background */
-    --hour-pink: 0.92 0.06 350;
-    /* Pale grey for half-hour separators */
-    --halfhour-grey: 0.88 0 0;
+    --font-display: Verdana, Geneva, sans-serif;
+    --font-body: Verdana, Geneva, sans-serif;
+    --font-mono: "Courier New", monospace;
+    --radius: 0.5rem;
+
+    --background: 0.97 0.005 220;
+    --foreground: 0.15 0.01 260;
+    --card: 1.0 0 0;
+    --card-foreground: 0.15 0.01 260;
+    --popover: 1.0 0 0;
+    --popover-foreground: 0.15 0.01 260;
+
+    --primary: 0.38 0.14 250;
+    --primary-foreground: 0.98 0 0;
+
+    --secondary: 0.93 0.02 220;
+    --secondary-foreground: 0.25 0.02 250;
+    --muted: 0.93 0.015 220;
+    --muted-foreground: 0.48 0.02 250;
+
+    --accent: 0.55 0.18 250;
+    --accent-foreground: 0.98 0 0;
+
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.98 0 0;
+
+    --border: 0.88 0.015 220;
+    --input: 0.92 0.01 220;
+    --ring: 0.38 0.14 250;
+
+    --chart-1: 0.65 0.22 40;
+    --chart-2: 0.6 0.12 185;
+    --chart-3: 0.4 0.07 227;
+    --chart-4: 0.83 0.19 84;
+    --chart-5: 0.77 0.19 70;
+
+    --sidebar: 0.22 0.06 255;
+    --sidebar-foreground: 0.92 0.02 240;
+    --sidebar-primary: 0.65 0.18 250;
+    --sidebar-primary-foreground: 0.98 0 0;
+    --sidebar-accent: 0.28 0.06 255;
+    --sidebar-accent-foreground: 0.9 0.02 240;
+    --sidebar-border: 0.3 0.05 255;
+    --sidebar-ring: 0.65 0.18 250;
   }
 
   .dark {
-    --background: 0.145 0 0;
-    --foreground: 0.985 0 0;
-    --card: 0.18 0 0;
-    --card-foreground: 0.985 0 0;
-    --popover: 0.2 0 0;
-    --popover-foreground: 0.985 0 0;
-    --primary: 0.65 0.2 240;
-    --primary-foreground: 0.99 0 0;
-    --secondary: 0.25 0.01 240;
-    --secondary-foreground: 0.985 0 0;
-    --muted: 0.25 0.01 240;
-    --muted-foreground: 0.65 0.01 240;
-    --accent: 0.7 0.22 160;
-    --accent-foreground: 0.99 0 0;
-    --destructive: 0.6 0.22 27;
-    --destructive-foreground: 0.99 0 0;
-    --border: 0.3 0.01 240;
-    --input: 0.3 0.01 240;
-    --ring: 0.65 0.2 240;
-    --chart-1: 0.65 0.2 240;
-    --chart-2: 0.7 0.22 160;
-    --chart-3: 0.75 0.18 200;
-    --chart-4: 0.68 0.24 280;
-    --chart-5: 0.78 0.2 140;
-    --sidebar: 0.18 0 0;
-    --sidebar-foreground: 0.985 0 0;
-    --sidebar-primary: 0.65 0.2 240;
-    --sidebar-primary-foreground: 0.99 0 0;
-    --sidebar-accent: 0.25 0.01 240;
-    --sidebar-accent-foreground: 0.985 0 0;
-    --sidebar-border: 0.3 0.01 240;
-    --sidebar-ring: 0.65 0.2 240;
-    --sunday-pink: 0.55 0.15 350;
-    --sunday-pink-light: 0.35 0.1 350;
-    --today-blue: 0.3 0.08 220;
-    --today-blue-header: 0.4 0.12 220;
-    /* Pale pink for full-hour separators and hour cell background (dark mode) */
-    --hour-pink: 0.45 0.08 350;
-    /* Pale grey for half-hour separators (dark mode) */
-    --halfhour-grey: 0.35 0 0;
+    --background: 0.13 0.02 260;
+    --foreground: 0.92 0.01 240;
+    --card: 0.17 0.02 255;
+    --card-foreground: 0.92 0.01 240;
+    --popover: 0.2 0.02 255;
+    --popover-foreground: 0.92 0.01 240;
+
+    --primary: 0.52 0.18 250;
+    --primary-foreground: 0.97 0.01 240;
+
+    --secondary: 0.22 0.03 255;
+    --secondary-foreground: 0.85 0.01 240;
+    --muted: 0.22 0.02 255;
+    --muted-foreground: 0.62 0.02 250;
+
+    --accent: 0.52 0.18 250;
+    --accent-foreground: 0.97 0.01 240;
+
+    --destructive: 0.6 0.2 22;
+    --destructive-foreground: 0.97 0 0;
+
+    --border: 0.28 0.03 255;
+    --input: 0.26 0.03 255;
+    --ring: 0.52 0.18 250;
+
+    --chart-1: 0.49 0.24 264;
+    --chart-2: 0.7 0.17 162;
+    --chart-3: 0.77 0.19 70;
+    --chart-4: 0.63 0.27 304;
+    --chart-5: 0.65 0.25 16;
+
+    --sidebar: 0.15 0.025 260;
+    --sidebar-foreground: 0.92 0.01 240;
+    --sidebar-primary: 0.68 0.16 250;
+    --sidebar-primary-foreground: 0.1 0.02 260;
+    --sidebar-accent: 0.2 0.03 255;
+    --sidebar-accent-foreground: 0.85 0.01 240;
+    --sidebar-border: 0.25 0.03 255;
+    --sidebar-ring: 0.68 0.16 250;
   }
 
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: Verdana, Geneva, sans-serif;
   }
 }
 
-/* Verdana Typography Classes */
-@layer components {
-  /* Titres des cadres : Verdana, taille 13, gras, sans espace avant/après */
-  .frame-title {
-    font-family: Verdana, sans-serif;
-    font-size: 13px;
-    font-weight: bold;
-    margin: 0;
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
-  /* Totaux de sommes : Verdana, taille 14, gras, sans espace avant/après */
-  /* NOTE: sum-total is intentionally kept at 14px — used by A/B/C and E/F/G stat cards */
-  .sum-total {
-    font-family: Verdana, sans-serif;
-    font-size: 14px;
-    font-weight: bold;
-    margin: 0;
+  .font-verdana {
+    font-family: Verdana, Geneva, sans-serif !important;
   }
-
-  /* Noms des lignes/colonnes de tableaux : Verdana, taille 11, gras, sans espace avant/après */
-  .table-header {
-    font-family: Verdana, sans-serif;
-    font-size: 11px;
-    font-weight: bold;
-    margin: 0;
-  }
-
-  /* Données des tableaux : Verdana, taille 10, non gras, sans espace avant/après */
-  .table-data {
-    font-family: Verdana, sans-serif;
+  .table-compact {
+    font-family: Verdana, Geneva, sans-serif;
     font-size: 10px;
-    font-weight: normal;
+    line-height: 14px;
+  }
+  .input-no-spinner::-webkit-outer-spin-button,
+  .input-no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
     margin: 0;
   }
-}
-
-/* Compta Mois grid alignment styles */
-@layer components {
-  .compta-mois-table {
-    border-collapse: separate;
-    border-spacing: 0;
+  .input-no-spinner {
+    -moz-appearance: textfield;
   }
-
-  .compta-mois-table td,
-  .compta-mois-table th {
-    box-sizing: border-box;
-  }
-
-  /* Narrow day columns - minimal width with nowrap */
-  .compta-mois-day-header {
-    padding: 2px 4px;
-    white-space: nowrap;
-    width: auto;
-    min-width: fit-content;
-  }
-
-  /* Hour column header */
-  .compta-mois-hour-header {
-    padding: 2px 4px;
-    width: 40px;
-    min-width: 40px;
-    text-align: center;
-    vertical-align: middle;
-  }
-
-  /* Consistent 30-minute slot height */
-  .compta-mois-time-row {
-    height: 130px;
-  }
-
-  .compta-mois-hour-cell {
-    position: relative;
-    vertical-align: middle;
-    text-align: center;
-    height: 130px;
-    padding: 1px 2px;
-  }
-
-  .compta-mois-day-cell {
-    position: relative;
-    box-sizing: border-box;
-    height: 130px;
-    padding: 1px;
-  }
-
-  /* Hour separator: thick pale pink top border at the start of each full hour */
-  .compta-mois-hour-separator td {
-    border-top: 3px solid oklch(var(--hour-pink)) !important;
-  }
-
-  /* Half-hour separator: thin pale grey top border at the 30-minute mark */
-  .compta-mois-halfhour-separator td {
-    border-top: 1px solid oklch(var(--halfhour-grey)) !important;
-  }
-
-  /* Pale pink background only on the hour label cell (full hours) */
-  .compta-mois-hour-label-cell {
-    background-color: oklch(var(--hour-pink)) !important;
-  }
-
-  /* Sunday styling - light pink backgrounds */
-  .compta-mois-sunday-header {
-    background-color: oklch(var(--sunday-pink-light) / 1) !important;
-    color: oklch(var(--foreground) / 1);
-  }
-
-  .compta-mois-sunday-empty {
-    background-color: oklch(var(--sunday-pink-light) / 1);
-  }
-
-  /* Sunday appointments - subtle border accent, preserve status colors */
-  .compta-mois-sunday-appointment {
-    border-left: 3px solid oklch(var(--sunday-pink) / 0.8) !important;
-    border-right: 3px solid oklch(var(--sunday-pink) / 0.8) !important;
-  }
-
-  /* Today column - light blue backgrounds */
-  .compta-mois-today-header {
-    background-color: oklch(var(--today-blue-header) / 1) !important;
-    color: oklch(var(--foreground) / 1);
-  }
-
-  .compta-mois-today-empty {
-    background-color: oklch(var(--today-blue) / 1);
-  }
-
-  /* Today appointments - subtle blue border accent, preserve status colors */
-  .compta-mois-today-appointment {
-    border-left: 3px solid oklch(var(--today-blue-header) / 1) !important;
-    border-right: 3px solid oklch(var(--today-blue-header) / 1) !important;
-  }
-}
-
-/* =============================================================================
-   ADAPTATION RESPONSIVE POUR SMARTPHONES (max-width: 768px)
-   ============================================================================= */
-@media (max-width: 768px) {
-  /* Container principal : padding réduit */
-  .container {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-
-  /* Tous les tableaux larges : défilement horizontal */
-  .responsive-table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Taille de police réduite sur mobile pour les tableaux */
-  .table-data {
-    font-size: 9px;
-  }
-  .table-header {
-    font-size: 10px;
-  }
-  .frame-title {
-    font-size: 12px;
-  }
-
-  /* Grille 3 colonnes du Tableau de bord : en colonne sur mobile */
-  .dashboard-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Calendrier mensuel sur mobile : défilement horizontal */
-  .compta-mois-table {
-    font-size: 8px !important;
-  }
-  .compta-mois-time-row {
-    height: 130px !important;
-  }
-  .compta-mois-hour-cell {
-    height: 130px !important;
-    font-size: 8px !important;
-    padding: 0 2px !important;
-  }
-  .compta-mois-day-cell {
-    height: 130px !important;
-    font-size: 8px !important;
-    padding: 0 !important;
-  }
-  .compta-mois-day-header {
-    font-size: 8px !important;
-    padding: 2px 2px !important;
-  }
-  .compta-mois-hour-header {
-    width: 28px !important;
-    min-width: 28px !important;
-    font-size: 8px !important;
-  }
-
-  /* Header : titre raccourci sur mobile */
-  header h1 {
-    font-size: 16px !important;
-  }
-  header p {
-    display: none;
-  }
-}
-
-/* Classe utilitaire pour les wrappers de tableaux scrollables */
-.table-scroll-wrapper {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-}
-
-/* ─── Police orangée - option mode sombre ──────────────────────────────────── */
-/* Activé via la case à cocher dans la page Utilisateurs */
-.orange-font,
-.orange-font * {
-  color: rgb(226, 107, 10) !important;
-}
-
-/* ─── Couleur de police personnalisée ──────────────────────────────────────── */
-/* Activé via le sélecteur de couleur dans la page Utilisateurs */
-.custom-font-color * {
-  color: var(--custom-font-color) !important;
 }
